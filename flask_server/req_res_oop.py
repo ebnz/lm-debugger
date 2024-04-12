@@ -48,7 +48,7 @@ class ModelingRequests():
             hook.remove()
 
     def set_hooks_gpt2(self):
-        final_layer = self.model.config.n_layer - 1
+        final_layer = self.model.config.num_hidden_layers - 1
 
         for attr in ["activations_"]:
             if not hasattr(self.model, attr):
@@ -79,9 +79,21 @@ class ModelingRequests():
 
             return hook
 
-        self.model.transformer.h[0].ln_1.register_forward_hook(get_activation("input_embedding"))
+        self.model.model.layers[0].input_layernorm.register_forward_hook(get_activation("input_embedding"))
+        #self.model.transformer.h[0].ln_1.register_forward_hook(get_activation("input_embedding"))
 
-        for i in range(self.model.config.n_layer):
+        for i in range(self.model.config.num_hidden_layers):
+            if i != 0:
+                self.model.model.layers[i].input_layernorm.register_forward_hook(get_activation("layer_residual_" + str(i - 1)))
+            self.model.model.layers[i].post_attention_layernorm.register_forward_hook(get_activation("intermediate_residual_" + str(i)))
+
+            self.model.model.layers[i].self_attn.register_forward_hook(get_activation("attn_" + str(i)))
+            self.model.model.layers[i].mlp.register_forward_hook(get_activation("mlp_" + str(i)))
+            self.model.model.layers[i].mlp.down_proj.register_forward_hook(get_activation("m_coef_" + str(i)))
+
+        self.model.model.norm.register_forward_hook(get_activation("layer_residual_" + str(final_layer)))
+
+        """for i in range(self.model.config.n_layer):
             if i != 0:
                 self.model.transformer.h[i].ln_1.register_forward_hook(get_activation("layer_residual_" + str(i - 1)))
             self.model.transformer.h[i].ln_2.register_forward_hook(get_activation("intermediate_residual_" + str(i)))
@@ -90,10 +102,11 @@ class ModelingRequests():
             self.model.transformer.h[i].mlp.register_forward_hook(get_activation("mlp_" + str(i)))
             self.model.transformer.h[i].mlp.c_proj.register_forward_hook(get_activation("m_coef_" + str(i)))
 
-        self.model.transformer.ln_f.register_forward_hook(get_activation("layer_residual_" + str(final_layer)))
+        self.model.transformer.ln_f.register_forward_hook(get_activation("layer_residual_" + str(final_layer)))"""
 
     def get_resid_predictions(self, sentence, start_idx=None, end_idx=None, set_mlp_0=False):
-        HIDDEN_SIZE = self.model.config.n_embd
+        HIDDEN_SIZE = self.model.config.hidden_size
+        #HIDDEN_SIZE = self.model.config.n_embd
 
         layer_residual_preds = []
         intermed_residual_preds = []
@@ -108,9 +121,10 @@ class ModelingRequests():
         tokens = self.tokenizer(sentence, return_tensors="pt")
         tokens.to(self.device)
         output = self.model(**tokens, output_hidden_states=True)
+
         for layer in self.model.activations_.keys():
             if "layer_residual" in layer or "intermediate_residual" in layer:
-                normed = self.model.transformer.ln_f(self.model.activations_[layer])
+                normed = self.model.model.norm(self.model.activations_[layer])
 
                 logits = torch.matmul(self.model.lm_head.weight, normed.T)
 
@@ -137,6 +151,35 @@ class ModelingRequests():
             self.model.layer_resid_preds = layer_residual_preds
             self.model.intermed_residual_preds = intermed_residual_preds
 
+        """for layer in self.model.activations_.keys():
+            if "layer_residual" in layer or "intermediate_residual" in layer:
+                normed = self.model.transformer.ln_f(self.model.activations_[layer])
+
+                logits = torch.matmul(self.model.lm_head.weight, normed.T)
+
+                probs = F.softmax(logits.T[0], dim=-1)
+
+                probs = torch.reshape(probs, (-1,)).detach().cpu().numpy()
+
+                assert np.abs(np.sum(probs) - 1) <= 0.01, str(np.abs(np.sum(probs) - 1)) + layer
+
+                probs_ = []
+                for index, prob in enumerate(probs):
+                    probs_.append((index, prob))
+                top_k = sorted(probs_, key=lambda x: x[1], reverse=True)[:self.TOP_K]
+                top_k = [(t[1].item(), self.tokenizer.decode(t[0])) for t in top_k]
+            if "layer_residual" in layer:
+                layer_residual_preds.append(top_k)
+            elif "intermediate_residual" in layer:
+                intermed_residual_preds.append(top_k)
+
+            for attr in ["layer_resid_preds", "intermed_residual_preds"]:
+                if not hasattr(self.model, attr):
+                    setattr(self.model, attr, [])
+
+            self.model.layer_resid_preds = layer_residual_preds
+            self.model.intermed_residual_preds = intermed_residual_preds"""
+
     def get_preds_and_hidden_states(self, prompt):
         self.set_hooks_gpt2()
 
@@ -159,11 +202,12 @@ class ModelingRequests():
         residual_preds_tokens = []
         layer_preds_probs = []
         layer_preds_tokens = []
-        for LAYER in range(self.model.config.n_layer):
+        for LAYER in range(self.model.config.num_hidden_layers):
             coefs_ = []
             m_coefs = sent_to_hidden_states["m_coef_" + str(LAYER)].squeeze(0).cpu().numpy()
             res_vec = sent_to_hidden_states["layer_residual_" + str(LAYER)].squeeze(0).cpu().numpy()
-            value_norms = torch.linalg.norm(self.model.transformer.h[LAYER].mlp.c_proj.weight.data, dim=1).cpu()
+            value_norms = torch.linalg.norm(self.model.model.layers[LAYER].mlp.down_proj.weight.data, dim=0).cpu()
+            #value_norms = torch.linalg.norm(self.model.transformer.h[LAYER].mlp.c_proj.weight.data, dim=1).cpu()
             scaled_coefs = np.absolute(m_coefs) * value_norms.numpy()
 
             for index, prob in enumerate(scaled_coefs):
