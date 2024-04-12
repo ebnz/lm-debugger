@@ -78,7 +78,7 @@ function Prompt(props: Props): JSX.Element {
         <Button>Select Example <CaretDownOutlined /></Button>
       </ExampleDropdown>
       {/* <TextInput disabled={isLoading} value={promptValue} onChange={e => onPromptValueChanged(e.target.value)}/> */}
-      <TextInput value={promptValue} onChange={e => setPromptValue(e.target.value)} disabled={isLoading} id="prompt_input"/>
+      <TextInput value={typeof promptValue === "string" ? promptValue : "Loading..."} onChange={e => setPromptValue(e.target.value)} disabled={isLoading} id="prompt_input"/>
 
       <MainButtons>
         <RunButton disabled={isEmpty || isAnythingLoading} onClick={() => onRun(promptValue)}>

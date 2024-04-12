@@ -5,19 +5,19 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from create_offline_files import create_elastic_search_data, create_streamlit_data
-from transformers import GPT2Tokenizer, GPT2LMHeadModel
+from transformers import LlamaForCausalLM, CodeLlamaTokenizer
 
 warnings.filterwarnings('ignore')
 
 
 class ModelingRequests():
     def __init__(self, args):
-        self.model = GPT2LMHeadModel.from_pretrained(args.model_name)
+        self.model = LlamaForCausalLM.from_pretrained(args.model_name, torch_dtype=torch.float16)       #ToDo: Set dtype back to 32Bit
         self.device = args.device
         self.model.to(self.device)
-        self.tokenizer = GPT2Tokenizer.from_pretrained(args.model_name)
-        self.dict_es = create_elastic_search_data(args.elastic_projections_path, self.model, args.model_name,
-                                                  self.tokenizer, args.top_k_for_elastic)
+        self.tokenizer = CodeLlamaTokenizer.from_pretrained(args.model_name)
+        #self.dict_es = create_elastic_search_data(args.elastic_projections_path, self.model, args.model_name,
+                                                  #self.tokenizer, args.top_k_for_elastic)   #ToDo: make work
         if args.create_cluster_files:
             create_streamlit_data(args.streamlit_cluster_to_value_file_path, args.streamlit_value_to_cluster_file_path,
                                   self.model, args.model_name, args.num_clusters)

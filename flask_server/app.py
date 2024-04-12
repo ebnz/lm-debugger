@@ -47,6 +47,7 @@ if __name__ == '__main__':
     def generate():
         try:
             request_data = request.get_json()
+            print(request_data)
             return jsonify(requests_obj.send_request_get_response_for_generation(request_data))
         except:
             return jsonify({})

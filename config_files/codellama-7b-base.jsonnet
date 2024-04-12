@@ -1,6 +1,6 @@
 {
   server_files_dir:: "SERVER_FILES_PATH",
-  model_name:"gpt2-medium",
+  model_name:"codellama/CodeLlama-7b-hf",
   device:"cuda",
   server_ip: "129.206.61.57",
   server_port: 8000,

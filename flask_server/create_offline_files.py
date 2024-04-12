@@ -10,7 +10,7 @@ import pyhocon
 import torch
 from sklearn.cluster import AgglomerativeClustering
 from tqdm import tqdm
-from transformers import GPT2LMHeadModel, GPT2Tokenizer
+from transformers import LlamaForCausalLM, CodeLlamaTokenizer
 
 warnings.filterwarnings('ignore')
 
@@ -109,10 +109,10 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
     config = pyhocon.ConfigFactory.from_dict(json.loads(_jsonnet.evaluate_file(args.config_path)))
-    model = GPT2LMHeadModel.from_pretrained(config.model_name)
+    model = LlamaForCausalLM.from_pretrained(config.model_name, torch_dtype=torch.float16)          #ToDo: Set dtype back to 32Bit
     device = config.device
     model.to(device)
-    tokenizer = GPT2Tokenizer.from_pretrained(config.model_name)
+    tokenizer = CodeLlamaTokenizer.from_pretrained(config.model_name)
     _ = create_elastic_search_data(config.elastic_projections_path, model, config.model_name, tokenizer,
                                    config.top_k_for_elastic)
     create_streamlit_data(config.streamlit_cluster_to_value_file_path, config.streamlit_value_to_cluster_file_path,
