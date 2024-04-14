@@ -14,7 +14,7 @@ from transformers import LlamaForCausalLM, CodeLlamaTokenizer
 
 warnings.filterwarnings('ignore')
 
-
+"""
 def get_all_projected_values(model):
     logits = []
     for i in tqdm(range(model.config.n_layer)):
@@ -23,6 +23,25 @@ def get_all_projected_values(model):
 
     logits = torch.vstack(logits)
     return logits.detach().cpu().numpy()
+"""
+"""
+def get_all_projected_values(model):
+    logits = []
+    for i in tqdm(range(model.config.num_hidden_layers)):
+        layer_logits = torch.matmul(model.model.embed_tokens.weight, model.model.layers[i].mlp.down_proj.weight).T  #ToDo: Check if .T does belong here
+        logits.append(layer_logits)
+
+    logits = torch.vstack(logits)
+    return logits.detach().cpu().numpy()
+"""
+def get_all_projected_values(model):
+    logits = []
+    for i in tqdm(range(model.config.num_hidden_layers)):
+        layer_logits = torch.matmul(model.model.embed_tokens.weight.to("cuda:1"), model.model.layers[i].mlp.down_proj.weight.to("cuda:1")).T  #ToDo: Check if .T does belong here
+        logits.append(layer_logits.detach().cpu())
+
+    logits = torch.vstack(logits)
+    return logits.numpy()
 
 
 def create_elastic_search_data(path, model, model_name, tokenizer, top_k):
@@ -33,7 +52,7 @@ def create_elastic_search_data(path, model, model_name, tokenizer, top_k):
     d = {}
     inv_d = {}
     cnt = 0
-    total_dims = model.transformer.h[0].mlp.c_proj.weight.size(0)
+    """total_dims = model.transformer.h[0].mlp.c_proj.weight.size(0)
     for i in range(model.config.n_layer):
         for j in range(total_dims):
             d[cnt] = (i, j)
@@ -42,6 +61,22 @@ def create_elastic_search_data(path, model, model_name, tokenizer, top_k):
     dict_es = {}
     logits = get_all_projected_values(model)
     for i in tqdm(range(model.config.n_layer)):
+        for j in tqdm(range(total_dims), leave=False):
+            k = (i, j)
+            cnt = inv_d[(i, j)]
+            ids = np.argsort(-logits[cnt])[:top_k]
+            tokens = [tokenizer._convert_id_to_token(x) for x in ids]
+            dict_es[k] = [(ids[b], tokens[b], logits[cnt][ids[b]]) for b in range(len(tokens))]
+    """
+    total_dims = model.model.layers[0].mlp.down_proj.weight.size(1)     #ToDo: .size(1)
+    for i in range(model.config.num_hidden_layers):
+        for j in range(total_dims):
+            d[cnt] = (i, j)
+            inv_d[(i, j)] = cnt
+            cnt += 1
+    dict_es = {}
+    logits = get_all_projected_values(model)
+    for i in tqdm(range(model.config.num_hidden_layers)):
         for j in tqdm(range(total_dims), leave=False):
             k = (i, j)
             cnt = inv_d[(i, j)]
