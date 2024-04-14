@@ -1,6 +1,6 @@
 {
   server_files_dir:: SERVER_FILES_PATH,
-  model_name:"gpt2-medium",
+  model_name:"codellama/CodeLlama-7b-Instruct-hf",
   device:"cpu",
   server_ip:SERVER_IP,
   server_port:SERVER_PORT,

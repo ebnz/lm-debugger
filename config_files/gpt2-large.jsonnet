@@ -1,7 +1,7 @@
 {
   server_files_dir:: SERVER_FILES_PATH,
   model_name:"gpt2-large",
-  device:"cuda:0",
+  device:"cpu",
   server_ip:SERVER_IP,
   server_port:SERVER_PORT,
   elastic_ip:ELASTIC_IP,
