@@ -91,8 +91,12 @@ def create_elastic_search_data(path, model, model_name, tokenizer, top_k):
 
 def get_all_values(model):
     values = []
+    """
     for i in tqdm(range(model.config.n_layer)):
         layer_logits = model.transformer.h[i].mlp.c_proj.weight
+    """
+    for i in tqdm(range(model.config.num_hidden_layers)):
+        layer_logits = model.model.layers[i].mlp.down_proj.weight.T     #ToDo: Check if .T is right here
         values.append(layer_logits)
     values = torch.vstack(values)
     return values
@@ -118,14 +122,18 @@ def create_streamlit_data(path_cluster_to_value, path_value_to_cluster, model, m
     d = {}
     inv_d = {}
     cnt = 0
-    total_dims = model.transformer.h[0].mlp.c_proj.weight.size(0)
-    for i in range(model.config.n_layer):
+    #total_dims = model.transformer.h[0].mlp.c_proj.weight.size(0)
+    total_dims = model.model.layers[0].mlp.down_proj.weight.size(1)
+    for i in range(model.config.num_hidden_layers):
         for j in range(total_dims):
             d[cnt] = (i, j)
             inv_d[(i, j)] = cnt
             cnt += 1
+    print("Getting all Model Features")
     values = get_all_values(model).detach().cpu()
+    print("Calculating Cosine-Distance Matrix")
     cosine_mat = cosine_distance_torch(values).detach().cpu().numpy()
+    print("Clustering")
     predicted_clusters = get_predicted_clusters(num_clusters, cosine_mat)
     clusters = {i: [] for i in range(num_clusters)}
     for i, x in enumerate(predicted_clusters):
