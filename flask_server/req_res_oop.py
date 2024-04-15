@@ -16,8 +16,8 @@ class ModelingRequests():
         self.device = args.device
         self.model.to(self.device)
         self.tokenizer = CodeLlamaTokenizer.from_pretrained(args.model_name)
-        #self.dict_es = create_elastic_search_data(args.elastic_projections_path, self.model, args.model_name,
-                                                  #self.tokenizer, args.top_k_for_elastic)   #ToDo: make work
+        self.dict_es = create_elastic_search_data(args.elastic_projections_path, self.model, args.model_name,
+                                                  self.tokenizer, args.top_k_for_elastic)   #ToDo: make work
         if args.create_cluster_files:
             create_streamlit_data(args.streamlit_cluster_to_value_file_path, args.streamlit_value_to_cluster_file_path,
                                   self.model, args.model_name, args.num_clusters)

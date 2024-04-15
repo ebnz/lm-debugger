@@ -68,7 +68,7 @@ def create_elastic_search_data(path, model, model_name, tokenizer, top_k):
             tokens = [tokenizer._convert_id_to_token(x) for x in ids]
             dict_es[k] = [(ids[b], tokens[b], logits[cnt][ids[b]]) for b in range(len(tokens))]
     """
-    total_dims = model.model.layers[0].mlp.down_proj.weight.size(0)     #ToDo: .size(1)
+    total_dims = model.model.layers[0].mlp.down_proj.weight.size(1)     #ToDo: .size(1)
     for i in range(model.config.num_hidden_layers):
         for j in range(total_dims):
             d[cnt] = (i, j)
@@ -81,7 +81,8 @@ def create_elastic_search_data(path, model, model_name, tokenizer, top_k):
             k = (i, j)
             cnt = inv_d[(i, j)]
             ids = np.argsort(-logits[cnt])[:top_k]
-            tokens = [tokenizer._convert_id_to_token(x) for x in ids]
+            ids_list = ids.tolist()     #Converting a copy to a python list, as tokenizer._convert_id_to_token has problems with np.array
+            tokens = [tokenizer._convert_id_to_token(x) for x in ids_list]
             dict_es[k] = [(ids[b], tokens[b], logits[cnt][ids[b]]) for b in range(len(tokens))]
     with open(path, 'wb') as handle:
         pickle.dump(dict_es, handle, protocol=pickle.HIGHEST_PROTOCOL)
