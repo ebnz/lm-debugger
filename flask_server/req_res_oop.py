@@ -31,12 +31,22 @@ class ModelingRequests():
             return hook
 
         hooks = []
-        for l in range(self.model.config.n_layer):
+        for l in range(self.model.config.num_hidden_layers):
             if l in values_per_layer:
                 values = values_per_layer[l]
             else:
                 values = []
+            """
             hook = self.model.transformer.h[l].mlp.c_fc.register_forward_hook(
+                change_values(values, coef_value)
+            )
+            hooks.append(hook)
+            """
+            hook = self.model.model.layers[l].mlp.gate_proj.register_forward_hook(
+                change_values(values, coef_value)
+            )
+            hooks.append(hook)
+            hook = self.model.model.layers[l].mlp.up_proj.register_forward_hook(
                 change_values(values, coef_value)
             )
             hooks.append(hook)
@@ -240,7 +250,7 @@ class ModelingRequests():
         pred_d = {}
         pred_d['prompt'] = pred_df['sent']
         pred_d['layers'] = []
-        for layer_n in range(self.model.config.n_layer):
+        for layer_n in range(self.model.config.num_hidden_layers):
             layer_d = {}
             layer_d['layer'] = layer_n
             layer_d['predictions_before'] = [
@@ -290,7 +300,7 @@ class ModelingRequests():
         response_dict['response'] = pred_dict
         if len(interventions_lst) > 0:
             hooks_lst = []
-            maxs_dict = {l: self.get_new_max_coef(l, pred_dict_raw) for l in range(self.model.config.n_layer)}
+            maxs_dict = {l: self.get_new_max_coef(l, pred_dict_raw) for l in range(self.model.config.num_hidden_layers)}
             for intervention in interventions_lst:
                 if intervention['coeff'] > 0:
                     new_max_val = maxs_dict[intervention['layer']]
@@ -312,7 +322,7 @@ class ModelingRequests():
         pred_dict_raw = self.process_and_get_data(prompt)
         if len(interventions_lst) > 0:
             hooks_lst = []
-            maxs_dict = {l: self.get_new_max_coef(l, pred_dict_raw) for l in range(self.model.config.n_layer)}
+            maxs_dict = {l: self.get_new_max_coef(l, pred_dict_raw) for l in range(self.model.config.num_hidden_layers)}
             for intervention in interventions_lst:
                 if intervention['coeff'] > 0:
                     new_max_val = maxs_dict[intervention['layer']]
