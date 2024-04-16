@@ -24,19 +24,10 @@ def get_all_projected_values(model):
     logits = torch.vstack(logits)
     return logits.detach().cpu().numpy()
 """
-"""
 def get_all_projected_values(model):
     logits = []
     for i in tqdm(range(model.config.num_hidden_layers)):
-        layer_logits = torch.matmul(model.model.embed_tokens.weight, model.model.layers[i].mlp.down_proj.weight).T  #ToDo: Check if .T does belong here
-        logits.append(layer_logits)
-
-    logits = torch.vstack(logits)
-    return logits.detach().cpu().numpy()
-"""
-def get_all_projected_values(model):
-    logits = []
-    for i in tqdm(range(model.config.num_hidden_layers)):
+        #layer_logits = torch.matmul(model.model.embed_tokens.weight, model.model.layers[i].mlp.down_proj.weight).T         #For calculating projected values on same device as model inference
         layer_logits = torch.matmul(model.model.embed_tokens.weight.to("cuda:1"), model.model.layers[i].mlp.down_proj.weight.to("cuda:1")).T  #ToDo: Check if .T does belong here
         logits.append(layer_logits.detach().cpu())
 

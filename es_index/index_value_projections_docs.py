@@ -9,7 +9,7 @@ import json
 
 from elasticsearch.helpers import bulk
 
-from es_index.es_utils import get_esclient
+from es_utils import get_esclient
 
 
 def make_documents(projections_path, es_index_name):
@@ -23,7 +23,7 @@ def make_documents(projections_path, es_index_name):
         doc = {
             '_op_type': 'create',
             '_index': es_index_name,
-            '_type': '_doc',
+            #'_type': '_doc',
             '_id': doc_id,
             '_source': {
                 'layer': int(layer),
@@ -40,16 +40,24 @@ if __name__ == "__main__":
     # Arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "api_key", type=str, help="specify the api key", nargs=1
+    )
+    parser.add_argument(
         "--config_path", default='./config_files/gpt2-medium.jsonnet', type=str, help="specify the config file"
+    )
+    parser.add_argument(
+        "--ca_cert_path", default='./config_files/http_ca.crt', type=str, help="specify the ca_cert path"
     )
     args = parser.parse_args()
     config = pyhocon.ConfigFactory.from_dict(json.loads(_jsonnet.evaluate_file(args.config_path)))
+    ca_cert_path = args.ca_cert_path
+    api_key = args.api_key[0]
 
     # Get Index Name
     es_index_name = config.elastic_index
 
     # Get an ElasticSearch client
-    es = get_esclient(config.elastic_ip, config.elastic_port)
+    es = get_esclient(config.elastic_ip, config.elastic_port, ca_cert_path, api_key)
 
     settings = {
         "index": {
