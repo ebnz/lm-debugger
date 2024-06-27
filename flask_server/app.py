@@ -11,6 +11,9 @@ from flask import request
 from flask_cors import CORS
 from req_res_oop import ModelingRequests
 
+#Needed for loading AutoEncoderInferenceConfig with jsonnet
+from utils.AutoEncoder import AutoEncoderInferenceConfig
+
 if __name__ == '__main__':
     def signal_handler(signal, frame):
         sys.exit(0)

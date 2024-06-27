@@ -17,8 +17,8 @@ class ModelingRequests():
     def __init__(self, args):
         self.args = args
         self.model = LlamaForCausalLM.from_pretrained(args.model_name, torch_dtype=torch.float16)
-        self.device = args.device
-        self.model.to(self.device)
+        self.llm_device = args.device
+        self.model.to(self.llm_device)
         self.tokenizer = CodeLlamaTokenizer.from_pretrained(args.model_name)
         self.dict_es = create_elastic_search_data(args.elastic_projections_path, self.model, args.model_name,
                                                   self.tokenizer, args.top_k_for_elastic)
@@ -29,13 +29,15 @@ class ModelingRequests():
 
         #Sparse Coding
         print(" >>>> Loading Autoencoder")
-        self.autoencoder = AutoEncoder.AutoEncoderNN(args.autoencoder_input_dim, args.autoencoder_hidden_dim)
-        self.autoencoder.load_state_dict(torch.load(args.autoencoder_state_dict_path))
-        self.autoencoder = self.autoencoder.to(self.device)
+        self.autoencoder_device = args.autoencoder_device
+        with open("autoencoder_configs/weak_model.pkl", "rb") as f:
+            self.autoencoder_config_inference: AutoEncoder.AutoEncoderInferenceConfig = pickle.load(f)
+        self.autoencoder = self.autoencoder_config_inference.return_model()
+        self.autoencoder = self.autoencoder.to(self.autoencoder_device)
+        self.autoencoder_interpretations = self.autoencoder_config_inference.autoencoder_interpretations
+
         self.dict_vecs = None
 
-        with open(args.autoencoder_interpretations_path, "rb") as f:
-            self.autoencoder_interpretations = pickle.load(f)
 
     def set_control_hooks_gpt2(self, values_per_layer, coef_value=0):
         def change_values(values, coef_val):
@@ -124,7 +126,7 @@ class ModelingRequests():
 
             sentence = " ".join(tokens[start_idx:end_idx])
         tokens = self.tokenizer(sentence, return_tensors="pt")
-        tokens.to(self.device)
+        tokens.to(self.llm_device)
         output = self.model(**tokens, output_hidden_states=True)
 
         for layer in self.model.activations_.keys():
@@ -296,7 +298,7 @@ class ModelingRequests():
                 hooks_lst.append(self.set_control_hooks_gpt2({intervention['layer']: [intervention['dim']], },
                                                              coef_value=new_max_val))
         tokens = self.tokenizer(prompt, return_tensors="pt")
-        tokens.to(self.device)
+        tokens.to(self.llm_device)
         greedy_output = self.model.generate(**tokens,
                                             max_length=req_json_dict['generate_k'] + len(tokens['input_ids'][0]))
         greedy_output = self.tokenizer.decode(greedy_output[0], skip_special_tokens=True)
@@ -329,14 +331,14 @@ class ModelingRequests():
     def get_max_autoencoder_neuron_per_token(self, prompt):
         def attn_hook(module, input, output):
             activations = output[0].detach().cpu()
-            activations = activations.to(self.device)
+            activations = activations.to(self.autoencoder_device)
             X_hat, f = self.autoencoder(activations.to(torch.float32))
             self.dict_vecs = f.detach().cpu()[0]  #self.dict_vecs is of shape [NUM_TOKENS, DICT_VEC_SIZE]
 
         forward_hook = self.model.model.layers[1].self_attn.register_forward_hook(attn_hook)
 
         tokens = self.tokenizer(prompt, add_special_tokens=False, return_tensors="pt")
-        tokens.to(self.device)
+        tokens.to(self.llm_device)
         output = self.model(**tokens, output_hidden_states=True)
 
         forward_hook.remove()
@@ -378,14 +380,14 @@ class ModelingRequests():
     def get_neuron_activation_per_token(self, prompt, neuron_id):
         def attn_hook(module, input, output):
             activations = output[0].detach().cpu()
-            activations = activations.to(self.device)
+            activations = activations.to(self.autoencoder_device)
             X_hat, f = self.autoencoder(activations.to(torch.float32))
             self.dict_vecs = f.detach().cpu()[0]  #self.dict_vecs is of shape [NUM_TOKENS, DICT_VEC_SIZE]
 
         forward_hook = self.model.model.layers[1].self_attn.register_forward_hook(attn_hook)
 
         tokens = self.tokenizer(prompt, add_special_tokens=False, return_tensors="pt")
-        tokens.to(self.device)
+        tokens.to(self.llm_device)
         output = self.model(**tokens, output_hidden_states=True)
 
         forward_hook.remove()

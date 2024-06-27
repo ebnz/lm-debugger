@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import torch
 
 class AutoEncoderTM(torch.nn.Module):
@@ -32,6 +34,19 @@ def AELossTM(X, X_hat, f, lam=1):
     return AELossTM_reconstruction(X, X_hat) + AELossTM_sparsity(f, lam=lam)
     #return torch.mean(torch.norm(X - X_hat, dim=1, p=2)**2 + lam * torch.norm(f, dim=1, p=1))
 
+@dataclass
+class AutoEncoderInferenceConfig:
+    state_dict: dict    #PyTorch state_dict of the AutoEncoder
+    act_vec_size: int
+    dict_vec_size: int
+    autoencoder_layer_type: str     #"self_attn" or "mlp"
+    autoencoder_layer_index: int
+    autoencoder_interpretations: dict
+
+    def return_model(self):
+        autoencoder = AutoEncoderNN(self.act_vec_size, self.dict_vec_size)
+        autoencoder.load_state_dict(self.state_dict)
+        return autoencoder
 
 class AutoEncoderNN(torch.nn.Module):
     def __init__(self, n, m):
