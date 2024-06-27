@@ -7,6 +7,9 @@ import torch.nn.functional as F
 from create_offline_files import create_elastic_search_data, create_streamlit_data
 from transformers import LlamaForCausalLM, CodeLlamaTokenizer
 
+import pickle
+from utils import AutoEncoder
+
 warnings.filterwarnings('ignore')
 
 
@@ -23,6 +26,16 @@ class ModelingRequests():
             create_streamlit_data(args.streamlit_cluster_to_value_file_path, args.streamlit_value_to_cluster_file_path,
                                   self.model, args.model_name, args.num_clusters)
         self.TOP_K = args.top_k_tokens_for_ui
+
+        #Sparse Coding
+        print(" >>>> Loading Autoencoder")
+        self.autoencoder = AutoEncoder.AutoEncoderNN(args.autoencoder_input_dim, args.autoencoder_hidden_dim)
+        self.autoencoder.load_state_dict(torch.load(args.autoencoder_state_dict_path))
+        self.autoencoder = self.autoencoder.to(self.device)
+        self.dict_vecs = None
+
+        with open(args.autoencoder_interpretations_path, "rb") as f:
+            self.autoencoder_interpretations = pickle.load(f)
 
     def set_control_hooks_gpt2(self, values_per_layer, coef_value=0):
         def change_values(values, coef_val):
@@ -311,3 +324,96 @@ class ModelingRequests():
         top_k = [{'token': self.process_clean_token(x[i][0]), 'logit': float(x[i][1])} for i in range(len(x))]
         new_d['top_k'] = top_k
         return new_d
+
+    #Sparse Coding
+    def get_max_autoencoder_neuron_per_token(self, prompt):
+        def attn_hook(module, input, output):
+            activations = output[0].detach().cpu()
+            activations = activations.to(self.device)
+            X_hat, f = self.autoencoder(activations.to(torch.float32))
+            self.dict_vecs = f.detach().cpu()[0]  #self.dict_vecs is of shape [NUM_TOKENS, DICT_VEC_SIZE]
+
+        forward_hook = self.model.model.layers[1].self_attn.register_forward_hook(attn_hook)
+
+        tokens = self.tokenizer(prompt, add_special_tokens=False, return_tensors="pt")
+        tokens.to(self.device)
+        output = self.model(**tokens, output_hidden_states=True)
+
+        forward_hook.remove()
+
+        if self.dict_vecs is None:
+            print("WARN: No Dictionary-Vectors!")
+            return {}
+
+        output_dict = {}
+
+        neuron_max_object = torch.max(self.dict_vecs, dim=1)
+        neuron_ids = neuron_max_object.indices.tolist()
+        neuron_activations = neuron_max_object.values.tolist()
+
+        token_ids = tokens["input_ids"][0].tolist()
+        tokens_as_string = self.tokenizer.convert_ids_to_tokens(token_ids)
+
+        if len(neuron_ids) != len(token_ids) or len(token_ids) != len(tokens_as_string) or len(token_ids) != len(neuron_activations):
+            print("WARN: Wrong number of neuron_ids, token_ids or tokens_as_string!")
+            return {}
+        for i in range(len(neuron_ids)):
+            interpretation = self.get_neuron_interpretation(neuron_ids[i])
+            #Returns {token as string: [token_id, neuron_id, interpretation, activation value]}
+            output_dict[tokens_as_string[i]] = [token_ids[i], neuron_ids[i], interpretation, neuron_activations[i]]
+
+        return output_dict
+
+    def get_neuron_interpretation(self, neuron_id):
+        if neuron_id not in self.autoencoder_interpretations:
+            return ""
+        return self.autoencoder_interpretations[neuron_id]
+
+    def request2response_get_max_act_neurons(self, req_json_dict):
+        prompt = req_json_dict['prompt']
+        response_dict = self.get_max_autoencoder_neuron_per_token(prompt)
+
+        return response_dict
+
+    def get_neuron_activation_per_token(self, prompt, neuron_id):
+        def attn_hook(module, input, output):
+            activations = output[0].detach().cpu()
+            activations = activations.to(self.device)
+            X_hat, f = self.autoencoder(activations.to(torch.float32))
+            self.dict_vecs = f.detach().cpu()[0]  #self.dict_vecs is of shape [NUM_TOKENS, DICT_VEC_SIZE]
+
+        forward_hook = self.model.model.layers[1].self_attn.register_forward_hook(attn_hook)
+
+        tokens = self.tokenizer(prompt, add_special_tokens=False, return_tensors="pt")
+        tokens.to(self.device)
+        output = self.model(**tokens, output_hidden_states=True)
+
+        forward_hook.remove()
+
+        if self.dict_vecs is None:
+            print("WARN: No Dictionary-Vectors!")
+            return {}
+
+        output_dict = {}
+
+        neuron_activations = self.dict_vecs[::, neuron_id].squeeze().tolist()
+
+        token_ids = tokens["input_ids"][0].tolist()
+        tokens_as_string = self.tokenizer.convert_ids_to_tokens(token_ids)
+
+        if len(token_ids) != len(tokens_as_string) or len(token_ids) != len(neuron_activations):
+            print("WARN: Wrong number of neuron_ids, token_ids or tokens_as_string!")
+            return {}
+        for i in range(len(token_ids)):
+            interpretation = self.get_neuron_interpretation(neuron_id)
+            #Returns {token as string: [token_id, neuron_id, interpretation, activation value]}
+            output_dict[tokens_as_string[i]] = [token_ids[i], neuron_id, interpretation, neuron_activations[i]]
+
+        return output_dict
+
+    def request2resonse_get_neuron_act(self, req_json_dict):
+        prompt = req_json_dict['prompt']
+        neuron_id = req_json_dict['neuron_id']
+        response_dict = self.get_neuron_activation_per_token(prompt, neuron_id)
+
+        return response_dict

@@ -52,5 +52,24 @@ if __name__ == '__main__':
         except:
             return jsonify({})
 
+    @app.route("/get_max_autoencoder_neuron_per_token", methods=["POST"])
+    def get_max_autoencoder_neuron_per_token():
+        try:
+            request_data = request.get_json()
+            return jsonify(requests_obj.request2response_get_max_act_neurons(request_data))
+        except Exception as e:
+            print("WARN: Error in <get_max_autoencoder_neuron_per_token>")
+            print(e)
+            return jsonify({})
+
+    @app.route("/get_neuron_activation_per_token", methods=["POST"])
+    def get_neuron_activation_per_token():
+        try:
+            request_data = request.get_json()
+            return jsonify(requests_obj.request2resonse_get_neuron_act(request_data))
+        except Exception as e:
+            print("WARN: Error in <get_neuron_activation_per_token>")
+            print(e)
+            return jsonify({})
 
     app.run(debug=False, port=config.server_port, host="0.0.0.0")
