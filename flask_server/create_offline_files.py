@@ -14,21 +14,12 @@ from transformers import LlamaForCausalLM, CodeLlamaTokenizer
 
 warnings.filterwarnings('ignore')
 
-"""
-def get_all_projected_values(model):
-    logits = []
-    for i in tqdm(range(model.config.n_layer)):
-        layer_logits = torch.matmul(model.transformer.wte.weight, model.transformer.h[i].mlp.c_proj.weight.T).T
-        logits.append(layer_logits)
-
-    logits = torch.vstack(logits)
-    return logits.detach().cpu().numpy()
-"""
 def get_all_projected_values(model):
     logits = []
     for i in tqdm(range(model.config.num_hidden_layers)):
+        #ToDo
         #layer_logits = torch.matmul(model.model.embed_tokens.weight, model.model.layers[i].mlp.down_proj.weight).T         #For calculating projected values on same device as model inference
-        layer_logits = torch.matmul(model.model.embed_tokens.weight.to("cuda:1"), model.model.layers[i].mlp.down_proj.weight.to("cuda:1")).T  #ToDo: Check if .T does belong here
+        layer_logits = torch.matmul(model.model.embed_tokens.weight.to("cuda:1"), model.model.layers[i].mlp.down_proj.weight.to("cuda:1")).T
         logits.append(layer_logits.detach().cpu())
 
     logits = torch.vstack(logits)
@@ -43,23 +34,7 @@ def create_elastic_search_data(path, model, model_name, tokenizer, top_k):
     d = {}
     inv_d = {}
     cnt = 0
-    """total_dims = model.transformer.h[0].mlp.c_proj.weight.size(0)
-    for i in range(model.config.n_layer):
-        for j in range(total_dims):
-            d[cnt] = (i, j)
-            inv_d[(i, j)] = cnt
-            cnt += 1
-    dict_es = {}
-    logits = get_all_projected_values(model)
-    for i in tqdm(range(model.config.n_layer)):
-        for j in tqdm(range(total_dims), leave=False):
-            k = (i, j)
-            cnt = inv_d[(i, j)]
-            ids = np.argsort(-logits[cnt])[:top_k]
-            tokens = [tokenizer._convert_id_to_token(x) for x in ids]
-            dict_es[k] = [(ids[b], tokens[b], logits[cnt][ids[b]]) for b in range(len(tokens))]
-    """
-    total_dims = model.model.layers[0].mlp.down_proj.weight.size(1)     #ToDo: .size(1)
+    total_dims = model.model.layers[0].mlp.down_proj.weight.size(1)
     for i in range(model.config.num_hidden_layers):
         for j in range(total_dims):
             d[cnt] = (i, j)
@@ -82,12 +57,8 @@ def create_elastic_search_data(path, model, model_name, tokenizer, top_k):
 
 def get_all_values(model):
     values = []
-    """
-    for i in tqdm(range(model.config.n_layer)):
-        layer_logits = model.transformer.h[i].mlp.c_proj.weight
-    """
     for i in tqdm(range(model.config.num_hidden_layers)):
-        layer_logits = model.model.layers[i].mlp.down_proj.weight.T     #ToDo: Check if .T is right here
+        layer_logits = model.model.layers[i].mlp.down_proj.weight.T
         values.append(layer_logits)
     values = torch.vstack(values)
     return values
@@ -101,7 +72,7 @@ def cosine_distance_torch(x1, x2=None, eps=1e-8):
 
 
 def get_predicted_clusters(n, cosine_mat):
-    clustering = AgglomerativeClustering(n_clusters=n, affinity='precomputed', linkage='complete')
+    clustering = AgglomerativeClustering(n_clusters=n, metric='precomputed', linkage='complete')
     predicted = clustering.fit(cosine_mat)
     predicted_clusters = predicted.labels_
     return predicted_clusters
@@ -113,7 +84,6 @@ def create_streamlit_data(path_cluster_to_value, path_value_to_cluster, model, m
     d = {}
     inv_d = {}
     cnt = 0
-    #total_dims = model.transformer.h[0].mlp.c_proj.weight.size(0)
     total_dims = model.model.layers[0].mlp.down_proj.weight.size(1)
     for i in range(model.config.num_hidden_layers):
         for j in range(total_dims):
@@ -144,7 +114,7 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
     config = pyhocon.ConfigFactory.from_dict(json.loads(_jsonnet.evaluate_file(args.config_path)))
-    model = LlamaForCausalLM.from_pretrained(config.model_name, torch_dtype=torch.float16)          #ToDo: Set dtype back to 32Bit
+    model = LlamaForCausalLM.from_pretrained(config.model_name, torch_dtype=torch.float16)
     device = config.device
     model.to(device)
     tokenizer = CodeLlamaTokenizer.from_pretrained(config.model_name)
