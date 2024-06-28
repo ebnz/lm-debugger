@@ -1,8 +1,8 @@
 import React from "react";
 import styled from "styled-components";
 import { Divider, Tag } from 'antd';
-import { LayerPrediction, ValueId } from "../types/dataModel";
-import {LabelContainer, PredictionContainer} from "./LabelContainer";
+import {AutoEncoderResponse, LayerPrediction, ValueId} from "../types/dataModel";
+import {LabelContainer, PredictionContainer, SparseFeatureContainer} from "./LabelContainer";
 
 
 interface Props {
@@ -40,6 +40,36 @@ function Layer(props: Props): JSX.Element {
   )
 }
 
+interface AutoEncoderProps {
+  response: AutoEncoderResponse;
+  onAnalyze: (valueId: ValueId) => void;
+  onCopy: (valueId: ValueId) => void;
+}
+
+function AutoEncoderLayer(props: AutoEncoderProps): JSX.Element {
+    let {
+        response,
+        onAnalyze,
+        onCopy
+    } = props;
+    function getUserReadableLayerType(layer_type: string) {
+        const mapping: Map<string, string> = new Map([
+            ["self_attn", "Self-Attention AutoEncoder"],
+            ["mlp", "MLP AutoEncoder"]
+        ]);
+
+        return mapping.has(layer_type) ? mapping.get(layer_type) : "AutoEncoder";
+    }
+
+    return(
+      <LayerLayout>
+        <LayerTag color="#53a58a">{getUserReadableLayerType(response.autoencoder_layer_type)}</LayerTag>
+        <MyDivider orientation="left" orientationMargin="15px">Most activating AutoEncoder-Neurons: </MyDivider>
+        <SparseFeatureContainer autoencoder_result={response}></SparseFeatureContainer>
+      </LayerLayout>
+    )
+}
+
 const LayerLayout = styled.div`
 
   padding: 10px;
@@ -65,3 +95,4 @@ const LayerTag = styled(Tag)`
 `;
 
 export const MemoLayer = React.memo(Layer);
+export const MemoAutoEncoderLayer = React.memo(AutoEncoderLayer);

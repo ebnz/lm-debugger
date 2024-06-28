@@ -1,8 +1,8 @@
 import React, {useState} from "react";
 import { hot } from "react-hot-loader";
 import Prompt from "./Prompt";
-import {NetworkPrediction, Intervention, ValueId} from "../types/dataModel";
-import {predict, generate, getValueNamesFromCookies} from "../api/prediction";
+import {NetworkPrediction, Intervention, ValueId, AutoEncoderResponse} from "../types/dataModel";
+import {predict, generate, getValueNamesFromCookies, getMaxAutoencoderNeuronPerToken} from "../api/prediction";
 import LayersPanel from "./LayersPanel";
 import ValueDetailsPanel from "./ValueDetailsPanel";
 import InterventionsPanel from "./InterventionsPanel";
@@ -15,6 +15,9 @@ function MainPage(): JSX.Element {
   const [selectedValueId, setSelectedValueId] = useState<ValueId | undefined>(undefined);
   const [isLoadingPrediction, setLoadingPrediction] = useState<boolean>(false);
   const [predictionError, setPredictionError] = useState<string | undefined>(undefined);
+
+  //Sparse Coding
+  const [autoencoderResults, setAutoencoderResults] = useState<Array<AutoEncoderResponse>>([]);
 
 
 
@@ -93,7 +96,11 @@ function MainPage(): JSX.Element {
     try {
       const result = await predict({prompt, interventions, generate_k: 1});
       const resultWithNames = addNamesToValues(result);
+
+      const result_autoencoder = await getMaxAutoencoderNeuronPerToken(prompt);
+
       setPrediction(resultWithNames);
+      setAutoencoderResults([result_autoencoder]);
     }catch(e) {
       setPredictionError("Failed prediction");
     } finally {
@@ -151,6 +158,7 @@ function MainPage(): JSX.Element {
           addIntervention={(valueId) => addIntervention(valueId)} 
           isLoading={isLoadingPrediction}
           errorMessage={predictionError}
+          autoencoder_results={autoencoderResults}
         />
       </LayersViewArea>
       <InterventionArea>

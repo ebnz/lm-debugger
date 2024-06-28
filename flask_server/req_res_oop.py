@@ -347,7 +347,13 @@ class ModelingRequests():
             print("WARN: No Dictionary-Vectors!")
             return {}
 
-        output_dict = {}
+        output_dict = {
+            "tokens_as_string": [],
+            "token_ids": [],
+            "neuron_ids": [],
+            "interpretations": [],
+            "neuron_activations": []
+        }
 
         neuron_max_object = torch.max(self.dict_vecs, dim=1)
         neuron_ids = neuron_max_object.indices.tolist()
@@ -361,8 +367,13 @@ class ModelingRequests():
             return {}
         for i in range(len(neuron_ids)):
             interpretation = self.get_neuron_interpretation(neuron_ids[i])
-            #Returns {token as string: [token_id, neuron_id, interpretation, activation value]}
-            output_dict[tokens_as_string[i]] = [token_ids[i], neuron_ids[i], interpretation, neuron_activations[i]]
+
+            output_dict["tokens_as_string"].append(tokens_as_string[i])
+            output_dict["token_ids"].append(token_ids[i])
+            output_dict["neuron_ids"].append(neuron_ids[i])
+            output_dict["interpretations"].append(interpretation)
+            output_dict["neuron_activations"].append(neuron_activations[i])
+
 
         return output_dict
 
@@ -373,11 +384,20 @@ class ModelingRequests():
 
     def request2response_get_max_act_neurons(self, req_json_dict):
         prompt = req_json_dict['prompt']
-        response_dict = self.get_max_autoencoder_neuron_per_token(prompt)
+        output_dict = self.get_max_autoencoder_neuron_per_token(prompt)
+
+        response_dict = {
+            "autoencoder_layer_type": self.autoencoder_config_inference.autoencoder_layer_type,
+            "autoencoder_layer_index": self.autoencoder_config_inference.autoencoder_layer_index
+        }
+        for item in output_dict.keys():
+            response_dict[item] = output_dict[item]
 
         return response_dict
 
     def get_neuron_activation_per_token(self, prompt, neuron_id):
+        neuron_id = int(neuron_id)
+
         def attn_hook(module, input, output):
             activations = output[0].detach().cpu()
             activations = activations.to(self.autoencoder_device)
@@ -396,7 +416,13 @@ class ModelingRequests():
             print("WARN: No Dictionary-Vectors!")
             return {}
 
-        output_dict = {}
+        output_dict = {
+            "tokens_as_string": [],
+            "token_ids": [],
+            "neuron_ids": [],
+            "interpretations": [],
+            "neuron_activations": []
+        }
 
         neuron_activations = self.dict_vecs[::, neuron_id].squeeze().tolist()
 
@@ -408,14 +434,25 @@ class ModelingRequests():
             return {}
         for i in range(len(token_ids)):
             interpretation = self.get_neuron_interpretation(neuron_id)
-            #Returns {token as string: [token_id, neuron_id, interpretation, activation value]}
-            output_dict[tokens_as_string[i]] = [token_ids[i], neuron_id, interpretation, neuron_activations[i]]
+
+            output_dict["tokens_as_string"].append(tokens_as_string[i])
+            output_dict["token_ids"].append(token_ids[i])
+            output_dict["neuron_ids"].append(neuron_id)
+            output_dict["interpretations"].append(interpretation)
+            output_dict["neuron_activations"].append(neuron_activations[i])
 
         return output_dict
 
     def request2resonse_get_neuron_act(self, req_json_dict):
         prompt = req_json_dict['prompt']
         neuron_id = req_json_dict['neuron_id']
-        response_dict = self.get_neuron_activation_per_token(prompt, neuron_id)
+        output_dict = self.get_neuron_activation_per_token(prompt, neuron_id)
+
+        response_dict = {
+            "autoencoder_layer_type": self.autoencoder_config_inference.autoencoder_layer_type,
+            "autoencoder_layer_index": self.autoencoder_config_inference.autoencoder_layer_index
+        }
+        for item in output_dict.keys():
+            response_dict[item] = output_dict[item]
 
         return response_dict

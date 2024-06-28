@@ -5,6 +5,7 @@ import AimOutlined from "@ant-design/icons/AimOutlined";
 import ValueLabel from "./ValueLabel";
 import {MemoLayer} from "./Layer"
 import LayersPanel from "./LayersPanel";
+import {AutoEncoderResponse} from "../types/dataModel";
 
 // LayerPrediction
 //  layer_name: string;
@@ -55,12 +56,26 @@ function Play(): JSX.Element {
         layer_inputs.push(Object.assign({}, input))
         layer_inputs[idx]['layer'] = n_layers - idx;
     }
+
+    const ae_results = [
+        {
+            autoencoder_layer_type: "HALLO",
+            autoencoder_layer_index: 2,
+            tokens_as_string: ["HAL", "LO"],
+            token_ids: [1, 2],
+            neuron_ids: [21, 22],
+            interpretations: ["BS", "BS2"],
+            neuron_activations: [0.5, 1.5]
+        }
+    ]
+
     return (
         <LayersPanel 
             layers={layer_inputs} 
             addIntervention={(v) => console.log(`L${v.layer}D${v.dim}`)}
             setSelectedValueId={(v) => {console.log(v)}}
             isLoading={false}
+            autoencoder_results={ae_results}
             />
     );
 }

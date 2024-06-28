@@ -1,4 +1,11 @@
-import {PredictionParams, NetworkPrediction, ValueId, ValueInterpretation, GenerationOutput} from "../types/dataModel";
+import {
+    PredictionParams,
+    NetworkPrediction,
+    ValueId,
+    ValueInterpretation,
+    GenerationOutput,
+    AutoEncoderResponse
+} from "../types/dataModel";
 import runConfig from "../runConfig.json";
 
 export async function generate(params: PredictionParams): Promise<GenerationOutput> {
@@ -79,4 +86,45 @@ export function getValueInterpretation(params: ValueId): [Promise<ValueInterpret
   });
 
   return [responsePromise, () => controller.abort()];
+}
+
+//Sparse Coding
+
+export async function getMaxAutoencoderNeuronPerToken(prompt: string): Promise<AutoEncoderResponse> {
+    const response = await fetch(
+    `http://${runConfig.server_ip}:${runConfig.server_port}/get_max_autoencoder_neuron_per_token`,
+    {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        prompt: prompt
+      })
+    }
+  )
+
+  const responseJson = await response.json();
+  return responseJson;
+}
+
+export async function getNeuronActivationPerToken(prompt: string, neuron_id: number): Promise<AutoEncoderResponse> {
+    const response = await fetch(
+    `http://${runConfig.server_ip}:${runConfig.server_port}/get_max_autoencoder_neuron_per_token`,
+    {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        prompt: prompt,
+        neuron_id: neuron_id
+      })
+    }
+  )
+
+  const responseJson = await response.json();
+  return responseJson;
 }

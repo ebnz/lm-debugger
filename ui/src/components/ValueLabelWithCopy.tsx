@@ -7,13 +7,52 @@ import { Typography } from 'antd';
 
 const {Text} = Typography
 
+//Generic Super-Element for Sparse Coding
+interface PropsAE {
+    name: string,
+    score: number,
+    onAnalyze: (valueId: number) => void;
+    onCopy: (valueId: number) => void;
+}
+
+export function AutoEncoderFeatureLabel(props: PropsAE): JSX.Element {
+
+    const {
+        name,
+        score,
+        onAnalyze,
+        onCopy
+    } = props;
+
+    const useEllipsis = name.length > 10
+
+    return (
+        <LabelLayout>
+            <MainButton onClick={() => onAnalyze(score)}>
+            <ScanOutlined/>
+
+            <Text strong
+                style={useEllipsis ? { width: 55 } : undefined}
+                ellipsis={useEllipsis ? { tooltip: true } : false}>{name}</Text>
+            <TagInButton color="#A6ABAB">{ score.toFixed(2)}</TagInButton>
+
+            </MainButton>
+            <Tooltip title="Send to interventions">
+                <CopyButton onClick={() => onCopy(score)} >
+                    <CopyIcon />
+                </CopyButton>
+            </Tooltip>
+        </LabelLayout>
+    );
+}
+
 interface Props {
     scoredValue: ScoredValue,
     onAnalyze: (valueId: ValueId) => void;
     onCopy: (valueId: ValueId) => void;
 }
 
-function ValueLabelWithCopy(props: Props): JSX.Element {
+export function ValueLabelWithCopy(props: Props): JSX.Element {
     
     const {
         scoredValue, 
@@ -90,5 +129,3 @@ const TagInButton = styled(Tag)`
     padding: 0px 2px;
     font-weight: normal;
 `;
-
-export default ValueLabelWithCopy;

@@ -1,8 +1,8 @@
 import React from "react";
 import styled from "styled-components";
-import ValueLabelWithCopy from "./ValueLabelWithCopy"
 import TokenLabel from "./TokenLabel";
-import { ScoredValue, Prediction, ValueId } from "../types/dataModel";
+import {ScoredValue, Prediction, ValueId, AutoEncoderResponse} from "../types/dataModel";
+import {ValueLabelWithCopy, AutoEncoderFeatureLabel} from "./ValueLabelWithCopy";
 
 
 
@@ -14,7 +14,7 @@ interface Props {
 
 export function LabelContainer(props: Props): JSX.Element {
     const labels = props.valueLabels.map(label => 
-        <ValueLabelWithCopy 
+        <ValueLabelWithCopy
             scoredValue={label}
             key={`L${label.layer}D${label.dim}`} 
             onAnalyze={props.onAnaylze}
@@ -40,6 +40,36 @@ export function PredictionContainer(props: PredProps) : JSX.Element {
     return (
         <ContainerLayout>
             {predictions}
+        </ContainerLayout>
+    );
+}
+
+//Sparse Coding
+
+interface SFCProps {
+    autoencoder_result: AutoEncoderResponse
+}
+
+export function SparseFeatureContainer(props: SFCProps): JSX.Element {
+    let {autoencoder_result} = props;
+
+    let labels = [];
+
+    for (let i = 0; i < autoencoder_result.tokens_as_string.length; i++) {
+        labels.push(
+            <AutoEncoderFeatureLabel
+            name={autoencoder_result.tokens_as_string[i]}
+            key={i}
+            score={autoencoder_result.neuron_activations[i]}
+            onAnalyze={() => {}}    //ToDo
+            onCopy={() => {}}       //ToDo
+        />
+        )
+    }
+
+    return (
+        <ContainerLayout>
+            {labels}
         </ContainerLayout>
     );
 }

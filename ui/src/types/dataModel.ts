@@ -47,3 +47,15 @@ export interface Value {
 export interface ValueInterpretation extends ValueId{
     top_k: Array<Value>
 }
+
+//Sparse Coding
+export interface AutoEncoderResponse {
+  autoencoder_layer_type: string;
+  autoencoder_layer_index: number;
+
+  tokens_as_string: Array<string>;
+  token_ids: Array<number>;
+  neuron_ids: Array<number>;
+  interpretations: Array<string>;
+  neuron_activations: Array<number>;
+}
