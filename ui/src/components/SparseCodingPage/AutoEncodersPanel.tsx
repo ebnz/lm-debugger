@@ -1,43 +1,41 @@
 import React from "react";
 import {AutoEncoderResponse, ValueId} from "../../types/dataModel";
-import {Empty, Card, Alert, Spin, Divider, Tag } from "antd";
+import {Empty, Card, Alert, Spin, Divider, Tag, Tooltip} from "antd";
 import styled from "styled-components";
 import {SparseFeatureContainer} from "../LabelContainer";
 
-interface AutoEncoderProps {
-  response: AutoEncoderResponse;
-  onAnalyze: (valueId: ValueId) => void;
-  onCopy: (valueId: ValueId) => void;
+interface TokenDescriptorProps {
+    text: string,
+    activation: number,
+    interpretation: string
 }
+function TokenDescriptor(props: TokenDescriptorProps): JSX.Element {
+    const {text, activation, interpretation} = props;
+    console.log(typeof interpretation);
+    const rgba_string = "rgb(255, 0, 0, " + activation + ")";
 
-function AutoEncoderLayer(props: AutoEncoderProps): JSX.Element {
-    let {
-        response,
-        onAnalyze,
-        onCopy
-    } = props;
-    function getUserReadableLayerType(layer_type: string) {
-        const mapping: Map<string, string> = new Map([
-            ["self_attn", "Self-Attention AutoEncoder"],
-            ["mlp", "MLP AutoEncoder"]
-        ]);
-
-        return mapping.has(layer_type) ? mapping.get(layer_type) : "AutoEncoder";
+    if (text === "<0x0A>") {
+        return (
+            <>
+                <Tooltip title={"Activation: \n" + activation.toFixed(2)}>
+                    <text style={{backgroundColor: rgba_string}}>\n</text>
+                </Tooltip>
+                <br/>
+            </>
+        )
     }
 
-    return(
-      <LayerLayout>
-        <LayerTag color="#53a58a">{getUserReadableLayerType(response.autoencoder_layer_type)}</LayerTag>
-        <MyDivider orientation="left" orientationMargin="15px">Requested Features: </MyDivider>
-      </LayerLayout>
-    )
+    return (<>
+        <Tooltip title={"Activation: \n" + activation.toFixed(2)}>
+            <text style={{backgroundColor: rgba_string}}>{text.replace("▁", " ")}</text>
+        </Tooltip>
+    </>)
 }
 
-
 interface AEPanelProps {
-  isLoading: boolean,
-  errorMessage?: string,
-  autoencoder_results: Array<AutoEncoderResponse>;
+    isLoading: boolean,
+    errorMessage?: string,
+    autoencoder_results: Array<AutoEncoderResponse>;
 }
 
 function AutoEncodersPanel(props: AEPanelProps): JSX.Element {
@@ -49,43 +47,44 @@ function AutoEncodersPanel(props: AEPanelProps): JSX.Element {
 
   let contentRender: React.ReactNode = [];
   if (isLoading) {
-    contentRender = <Spin style={{margin: "auto auto"}} tip="Loading prediction" />;
+    contentRender = <Spin style={{margin: "auto auto"}} tip="Loading Feature Activations" />;
   } else if (errorMessage !== undefined) {
     contentRender = <Alert type="error">{errorMessage}</Alert>
   } else if (autoencoder_results.length === 0){
-    contentRender = <Empty description="Run a query to see the predicted layers"/>
+    contentRender = <Empty description="Enter a prompt and click Run to see Feature Activations."/>
   } else {
     let contentRenderArray = [];
 
     for (let item of autoencoder_results) {
-        contentRenderArray.push(
-            <AutoEncoderLayer response={item} onAnalyze={() => {}} onCopy={() => {}}/>
-        )
+        for (let index = 0; index < item.tokens_as_string.length; index++) {
+            contentRenderArray.push(
+                <TokenDescriptor key={index} text={item.tokens_as_string[index]} activation={item.neuron_activations[index]} interpretation={item.interpretations[index]}></TokenDescriptor>
+                //<text style={{backgroundColor: rgba_string}}>{item.tokens_as_string[index].replace("▁", " ")}</text>
+            );
+        }
     }
     contentRender = contentRenderArray;
+    console.log(contentRenderArray)
   }
 
   return (
-    <MainLayout title="Layers">
-      {contentRender}
-    </MainLayout>
+      <MainLayout title="Features">
+          {contentRender}
+      </MainLayout>
   );
 }
 
 const MainLayout = styled(Card).attrs({
-  size: "small"
+    size: "small"
 })`
-  width: 100%;
-  height: 100%;
+    width: 100%;
+    height: 100%;
 
   &.ant-card .ant-card-body {
     height: calc(100vh - 236px);
     overflow-x: hidden;
     overflow-y: auto;
     padding: 2px;
-
-    display: grid;
-    justify-items: center;
   }
 `;
 
