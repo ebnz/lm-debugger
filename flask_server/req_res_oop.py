@@ -30,7 +30,7 @@ class ModelingRequests():
         #Sparse Coding
         print(" >>>> Loading Autoencoder")
         self.autoencoder_device = args.autoencoder_device
-        with open("autoencoder_configs/weak_model.pkl", "rb") as f:
+        with open(args.autoencoder_inference_config_path, "rb") as f:
             self.autoencoder_config_inference: AutoEncoder.AutoEncoderInferenceConfig = pickle.load(f)
         self.autoencoder = self.autoencoder_config_inference.return_model()
         self.autoencoder = self.autoencoder.to(self.autoencoder_device)
@@ -372,7 +372,14 @@ class ModelingRequests():
             output_dict["token_ids"].append(token_ids[i])
             output_dict["neuron_ids"].append(neuron_ids[i])
             output_dict["interpretations"].append(interpretation)
-            output_dict["neuron_activations"].append(neuron_activations[i])
+
+            neuron_act = neuron_activations[i] - self.autoencoder_config_inference.mins[i]
+            if self.autoencoder_config_inference.maxs[i] == 0:
+                neuron_act = 0
+            else:
+                neuron_act = neuron_act / self.autoencoder_config_inference.maxs[i]
+
+            output_dict["neuron_activations"].append(neuron_act)
 
 
         return output_dict
@@ -439,7 +446,14 @@ class ModelingRequests():
             output_dict["token_ids"].append(token_ids[i])
             output_dict["neuron_ids"].append(neuron_id)
             output_dict["interpretations"].append(interpretation)
-            output_dict["neuron_activations"].append(neuron_activations[i])
+
+            neuron_act = neuron_activations[i] - self.autoencoder_config_inference.mins[i]
+            if self.autoencoder_config_inference.maxs[i] == 0:
+                neuron_act = 0
+            else:
+                neuron_act = 10 * neuron_act / self.autoencoder_config_inference.maxs[i]
+
+            output_dict["neuron_activations"].append(neuron_act)
 
         return output_dict
 

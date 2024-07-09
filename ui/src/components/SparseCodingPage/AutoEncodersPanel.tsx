@@ -11,8 +11,7 @@ interface TokenDescriptorProps {
 }
 function TokenDescriptor(props: TokenDescriptorProps): JSX.Element {
     const {text, activation, interpretation} = props;
-    console.log(typeof interpretation);
-    const rgba_string = "rgb(255, 0, 0, " + activation + ")";
+    const rgba_string = "rgb(255, 0, 0, " + activation / 10 + ")";
 
     if (text === "<0x0A>") {
         return (
@@ -26,7 +25,7 @@ function TokenDescriptor(props: TokenDescriptorProps): JSX.Element {
     }
 
     return (<>
-        <Tooltip title={"Activation: \n" + activation.toFixed(2)}>
+        <Tooltip title={"Activation: \n" + activation.toFixed(10)}>
             <text style={{backgroundColor: rgba_string}}>{text.replace("▁", " ")}</text>
         </Tooltip>
     </>)
@@ -64,7 +63,6 @@ function AutoEncodersPanel(props: AEPanelProps): JSX.Element {
         }
     }
     contentRender = contentRenderArray;
-    console.log(contentRenderArray)
   }
 
   return (

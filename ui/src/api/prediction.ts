@@ -111,7 +111,7 @@ export async function getMaxAutoencoderNeuronPerToken(prompt: string): Promise<A
 
 export async function getNeuronActivationPerToken(prompt: string, neuron_id: number): Promise<AutoEncoderResponse> {
     const response = await fetch(
-    `http://${runConfig.server_ip}:${runConfig.server_port}/get_max_autoencoder_neuron_per_token`,
+    `http://${runConfig.server_ip}:${runConfig.server_port}/get_neuron_activation_per_token`,
     {
       method: 'POST',
       headers: {

@@ -42,6 +42,8 @@ class AutoEncoderInferenceConfig:
     autoencoder_layer_type: str     #"self_attn" or "mlp"
     autoencoder_layer_index: int
     autoencoder_interpretations: dict
+    mins: list
+    maxs: list
 
     def return_model(self):
         autoencoder = AutoEncoderNN(self.act_vec_size, self.dict_vec_size)
