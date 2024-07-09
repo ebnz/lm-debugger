@@ -447,11 +447,11 @@ class ModelingRequests():
             output_dict["neuron_ids"].append(neuron_id)
             output_dict["interpretations"].append(interpretation)
 
-            neuron_act = neuron_activations[i] - self.autoencoder_config_inference.mins[i]
-            if self.autoencoder_config_inference.maxs[i] == 0:
+            neuron_act = neuron_activations[i] - self.autoencoder_config_inference.mins[neuron_id]
+            if self.autoencoder_config_inference.maxs[neuron_id] == 0:
                 neuron_act = 0
             else:
-                neuron_act = 10 * neuron_act / self.autoencoder_config_inference.maxs[i]
+                neuron_act = 10 * neuron_act / self.autoencoder_config_inference.maxs[neuron_id]
 
             output_dict["neuron_activations"].append(neuron_act)
 
