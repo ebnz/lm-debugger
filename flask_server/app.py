@@ -55,6 +55,27 @@ if __name__ == '__main__':
         except:
             return jsonify({})
 
+    @app.route("/get_autoencoder_files", methods=["POST"])
+    def get_autoencoder_files():
+        try:
+            rv = requests_obj.get_autoencoder_files()
+            return jsonify({"autoencoder_files": rv})
+        except Exception as e:
+            print("WARN: Error in <get_autoencoder_files>")
+            print(e)
+            return jsonify({"autoencoder_files": []})
+
+    @app.route("/activate_autoencoder", methods=["POST"])
+    def activate_autoencoder():
+        try:
+            request_data = request.get_json()
+            rv = requests_obj.activate_autoencoder(int(request_data["index"]))
+            return jsonify({"return_code": rv})
+        except Exception as e:
+            print("WARN: Error in <activate_autoencoder>")
+            print(e)
+            return jsonify({"return_code": False})
+
     @app.route("/get_max_autoencoder_neuron_per_token", methods=["POST"])
     def get_max_autoencoder_neuron_per_token():
         try:

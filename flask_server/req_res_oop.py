@@ -1,5 +1,6 @@
 import json
 import warnings
+import os
 
 import numpy as np
 import torch
@@ -30,14 +31,23 @@ class ModelingRequests():
         #Sparse Coding
         print(" >>>> Loading Autoencoder")
         self.autoencoder_device = args.autoencoder_device
-        with open(args.autoencoder_inference_config_path, "rb") as f:
-            self.autoencoder_config_inference: AutoEncoder.AutoEncoderInferenceConfig = pickle.load(f)
-        self.autoencoder = self.autoencoder_config_inference.return_model()
-        self.autoencoder = self.autoencoder.to(self.autoencoder_device)
-        self.autoencoder_interpretations = self.autoencoder_config_inference.autoencoder_interpretations
+        self.autoencoder_config_files = os.listdir(args.autoencoder_inference_config_path)
+        self.autoencoder_configs = []
+        for config_file in self.autoencoder_config_files:
+            with open(f"{args.autoencoder_inference_config_path}/{config_file}", "rb") as f:
+                autoencoder_config_inference: AutoEncoder.AutoEncoderInferenceConfig = pickle.load(f)
+                self.autoencoder_configs.append(autoencoder_config_inference)
 
+        #Set Attributes for AutoEncoder-Loading-Procedure
         self.dict_vecs = None
+        self.current_ae_index = None
+        self.autoencoder_config_inference = None
+        self.autoencoder = None
+        self.autoencoder_interpretations = []
 
+        if len(self.autoencoder_configs) == 0:
+            raise Exception("No AutoEncoders found!")
+        self.activate_autoencoder(0)
 
     def set_control_hooks_gpt2(self, values_per_layer, coef_value=0):
         def change_values(values, coef_val):
@@ -328,6 +338,20 @@ class ModelingRequests():
         return new_d
 
     #Sparse Coding
+    def get_autoencoder_files(self):
+        return self.autoencoder_config_files
+
+    def activate_autoencoder(self, index):
+        #If index doesn't change, don't reload AutoEncoder
+        if self.current_ae_index == index:
+            return False
+        self.current_ae_index = index
+        self.autoencoder_config_inference = self.autoencoder_configs[index]
+        self.autoencoder = self.autoencoder_config_inference.return_model()
+        self.autoencoder = self.autoencoder.to(self.autoencoder_device)
+        self.autoencoder_interpretations = self.autoencoder_config_inference.autoencoder_interpretations
+        return True
+
     def get_max_autoencoder_neuron_per_token(self, prompt):
         def attn_hook(module, input, output):
             activations = output[0].detach().cpu()
@@ -362,7 +386,8 @@ class ModelingRequests():
         token_ids = tokens["input_ids"][0].tolist()
         tokens_as_string = self.tokenizer.convert_ids_to_tokens(token_ids)
 
-        if len(neuron_ids) != len(token_ids) or len(token_ids) != len(tokens_as_string) or len(token_ids) != len(neuron_activations):
+        if len(neuron_ids) != len(token_ids) or len(token_ids) != len(tokens_as_string) or len(token_ids) != len(
+                neuron_activations):
             print("WARN: Wrong number of neuron_ids, token_ids or tokens_as_string!")
             return {}
         for i in range(len(neuron_ids)):
@@ -380,7 +405,6 @@ class ModelingRequests():
                 neuron_act = neuron_act / self.autoencoder_config_inference.maxs[i]
 
             output_dict["neuron_activations"].append(neuron_act)
-
 
         return output_dict
 

@@ -89,6 +89,41 @@ export function getValueInterpretation(params: ValueId): [Promise<ValueInterpret
 }
 
 //Sparse Coding
+export async function get_autoencoder_files(): Promise<Array<string>> {
+    const response = await fetch(
+    `http://${runConfig.server_ip}:${runConfig.server_port}/get_autoencoder_files`,
+    {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({})
+    }
+  )
+
+  const responseJson = await response.json();
+  return responseJson;
+}
+
+export async function activate_autoencoder(index: number): Promise<boolean> {
+  const response = await fetch(
+    `http://${runConfig.server_ip}:${runConfig.server_port}/activate_autoencoder`,
+    {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+          index: index
+      })
+    }
+  )
+
+  const responseJson = await response.json();
+  return responseJson;
+}
 
 export async function getMaxAutoencoderNeuronPerToken(prompt: string): Promise<AutoEncoderResponse> {
     const response = await fetch(
