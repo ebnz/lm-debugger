@@ -4,6 +4,7 @@ import {Empty, Card, Alert, Spin, Divider, Tag, Tooltip, Button, Select} from "a
 import type {SelectProps} from "antd";
 import styled from "styled-components";
 import {SparseFeatureContainer} from "../LabelContainer";
+import {CloseOutlined} from "@ant-design/icons";
 
 interface TokenDescriptorProps {
     text: string,
@@ -37,28 +38,28 @@ function TokenDescriptor(props: TokenDescriptorProps): JSX.Element {
 }
 
 interface AEPanelProps {
-    isLoading: boolean,
-    errorMessage?: string,
-    autoencoder_results: Array<AutoEncoderResponse>;
+    autoencoderIndex: number|null;
+    setAutoencoderIndex: Function;
     autoencoderFeatures: Array<number>;
+    autoencoder_results: Array<AutoEncoderResponse>;
     handleAutoencoderFeaturesChange: Function;
 }
 
 function AutoEncodersPanel(props: AEPanelProps): JSX.Element {
   const {
-    isLoading,
-    errorMessage,
-    autoencoder_results,
+    autoencoderIndex,
+    setAutoencoderIndex,
     autoencoderFeatures,
+    autoencoder_results,
     handleAutoencoderFeaturesChange
   } = props;
 
   let contentRender: React.ReactNode = [];
-  if (isLoading) {
-    contentRender = <Spin style={{margin: "auto auto"}} tip="Loading Feature Activations" />;
-  } else if (errorMessage !== undefined) {
-    contentRender = <Alert type="error">{errorMessage}</Alert>
-  } else if (autoencoder_results.length === 0){
+  if (autoencoderIndex === null) {
+      //ToDo: Put empty message
+      return (<text>EMPTY</text>);
+  }
+  else if (autoencoder_results.length === 0){
     contentRender = <Empty description="Enter a prompt and click Run to see Feature Activations."/>
   } else {
     let contentRenderArray = [];
@@ -85,6 +86,7 @@ function AutoEncodersPanel(props: AEPanelProps): JSX.Element {
   }
 
   function handleFeaturesChange(values: Array<string>) {
+      //ToDo: Check if Feature Index in range of DICT_VECS
       if (values.length > 3) {
           //ToDo: Implement behavior
           return;
@@ -121,11 +123,12 @@ function AutoEncodersPanel(props: AEPanelProps): JSX.Element {
       <MainLayout>
           <Select
             mode="tags"
-            style={{ width: '100%' }}
+            style={{width: "90%"}}
             value={autoencoderFeatures.map(String)}
             onChange={handleFeaturesChange}
             tagRender={tagRender}
           />
+          <Button onClick={() => {setAutoencoderIndex(null)}}><CloseOutlined/></Button>
           <Divider/>
           {contentRender}
       </MainLayout>

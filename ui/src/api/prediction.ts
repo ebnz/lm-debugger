@@ -103,7 +103,7 @@ export async function get_autoencoder_files(): Promise<Array<string>> {
   )
 
   const responseJson = await response.json();
-  return responseJson;
+  return responseJson["autoencoder_files"];
 }
 
 export async function activate_autoencoder(index: number): Promise<boolean> {
@@ -122,7 +122,7 @@ export async function activate_autoencoder(index: number): Promise<boolean> {
   )
 
   const responseJson = await response.json();
-  return responseJson;
+  return responseJson["return_code"];
 }
 
 export async function getMaxAutoencoderNeuronPerToken(prompt: string): Promise<AutoEncoderResponse> {
