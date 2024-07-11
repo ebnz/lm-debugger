@@ -13,9 +13,12 @@ function SparseCodingPage(): JSX.Element {
 
     const [text, setText] = useState("");
     const [isLoading, setLoading] = useState(false);
-    const [autoencoderResults, setAutoencoderResults] = useState<Array<AutoEncoderResponse>>([])
 
-    async function handleRun(prompt: string, neuron_id: number) {
+    const [autoencoderIndex, setAutoencoderIndex] = useState<Array<number|null>>([0, null, null]);
+    const [autoencoderFeatures, setAutoencoderFeatures] = useState<Array<Array<number>>>([[157, 15769], [], []]);
+    const [autoencoderResults, setAutoencoderResults] = useState<Array<Array<AutoEncoderResponse>>>([[], [], []]);
+
+    async function handleRun(prompt: string, ae_output_column: number) {
         if (prompt.length === 0) {
             api.open({
                 message: "No Prompt specified!",
@@ -24,10 +27,25 @@ function SparseCodingPage(): JSX.Element {
             return;
         }
         setLoading(true);
-        const return_value = await getNeuronActivationPerToken(prompt, neuron_id);
-        setAutoencoderResults([return_value]);
+        let rv_cache = [];
+        for(let neuron_id of autoencoderFeatures[ae_output_column]) {
+            const return_value = await getNeuronActivationPerToken(prompt, neuron_id);
+            rv_cache.push(return_value);
+        }
+        let copyAutoEncoderResults = autoencoderResults;
+        copyAutoEncoderResults[ae_output_column] = rv_cache;
+        setAutoencoderResults(copyAutoEncoderResults);
         setLoading(false);
     }
+
+    function handleFeaturesChange(new_features: Array<number>, ae_column_id: number) {
+        let featuresCopy = [...autoencoderFeatures];
+        featuresCopy[ae_column_id] = new_features;
+        setAutoencoderFeatures(featuresCopy);
+    }
+
+    console.log(autoencoderFeatures)
+
 
     return (<>
         {contextHolder}
@@ -36,11 +54,16 @@ function SparseCodingPage(): JSX.Element {
                 <TextArea rows={10} disabled={isLoading} value={text} onChange={(e) => {setText(e.target.value)}}></TextArea>
             </Col>
             <Col className="gutter-row" span={12}>
-                <Button disabled={isLoading} onClick={() => {handleRun(text, 15769)}}>Run</Button>
+                <Button disabled={isLoading} onClick={() => {handleRun(text, 0)}}>Run</Button>
             </Col>
         </Row>
 
-        <AutoEncodersPanel isLoading={false} errorMessage={undefined} autoencoder_results={autoencoderResults}></AutoEncodersPanel>
+        <AutoEncodersPanel
+            isLoading={false}
+            errorMessage={undefined}
+            autoencoder_results={autoencoderResults[0]}
+            autoencoderFeatures={autoencoderFeatures[0]}
+            handleAutoencoderFeaturesChange={(new_features: Array<number>) => {handleFeaturesChange(new_features, 0)}}/>
     </>)
 }
 

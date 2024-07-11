@@ -418,6 +418,7 @@ class ModelingRequests():
         output_dict = self.get_max_autoencoder_neuron_per_token(prompt)
 
         response_dict = {
+            "autoencoder_name": self.autoencoder_config_files[self.current_ae_index],
             "autoencoder_layer_type": self.autoencoder_config_inference.autoencoder_layer_type,
             "autoencoder_layer_index": self.autoencoder_config_inference.autoencoder_layer_index
         }
@@ -487,6 +488,7 @@ class ModelingRequests():
         output_dict = self.get_neuron_activation_per_token(prompt, neuron_id)
 
         response_dict = {
+            "autoencoder_name": self.autoencoder_config_files[self.current_ae_index],
             "autoencoder_layer_type": self.autoencoder_config_inference.autoencoder_layer_type,
             "autoencoder_layer_index": self.autoencoder_config_inference.autoencoder_layer_index
         }

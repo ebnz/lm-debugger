@@ -50,7 +50,7 @@ export interface ValueInterpretation extends ValueId{
 
 //Sparse Coding
 export interface AutoEncoderResponse {
-  //autoencoder_name: string;
+  autoencoder_name: string;
   autoencoder_layer_type: string;
   autoencoder_layer_index: number;
 

@@ -59,6 +59,7 @@ function Play(): JSX.Element {
 
     const ae_results = [
         {
+            autoencoder_name: "strong_model.pkl",
             autoencoder_layer_type: "HALLO",
             autoencoder_layer_index: 2,
             tokens_as_string: ["HAL", "LO"],

@@ -1,22 +1,27 @@
 import React from "react";
 import {AutoEncoderResponse, ValueId} from "../../types/dataModel";
-import {Empty, Card, Alert, Spin, Divider, Tag, Tooltip} from "antd";
+import {Empty, Card, Alert, Spin, Divider, Tag, Tooltip, Button, Select} from "antd";
+import type {SelectProps} from "antd";
 import styled from "styled-components";
 import {SparseFeatureContainer} from "../LabelContainer";
 
 interface TokenDescriptorProps {
     text: string,
-    activation: number,
-    interpretation: string
+    activations: Array<number>,
+    color: Array<number>    //[0-255, 0-255, 0-255] (RGB)
 }
 function TokenDescriptor(props: TokenDescriptorProps): JSX.Element {
-    const {text, activation, interpretation} = props;
-    const rgba_string = "rgb(255, 0, 0, " + activation / 10 + ")";
+    const {text, activations, color} = props;
+    let alpha = 0.0;
+    if (activations[0] > 2 || activations[1] > 2 || activations[2] > 2) {
+        alpha = 1.0;
+    }
+    const rgba_string = "rgb(" + color[0] + ", " + color[1] + ", " + color[2] + ", " + alpha + ")";
 
     if (text === "<0x0A>") {
         return (
             <>
-                <Tooltip title={"Activation: \n" + activation.toFixed(2)}>
+                <Tooltip title={Math.max(...activations).toFixed(1)}>
                     <text style={{backgroundColor: rgba_string}}>\n</text>
                 </Tooltip>
                 <br/>
@@ -25,7 +30,7 @@ function TokenDescriptor(props: TokenDescriptorProps): JSX.Element {
     }
 
     return (<>
-        <Tooltip title={"Activation: \n" + activation.toFixed(10)}>
+        <Tooltip title={Math.max(...activations).toFixed(1)}>
             <text style={{backgroundColor: rgba_string}}>{text.replace("▁", " ")}</text>
         </Tooltip>
     </>)
@@ -35,6 +40,8 @@ interface AEPanelProps {
     isLoading: boolean,
     errorMessage?: string,
     autoencoder_results: Array<AutoEncoderResponse>;
+    autoencoderFeatures: Array<number>;
+    handleAutoencoderFeaturesChange: Function;
 }
 
 function AutoEncodersPanel(props: AEPanelProps): JSX.Element {
@@ -42,6 +49,8 @@ function AutoEncodersPanel(props: AEPanelProps): JSX.Element {
     isLoading,
     errorMessage,
     autoencoder_results,
+    autoencoderFeatures,
+    handleAutoencoderFeaturesChange
   } = props;
 
   let contentRender: React.ReactNode = [];
@@ -54,19 +63,70 @@ function AutoEncodersPanel(props: AEPanelProps): JSX.Element {
   } else {
     let contentRenderArray = [];
 
-    for (let item of autoencoder_results) {
-        for (let index = 0; index < item.tokens_as_string.length; index++) {
-            contentRenderArray.push(
-                <TokenDescriptor key={index} text={item.tokens_as_string[index]} activation={item.neuron_activations[index]} interpretation={item.interpretations[index]}></TokenDescriptor>
-                //<text style={{backgroundColor: rgba_string}}>{item.tokens_as_string[index].replace("▁", " ")}</text>
-            );
-        }
+
+    for (let index = 0; index < autoencoder_results[0].tokens_as_string.length; index++) {
+        let color = [0.0, 0.0, 0.0];
+
+        color[0] += autoencoder_results.length >= 1 ? autoencoder_results[0].neuron_activations[index] * 255 / 10 : 0.0;
+        color[1] += autoencoder_results.length >= 2 ? autoencoder_results[1].neuron_activations[index] * 255 / 10 : 0.0;
+        color[2] += autoencoder_results.length >= 3 ? autoencoder_results[2].neuron_activations[index] * 255 / 10 : 0.0;
+
+        const activations = [
+            autoencoder_results.length >= 1 ? autoencoder_results[0].neuron_activations[index] : 0.0,
+            autoencoder_results.length >= 2 ? autoencoder_results[1].neuron_activations[index] : 0.0,
+            autoencoder_results.length >= 3 ? autoencoder_results[2].neuron_activations[index] : 0.0
+        ];
+
+        contentRenderArray.push(
+            <TokenDescriptor key={index} text={autoencoder_results[0].tokens_as_string[index]} activations={activations} color={color}></TokenDescriptor>
+        );
     }
     contentRender = contentRenderArray;
   }
 
+  function handleFeaturesChange(values: Array<string>) {
+      if (values.length > 3) {
+          //ToDo: Implement behavior
+          return;
+      }
+      const numberValues = values.map(Number);
+      for (let item of numberValues) {
+          if (isNaN(item)) {
+              //ToDo: Open e.g. Toast
+              handleAutoencoderFeaturesChange(autoencoderFeatures);
+              return;
+          }
+      }
+      handleAutoencoderFeaturesChange(numberValues.map(Math.floor));
+  }
+
+  type TagRender = SelectProps['tagRender'];
+
+  const tagRender: TagRender = (props) => {
+  const { label, value, closable, onClose } = props;
+  const COLORS = ["red", "green", "blue"];
+
   return (
-      <MainLayout title="Features">
+    <Tag
+      color={COLORS[autoencoderFeatures.indexOf(parseFloat(value))]}
+      closable={closable}
+      onClose={onClose}
+    >
+      {label}
+    </Tag>
+  );
+};
+
+  return (
+      <MainLayout>
+          <Select
+            mode="tags"
+            style={{ width: '100%' }}
+            value={autoencoderFeatures.map(String)}
+            onChange={handleFeaturesChange}
+            tagRender={tagRender}
+          />
+          <Divider/>
           {contentRender}
       </MainLayout>
   );
