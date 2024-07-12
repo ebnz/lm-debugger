@@ -106,7 +106,12 @@ export async function get_autoencoder_files(): Promise<Array<string>> {
   return responseJson["autoencoder_files"];
 }
 
-export async function activate_autoencoder(index: number): Promise<boolean> {
+export async function activate_autoencoder(index: number|null): Promise<boolean> {
+  //If null is passed as index, return false, indicating that the activation process didn't work
+  if (index === null) {
+    return false;
+  }
+
   const response = await fetch(
     `http://${runConfig.server_ip}:${runConfig.server_port}/activate_autoencoder`,
     {

@@ -4,7 +4,7 @@ import {Empty, Card, Alert, Spin, Divider, Tag, Tooltip, Button, Select} from "a
 import type {SelectProps} from "antd";
 import styled from "styled-components";
 import {SparseFeatureContainer} from "../LabelContainer";
-import {CloseOutlined} from "@ant-design/icons";
+import {CloseOutlined, PlusCircleOutlined, RobotOutlined} from "@ant-design/icons";
 
 interface TokenDescriptorProps {
     text: string,
@@ -43,6 +43,7 @@ interface AEPanelProps {
     autoencoderFeatures: Array<number>;
     autoencoder_results: Array<AutoEncoderResponse>;
     handleAutoencoderFeaturesChange: Function;
+    api: any;
 }
 
 function AutoEncodersPanel(props: AEPanelProps): JSX.Element {
@@ -51,13 +52,17 @@ function AutoEncodersPanel(props: AEPanelProps): JSX.Element {
     setAutoencoderIndex,
     autoencoderFeatures,
     autoencoder_results,
-    handleAutoencoderFeaturesChange
+    handleAutoencoderFeaturesChange,
+    api
   } = props;
 
   let contentRender: React.ReactNode = [];
   if (autoencoderIndex === null) {
-      //ToDo: Put empty message
-      return (<text>EMPTY</text>);
+      return (<div style={{textAlign: "center", marginTop: "100px"}}>
+          <PlusCircleOutlined style={{fontSize: 70}}/>
+          <br/><br/>
+          Use Select above to add a new AutoEncoder to this Column.
+      </div>);
   }
   else if (autoencoder_results.length === 0){
     contentRender = <Empty description="Enter a prompt and click Run to see Feature Activations."/>
@@ -86,15 +91,30 @@ function AutoEncodersPanel(props: AEPanelProps): JSX.Element {
   }
 
   function handleFeaturesChange(values: Array<string>) {
-      //ToDo: Check if Feature Index in range of DICT_VECS
       if (values.length > 3) {
-          //ToDo: Implement behavior
+          api.open({
+                message: "Max Amount of Features reached!",
+                description: "Please delete a Feature from that AutoEncoder before adding a new one. " +
+                    "Alternatively, you can add the same AutoEncoder into a different Column."
+              });
           return;
       }
       const numberValues = values.map(Number);
       for (let item of numberValues) {
           if (isNaN(item)) {
-              //ToDo: Open e.g. Toast
+              api.open({
+                message: "Not a valid Feature-ID!",
+                description: "Please input a valid Integer into the Input-Field."
+              });
+              handleAutoencoderFeaturesChange(autoencoderFeatures);
+              return;
+          }
+          if (item < 0 || item >= 16384) {
+              //ToDo: Get max Feature-ID from Server. Also update in description of Toast
+              api.open({
+                message: "Feature-ID does not exist!",
+                description: "Please input a Feature-ID in the range [0, 16383]."
+              });
               handleAutoencoderFeaturesChange(autoencoderFeatures);
               return;
           }
@@ -123,12 +143,12 @@ function AutoEncodersPanel(props: AEPanelProps): JSX.Element {
       <MainLayout>
           <Select
             mode="tags"
-            style={{width: "90%"}}
+            style={{width: "80%"}}
             value={autoencoderFeatures.map(String)}
             onChange={handleFeaturesChange}
             tagRender={tagRender}
           />
-          <Button onClick={() => {setAutoencoderIndex(null)}}><CloseOutlined/></Button>
+          <Button onClick={() => {handleAutoencoderFeaturesChange([]);setAutoencoderIndex(null)}}><CloseOutlined/></Button>
           <Divider/>
           {contentRender}
       </MainLayout>

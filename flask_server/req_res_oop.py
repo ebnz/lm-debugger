@@ -342,9 +342,12 @@ class ModelingRequests():
         return self.autoencoder_config_files
 
     def activate_autoencoder(self, index):
+        #If index out of range, return False
+        if index < 0 or index >= len(self.autoencoder_configs):
+            return False
         #If index doesn't change, don't reload AutoEncoder
         if self.current_ae_index == index:
-            return False
+            return True
         self.current_ae_index = index
         self.autoencoder_config_inference = self.autoencoder_configs[index]
         self.autoencoder = self.autoencoder_config_inference.return_model()
