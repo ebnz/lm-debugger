@@ -8,7 +8,7 @@ class AutoEncoderTM(torch.nn.Module):
 
         self.n = n
         self.m = m
-        
+
         self.bias_encoder = torch.nn.Parameter(torch.rand(m))
         self.bias_decoder = torch.nn.Parameter(torch.rand(n))
 
@@ -34,21 +34,10 @@ def AELossTM(X, X_hat, f, lam=1):
     return AELossTM_reconstruction(X, X_hat) + AELossTM_sparsity(f, lam=lam)
     #return torch.mean(torch.norm(X - X_hat, dim=1, p=2)**2 + lam * torch.norm(f, dim=1, p=1))
 
-@dataclass
-class AutoEncoderInferenceConfig:
-    state_dict: dict    #PyTorch state_dict of the AutoEncoder
-    act_vec_size: int
-    dict_vec_size: int
-    autoencoder_layer_type: str     #"self_attn" or "mlp"
-    autoencoder_layer_index: int
-    autoencoder_interpretations: dict
-    mins: list
-    maxs: list
-
-    def return_model(self):
-        autoencoder = AutoEncoderNN(self.act_vec_size, self.dict_vec_size)
-        autoencoder.load_state_dict(self.state_dict)
-        return autoencoder
+def load_model_from_config(config_dict):
+    autoencoder = AutoEncoderNN(config_dict["ACT_VEC_SIZE"], config_dict["DICT_VEC_SIZE"])
+    autoencoder.load_state_dict(config_dict["STATE_DICT"])
+    return autoencoder
 
 class AutoEncoderNN(torch.nn.Module):
     def __init__(self, n, m):
@@ -56,7 +45,7 @@ class AutoEncoderNN(torch.nn.Module):
 
         self.n = n
         self.m = m
-        
+
         self.bias_encoder = torch.nn.Parameter(torch.zeros(m))
         self.bias_decoder = torch.nn.Parameter(torch.zeros(n))
 
@@ -66,11 +55,19 @@ class AutoEncoderNN(torch.nn.Module):
         self.relu = torch.nn.ReLU()
 
     def forward(self, x):
-        x_bar = x - self.bias_decoder
-        f = self.relu(x_bar @ self.weight_encoder + self.bias_encoder)
-        x_hat = f @ self.weight_decoder + self.bias_decoder
+        f = self.forward_encoder(x)
+        x_hat = self.forward_decoder(f)
 
         return x_hat, f
+
+    def forward_encoder(self, x):
+        x_bar = x - self.bias_decoder
+        f = self.relu(x_bar @ self.weight_encoder + self.bias_encoder)
+        return f
+
+    def forward_decoder(self, f):
+        x_hat = f @ self.weight_decoder + self.bias_decoder
+        return x_hat
 
 def AELossNN_reconstruction(X, X_hat):
     return torch.mean(torch.sum((X - X_hat)**2, dim=1))
@@ -89,7 +86,7 @@ class AutoEncoderSC(torch.nn.Module):
         self.n = n
         self.m = m
         self.reinit_dead_neurons = reinit_dead_neurons
-        
+
         self.training_steps = 0
         self.summed_f_activations = torch.zeros((m))
 
@@ -115,7 +112,7 @@ class AutoEncoderSC(torch.nn.Module):
 
                 self.training_steps = 0
                 self.summed_f_activations = torch.zeros((self.m))
-        
+
         return x_hat, f
 
 def AELossSC(X, X_hat, f, lam=1):

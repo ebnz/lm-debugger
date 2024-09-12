@@ -35,13 +35,13 @@ class ModelingRequests():
         self.autoencoder_configs = []
         for config_file in self.autoencoder_config_files:
             with open(f"{args.autoencoder_inference_config_path}/{config_file}", "rb") as f:
-                autoencoder_config_inference: AutoEncoder.AutoEncoderInferenceConfig = pickle.load(f)
-                self.autoencoder_configs.append(autoencoder_config_inference)
+                autoencoder_config: dict = pickle.load(f)
+                self.autoencoder_configs.append(autoencoder_config)
 
         #Set Attributes for AutoEncoder-Loading-Procedure
         self.dict_vecs = None
         self.current_ae_index = None
-        self.autoencoder_config_inference = None
+        self.current_autoencoder_config = None
         self.autoencoder = None
         self.autoencoder_interpretations = []
 
@@ -53,6 +53,7 @@ class ModelingRequests():
         def change_values(values, coef_val):
             def hook(module, input, output):
                 output[:, :, values] = coef_val
+                return output
 
             return hook
 
@@ -62,16 +63,86 @@ class ModelingRequests():
                 values = values_per_layer[l]
             else:
                 values = []
-            hook = self.model.model.layers[l].mlp.gate_proj.register_forward_hook(
+
+            hook = self.model.model.layers[l].mlp.gate_proj.register_forward_hook(  # ToDo: up_proj?
                 change_values(values, coef_value)
             )
             hooks.append(hook)
-            hook = self.model.model.layers[l].mlp.up_proj.register_forward_hook(
+            hook = self.model.model.layers[l].mlp.up_proj.register_forward_hook(  # ToDo: down_proj?
                 change_values(values, coef_value)
             )
             hooks.append(hook)
 
         return hooks
+
+    def set_control_hook_for_autoencoder(self, autoencoder_index, dim, coef_value, layer_type):
+        """
+        Set an Intervention-Forward-Hook with a specified AutoEncoder at a specific Dimension and Coefficient-Value
+        :param autoencoder_index: Index of the used AutoEncoder
+        :param dim: Index of the value in Dictionary-Vector to be manipulated
+        :param coef_value: 1 for activate this Feature, 0 for deactivate this feature
+        :param layer_type: "attn" for Attention-Sublayer or "mlp" for MLP-Sublayer
+        """
+        def change_values_mlp(dim, coef_val):
+            def hook_mlp(module, input, output):
+                # Activate AutoEncoder
+                self.activate_autoencoder(autoencoder_index)
+
+                # Encode
+                X = output.to(self.autoencoder_device)
+                f = self.autoencoder.forward_encoder(X).detach()
+
+                # Patching
+                f_patched = torch.zeros_like(f)
+                f_patched[::, ::, dim] = coef_val
+
+                # Decode and Add
+                X_hat = X + self.autoencoder.forward_decoder(f_patched).to(output.dtype)
+
+                # Return
+                return X_hat.to(self.llm_device)
+
+            return hook_mlp
+
+        def change_values_attn(dim, coef_val):
+            def hook_attn(module, input, output):
+                #Activate AutoEncoder
+                self.activate_autoencoder(autoencoder_index)
+
+                #Encode
+                X = output[0].to(self.autoencoder_device)
+                f = self.autoencoder.forward_encoder(X).detach()
+
+                #Patching
+                f_patched = torch.zeros_like(f)
+                f_patched[::, ::, dim] = coef_val
+
+                #Decode and Add
+                X_hat = X + self.autoencoder.forward_decoder(f_patched).to(output[0].dtype)
+
+                #Return
+                return (X_hat.to(self.llm_device), output[1], output[2])
+
+            return hook_attn
+
+        if layer_type == "mlp":
+            layer_index = self.autoencoder_configs[autoencoder_index]["LAYER_INDEX"]
+
+            hook = self.model.model.layers[layer_index].mlp.register_forward_hook(
+                change_values_mlp(dim, coef_value)
+            )
+            return [hook]
+
+        elif layer_type == "attn":
+            layer_index = self.autoencoder_configs[autoencoder_index]["LAYER_INDEX"]
+
+            hook = self.model.model.layers[layer_index].self_attn.register_forward_hook(
+                change_values_attn(dim, coef_value)
+            )
+            return [hook]
+
+        else:
+            raise Exception(f"ERROR: Unknown layer_type: <{layer_type}>")
 
     def remove_hooks(self, hooks):
         for hook in hooks:
@@ -349,10 +420,10 @@ class ModelingRequests():
         if self.current_ae_index == index:
             return True
         self.current_ae_index = index
-        self.autoencoder_config_inference = self.autoencoder_configs[index]
-        self.autoencoder = self.autoencoder_config_inference.return_model()
+        self.current_autoencoder_config = self.autoencoder_configs[index]
+        self.autoencoder = AutoEncoder.load_model_from_config(self.current_autoencoder_config)
         self.autoencoder = self.autoencoder.to(self.autoencoder_device)
-        self.autoencoder_interpretations = self.autoencoder_config_inference.autoencoder_interpretations
+        self.autoencoder_interpretations = self.current_autoencoder_config["INTERPRETATIONS"]
         return True
 
     def get_max_autoencoder_neuron_per_token(self, prompt):
@@ -401,11 +472,11 @@ class ModelingRequests():
             output_dict["neuron_ids"].append(neuron_ids[i])
             output_dict["interpretations"].append(interpretation)
 
-            neuron_act = neuron_activations[i] - self.autoencoder_config_inference.mins[i]
-            if self.autoencoder_config_inference.maxs[i] == 0:
+            neuron_act = neuron_activations[i] - self.current_autoencoder_config["MINS"][i]
+            if self.current_autoencoder_config["MAXS"][i] == 0:
                 neuron_act = 0
             else:
-                neuron_act = neuron_act / self.autoencoder_config_inference.maxs[i]
+                neuron_act = neuron_act / self.current_autoencoder_config["MAXS"][i]
 
             output_dict["neuron_activations"].append(neuron_act)
 
@@ -422,8 +493,8 @@ class ModelingRequests():
 
         response_dict = {
             "autoencoder_name": self.autoencoder_config_files[self.current_ae_index],
-            "autoencoder_layer_type": self.autoencoder_config_inference.autoencoder_layer_type,
-            "autoencoder_layer_index": self.autoencoder_config_inference.autoencoder_layer_index
+            "autoencoder_layer_type": self.current_autoencoder_config["LAYER_TYPE"],
+            "autoencoder_layer_index": self.current_autoencoder_config["LAYER_INDEX"]
         }
         for item in output_dict.keys():
             response_dict[item] = output_dict[item]
@@ -475,11 +546,11 @@ class ModelingRequests():
             output_dict["neuron_ids"].append(neuron_id)
             output_dict["interpretations"].append(interpretation)
 
-            neuron_act = neuron_activations[i] - self.autoencoder_config_inference.mins[neuron_id]
-            if self.autoencoder_config_inference.maxs[neuron_id] == 0:
+            neuron_act = neuron_activations[i] - self.current_autoencoder_config["MINS"][neuron_id]
+            if self.current_autoencoder_config["MAXS"][neuron_id] == 0:
                 neuron_act = 0
             else:
-                neuron_act = 10 * neuron_act / self.autoencoder_config_inference.maxs[neuron_id]
+                neuron_act = 10 * neuron_act / self.current_autoencoder_config["MAXS"][neuron_id]
 
             output_dict["neuron_activations"].append(neuron_act)
 
@@ -492,10 +563,61 @@ class ModelingRequests():
 
         response_dict = {
             "autoencoder_name": self.autoencoder_config_files[self.current_ae_index],
-            "autoencoder_layer_type": self.autoencoder_config_inference.autoencoder_layer_type,
-            "autoencoder_layer_index": self.autoencoder_config_inference.autoencoder_layer_index
+            "autoencoder_layer_type": self.current_autoencoder_config["LAYER_TYPE"],
+            "autoencoder_layer_index": self.current_autoencoder_config["LAYER_INDEX"]
         }
         for item in output_dict.keys():
             response_dict[item] = output_dict[item]
 
+        return response_dict
+
+    #Combination of Intervention-Methods
+    """
+    Combine the Intervention-Method from LM-Debugger and Sparse Autoencoders
+    """
+    def request2response_generate_intervened(self, req_json_dict):
+        response_dict = {}
+        prompt, interventions_lst, sae_interventions_lst = req_json_dict['prompt'], req_json_dict['interventions'], req_json_dict['sae_interventions']
+        pred_dict_raw = self.process_and_get_data(prompt)
+
+        hooks_lst = []
+        if len(interventions_lst) > 0:
+            maxs_dict = {l: self.get_new_max_coef(l, pred_dict_raw) for l in range(self.model.config.num_hidden_layers)}
+            for intervention in interventions_lst:
+                if intervention['coeff'] > 0:
+                    new_max_val = maxs_dict[intervention['layer']]
+                else:
+                    new_max_val = 0
+                hooks_lst.append(self.set_control_hooks_gpt2({intervention['layer']: [intervention['dim']], },
+                                                             coef_value=new_max_val))
+
+        if len(sae_interventions_lst) > 0:
+            for intervention in sae_interventions_lst:
+                if intervention['coeff'] == 0:
+                    new_max_val = 0 #Set to MINS[feature]
+                else:
+                    new_max_val = 100 #Set to MAXS[feature]
+                #Set the layer_type to 'attn' or 'mlp' for SAE-Intervention instead of 'up_down' for LM-Debugger-Intervention
+                autoencoder_index = int(intervention["autoencoder_index"])
+                dim = intervention["dim"]
+                layer_type = self.autoencoder_configs[autoencoder_index]["LAYER_TYPE"]
+                hooks_lst.append(self.set_control_hook_for_autoencoder(autoencoder_index,
+                                                                       dim,
+                                                                       intervention["coeff"],   #ToDo: Set to new_max_val and MINS/MAXS
+                                                                       layer_type))
+
+        tokens = self.tokenizer(prompt, return_tensors="pt")
+        tokens.to(self.llm_device)
+        try:
+            greedy_output = self.model.generate(**tokens,
+                                                max_length=req_json_dict['generate_k'] + len(tokens['input_ids'][0]))
+            greedy_output = self.tokenizer.decode(greedy_output[0], skip_special_tokens=True)
+            response_dict['generate_text'] = greedy_output
+        except Exception as e:
+            print(e)
+
+
+        if len(interventions_lst) > 0 or len(sae_interventions_lst) > 0:
+            for hook in hooks_lst:
+                self.remove_hooks(hook)
         return response_dict
