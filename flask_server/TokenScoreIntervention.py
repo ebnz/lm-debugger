@@ -133,22 +133,21 @@ class LMDebuggerIntervention(TokenScoreInterventionMethod):
 
             return hook
 
-        hooks = []
         for l in range(self.model_wrapper.model.config.num_hidden_layers):
             if l in values_per_layer:
                 values = values_per_layer[l]
             else:
                 values = []
-            hook = self.model_wrapper.model.model.layers[l].mlp.gate_proj.register_forward_hook(
-                change_values(values, coef_value)
+            self.model_wrapper.setup_hook(
+                change_values(values, coef_value),
+                l,
+                "mlp.gate_proj"
             )
-            hooks.append(hook)
-            hook = self.model_wrapper.model.model.layers[l].mlp.up_proj.register_forward_hook(
-                change_values(values, coef_value)
+            self.model_wrapper.setup_hook(
+                change_values(values, coef_value),
+                l,
+                "mlp.up_proj"
             )
-            hooks.append(hook)
-
-        return hooks
 
     def set_hooks_gpt2(self):
         final_layer = self.model_wrapper.model.config.num_hidden_layers - 1
@@ -182,18 +181,53 @@ class LMDebuggerIntervention(TokenScoreInterventionMethod):
 
             return hook
 
-        self.model_wrapper.model.model.layers[0].input_layernorm.register_forward_hook(get_activation("input_embedding"))
+        self.model_wrapper.setup_hook(
+            get_activation("input_embedding"),
+            0,
+            "input_layernorm",
+            permanent=True
+        )
 
         for i in range(self.model_wrapper.model.config.num_hidden_layers):
             if i != 0:
-                self.model_wrapper.model.model.layers[i].input_layernorm.register_forward_hook(get_activation("layer_residual_" + str(i - 1)))
-            self.model_wrapper.model.model.layers[i].post_attention_layernorm.register_forward_hook(get_activation("intermediate_residual_" + str(i)))
+                self.model_wrapper.setup_hook(
+                    get_activation("layer_residual_" + str(i - 1)),
+                    i,
+                    "input_layernorm",
+                    permanent=True
+                )
+            self.model_wrapper.setup_hook(
+                get_activation("intermediate_residual_" + str(i)),
+                i,
+                "post_attention_layernorm",
+                permanent=True
+            )
 
-            self.model_wrapper.model.model.layers[i].self_attn.register_forward_hook(get_activation("attn_" + str(i)))
-            self.model_wrapper.model.model.layers[i].mlp.register_forward_hook(get_activation("mlp_" + str(i)))
-            self.model_wrapper.model.model.layers[i].mlp.down_proj.register_forward_hook(get_activation("m_coef_" + str(i)))
+            self.model_wrapper.setup_hook(
+                get_activation("attn_" + str(i)),
+                i,
+                "self_attn",
+                permanent=True
+            )
+            self.model_wrapper.setup_hook(
+                get_activation("mlp_" + str(i)),
+                i,
+                "mlp",
+                permanent=True
+            )
+            self.model_wrapper.setup_hook(
+                get_activation("m_coef_" + str(i)),
+                i,
+                "mlp.down_proj",
+                permanent=True
+            )
 
-        self.model_wrapper.model.model.norm.register_forward_hook(get_activation("layer_residual_" + str(final_layer)))
+        self.model_wrapper.setup_hook(
+            get_activation("layer_residual_" + str(final_layer)),
+            None,
+            "norm",
+            permanent=True
+        )
 
     def get_resid_predictions(self, sentence, start_idx=None, end_idx=None, set_mlp_0=False):
         HIDDEN_SIZE = self.model_wrapper.model.config.hidden_size
