@@ -1,6 +1,14 @@
 import torch
 import numpy as np
 
+# ToDo's:
+# Implement IntervenedGenerationController
+# self.TOP_K
+# remove_hooks: use model_wrapper functionality
+# Implement usage of above to LM-Debugger
+# Move Functionalities to own files
+# Hopefully find no bugs
+
 class TokenScoreInterventionMethod:
     def __init__(self, model_wrapper, hook_handles):
         self.model_wrapper = model_wrapper
