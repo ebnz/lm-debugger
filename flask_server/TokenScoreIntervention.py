@@ -106,20 +106,17 @@ class LMDebuggerIntervention(TokenScoreInterventionMethod):
         pred_dict = self.process_pred_dict(pred_dict_raw)
         response_dict['response'] = pred_dict
         if len(self.interventions) > 0:
-            hooks_lst = []
             maxs_dict = {l: self.get_new_max_coef(l, pred_dict_raw) for l in range(self.model_wrapper.model.config.num_hidden_layers)}
             for intervention in self.interventions:
                 if intervention['coeff'] > 0:
                     new_max_val = maxs_dict[intervention['layer']]
                 else:
                     new_max_val = 0
-                hooks_lst.append(self.set_control_hooks_gpt2({intervention['layer']: [intervention['dim']], },
-                                                             coef_value=new_max_val))
+                self.set_control_hooks_gpt2({intervention['layer']: [intervention['dim']], }, coef_value=new_max_val)
             pred_dict_new_raw = self.process_and_get_data(prompt)
             pred_dict_new = self.process_pred_dict(pred_dict_new_raw)
             response_dict['intervention'] = pred_dict_new
-            for hook in hooks_lst:
-                self.remove_hooks(hook)
+            self.model_wrapper.clear_hooks()
         return response_dict
 
     """
@@ -337,12 +334,10 @@ class LMDebuggerIntervention(TokenScoreInterventionMethod):
     def setup_intervention_hooks(self, prompt):
         pred_dict_raw = self.process_and_get_data(prompt)
         if len(self.interventions) > 0:
-            hooks_lst = []
             maxs_dict = {l: self.get_new_max_coef(l, pred_dict_raw) for l in range(self.model_wrapper.model.config.num_hidden_layers)}
             for intervention in self.interventions:
                 if intervention['coeff'] > 0:
                     new_max_val = maxs_dict[intervention['layer']]
                 else:
                     new_max_val = 0
-                hooks_lst.append(self.set_control_hooks_gpt2({intervention['layer']: [intervention['dim']], },
-                                                             coef_value=new_max_val))
+                self.set_control_hooks_gpt2({intervention['layer']: [intervention['dim']], }, coef_value=new_max_val)
