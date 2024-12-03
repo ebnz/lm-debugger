@@ -7,22 +7,24 @@ import torch.nn.functional as F
 from create_offline_files import create_elastic_search_data, create_streamlit_data
 from transformers import LlamaForCausalLM, CodeLlamaTokenizer
 
+from sparse_autoencoders.TransformerModels import CodeLlamaModel
+from flask_server.TokenScoreIntervention import InterventionGenerationController, LMDebuggerIntervention
+
 warnings.filterwarnings('ignore')
 
 
 class ModelingRequests():
     def __init__(self, args):
         self.args = args
-        self.model = LlamaForCausalLM.from_pretrained(args.model_name, torch_dtype=torch.float16)
-        self.device = args.device
-        self.model.to(self.device)
-        self.tokenizer = CodeLlamaTokenizer.from_pretrained(args.model_name)
-        self.dict_es = create_elastic_search_data(args.elastic_projections_path, self.model, args.model_name,
-                                                  self.tokenizer, args.top_k_for_elastic)
+        self.model_wrapper = CodeLlamaModel(args.model_name, device=args.device)
+        self.dict_es = create_elastic_search_data(args.elastic_projections_path, self.model_wrapper.model, args.model_name,
+                                                  self.model_wrapper.tokenizer, args.top_k_for_elastic)
         if args.create_cluster_files:
             create_streamlit_data(args.streamlit_cluster_to_value_file_path, args.streamlit_value_to_cluster_file_path,
-                                  self.model, args.model_name, args.num_clusters)
-        self.TOP_K = args.top_k_tokens_for_ui
+                                  self.model_wrapper.model, args.model_name, args.num_clusters)
+
+        self.intervention_controller = InterventionGenerationController(self.model_wrapper, args.top_k_for_ui)
+        self.intervention_controller.register_method(LMDebuggerIntervention(self.model_wrapper))
 
     def set_control_hooks_gpt2(self, values_per_layer, coef_value=0):
         def change_values(values, coef_val):
@@ -245,52 +247,34 @@ class ModelingRequests():
         return curr_max_val + eps
 
     def request2response(self, req_json_dict, save_json=False, res_json_path=None, res_json_intervention_path=None):
-        response_dict = {}
-        prompt, interventions_lst = req_json_dict['prompt'], req_json_dict['interventions']
-        pred_dict_raw = self.process_and_get_data(prompt)
-        pred_dict = self.process_pred_dict(pred_dict_raw)
-        response_dict['response'] = pred_dict
-        if len(interventions_lst) > 0:
-            hooks_lst = []
-            maxs_dict = {l: self.get_new_max_coef(l, pred_dict_raw) for l in range(self.model.config.num_hidden_layers)}
-            for intervention in interventions_lst:
-                if intervention['coeff'] > 0:
-                    new_max_val = maxs_dict[intervention['layer']]
-                else:
-                    new_max_val = 0
-                hooks_lst.append(self.set_control_hooks_gpt2({intervention['layer']: [intervention['dim']], },
-                                                             coef_value=new_max_val))
-            pred_dict_new_raw = self.process_and_get_data(prompt)
-            pred_dict_new = self.process_pred_dict(pred_dict_new_raw)
-            response_dict['intervention'] = pred_dict_new
-            for hook in hooks_lst:
-                self.remove_hooks(hook)
+        prompt = req_json_dict['prompt']
+        interventions = req_json_dict['interventions']
+
+        # Set Interventions for LM-Debugger-Intervention
+        self.intervention_controller.intervention_methods[0].set_interventions(interventions)
+
+        # Generate Token-Scores
+        response_dict = self.intervention_controller.intervention_methods[0].get_token_scores(prompt)
+
         return response_dict
 
     def request2response_for_generation(self, req_json_dict, save_json=False, res_json_path=None,
                                         res_json_intervention_path=None):
-        response_dict = {}
-        prompt, interventions_lst = req_json_dict['prompt'], req_json_dict['interventions']
-        pred_dict_raw = self.process_and_get_data(prompt)
-        if len(interventions_lst) > 0:
-            hooks_lst = []
-            maxs_dict = {l: self.get_new_max_coef(l, pred_dict_raw) for l in range(self.model.config.num_hidden_layers)}
-            for intervention in interventions_lst:
-                if intervention['coeff'] > 0:
-                    new_max_val = maxs_dict[intervention['layer']]
-                else:
-                    new_max_val = 0
-                hooks_lst.append(self.set_control_hooks_gpt2({intervention['layer']: [intervention['dim']], },
-                                                             coef_value=new_max_val))
-        tokens = self.tokenizer(prompt, return_tensors="pt")
-        tokens.to(self.device)
-        greedy_output = self.model.generate(**tokens,
-                                            max_length=req_json_dict['generate_k'] + len(tokens['input_ids'][0]))
-        greedy_output = self.tokenizer.decode(greedy_output[0], skip_special_tokens=True)
-        response_dict['generate_text'] = greedy_output
-        if len(interventions_lst) > 0:
-            for hook in hooks_lst:
-                self.remove_hooks(hook)
+        prompt = req_json_dict['prompt']
+        interventions = req_json_dict['interventions']
+        generate_k = req_json_dict['generate_k']
+
+        # Prepare Intervention-Methods for Generation
+        # LM-Debugger-Intervention
+        self.intervention_controller.intervention_methods[0].set_interventions(interventions)
+        self.intervention_controller.intervention_methods[0].setup_intervention_hooks(prompt)
+
+        # Sparse-AutoEncoders
+        # ToDo: tbd
+
+        # Generate
+        response_dict = self.intervention_controller.generate(prompt, generate_k)
+
         return response_dict
 
     def send_request_get_response(self, request_json_dict):
