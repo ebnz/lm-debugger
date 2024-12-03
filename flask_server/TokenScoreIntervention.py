@@ -4,17 +4,56 @@ import numpy as np
 
 # ToDo's:
 # Implement IntervenedGenerationController
+# save interventions in InterventionMethods, add setter-method and apply interventions on generation
 # self.TOP_K
+# add_hooks: use model_wrapper functionality
 # remove_hooks: use model_wrapper functionality
 # Implement usage of above to LM-Debugger
 # Move Functionalities to own files
 # Hopefully find no bugs
 
-class TokenScoreInterventionMethod:
-    def __init__(self, model_wrapper, hook_handles):
+class InterventionGenerationController:
+    def __init__(self, model_wrapper):
         self.model_wrapper = model_wrapper
-        self.hook_handles = hook_handles
+        self.intervention_methods = []
+
+    def register_method(self, method):
+        self.intervention_methods.append(method)
+
+    def generate(self, prompt, generate_k):
+        # Setup Intervention-Hooks
+        for intervention_method in self.intervention_methods:
+            intervention_method.setup_intervention_hooks(prompt)
+
+        response_dict = {}
+        tokens = self.model_wrapper.tokenizer(prompt, return_tensors="pt")
+        tokens.to(self.model_wrapper.device)
+        greedy_output = self.model_wrapper.model.generate(**tokens,
+                                            max_length=generate_k + len(tokens['input_ids'][0]))
+        greedy_output = self.model_wrapper.tokenizer.decode(greedy_output[0], skip_special_tokens=True)
+        response_dict['generate_text'] = greedy_output
+
+        self.model_wrapper.clear_hooks()
+
+        return response_dict
+
+
+class TokenScoreInterventionMethod:
+    def __init__(self, model_wrapper):
+        self.model_wrapper = model_wrapper
+
+        self.interventions = []
+
         raise NotImplementedError("This class is an Interface")
+
+    def add_intervention(self, intervention):
+        self.interventions.append(intervention)
+
+    def set_interventions(self, interventions):
+        self.interventions = interventions
+
+    def clear_interventions(self):
+        self.interventions = []
 
     def get_token_scores(self, prompt, interventions):
         raise NotImplementedError("This class is an Interface")
@@ -24,8 +63,8 @@ class TokenScoreInterventionMethod:
 
 
 class LMDebuggerIntervention(TokenScoreInterventionMethod):
-    def __init__(self, model_wrapper, hook_handles):
-        super().__init__(model_wrapper, hook_handles)
+    def __init__(self, model_wrapper):
+        super().__init__(model_wrapper)
 
     def process_pred_dict(self, pred_df):
         pred_d = {}
@@ -61,15 +100,15 @@ class LMDebuggerIntervention(TokenScoreInterventionMethod):
             pred_d['layers'].append(layer_d)
         return pred_d
 
-    def get_token_scores(self, prompt, interventions):
+    def get_token_scores(self, prompt):
         response_dict = {}
         pred_dict_raw = self.process_and_get_data(prompt)
         pred_dict = self.process_pred_dict(pred_dict_raw)
         response_dict['response'] = pred_dict
-        if len(interventions) > 0:
+        if len(self.interventions) > 0:
             hooks_lst = []
             maxs_dict = {l: self.get_new_max_coef(l, pred_dict_raw) for l in range(self.model_wrapper.model.config.num_hidden_layers)}
-            for intervention in interventions:
+            for intervention in self.interventions:
                 if intervention['coeff'] > 0:
                     new_max_val = maxs_dict[intervention['layer']]
                 else:
@@ -261,13 +300,12 @@ class LMDebuggerIntervention(TokenScoreInterventionMethod):
         curr_max_val = old_dict['top_coef_vals'][layer][0]
         return curr_max_val + eps
 
-    def setup_intervention_hooks(self, prompt, interventions):
-        response_dict = {}
+    def setup_intervention_hooks(self, prompt):
         pred_dict_raw = self.process_and_get_data(prompt)
-        if len(interventions) > 0:
+        if len(self.interventions) > 0:
             hooks_lst = []
             maxs_dict = {l: self.get_new_max_coef(l, pred_dict_raw) for l in range(self.model_wrapper.model.config.num_hidden_layers)}
-            for intervention in interventions:
+            for intervention in self.interventions:
                 if intervention['coeff'] > 0:
                     new_max_val = maxs_dict[intervention['layer']]
                 else:
