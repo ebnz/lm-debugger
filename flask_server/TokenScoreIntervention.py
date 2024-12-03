@@ -13,8 +13,9 @@ import numpy as np
 # Hopefully find no bugs
 
 class InterventionGenerationController:
-    def __init__(self, model_wrapper):
+    def __init__(self, model_wrapper, top_k):
         self.model_wrapper = model_wrapper
+        self.TOP_K = top_k
         self.intervention_methods = []
 
     def register_method(self, method):
