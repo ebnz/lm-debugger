@@ -19,6 +19,7 @@ class InterventionGenerationController:
         self.intervention_methods = []
 
     def register_method(self, method):
+        method.controller_setup(self.model_wrapper, self.TOP_K)
         self.intervention_methods.append(method)
 
     def generate(self, prompt, generate_k):
@@ -40,12 +41,15 @@ class InterventionGenerationController:
 
 
 class TokenScoreInterventionMethod:
-    def __init__(self, model_wrapper):
-        self.model_wrapper = model_wrapper
+    def __init__(self):
+        self.model_wrapper = None
+        self.TOP_K = None
 
         self.interventions = []
 
-        raise NotImplementedError("This class is an Interface")
+    def controller_setup(self, model_wrapper, top_k):
+        self.model_wrapper = model_wrapper
+        self.TOP_K = top_k
 
     def add_intervention(self, intervention):
         self.interventions.append(intervention)
@@ -64,8 +68,8 @@ class TokenScoreInterventionMethod:
 
 
 class LMDebuggerIntervention(TokenScoreInterventionMethod):
-    def __init__(self, model_wrapper):
-        super().__init__(model_wrapper)
+    def __init__(self):
+        super().__init__()
 
     def process_pred_dict(self, pred_df):
         pred_d = {}

@@ -2,6 +2,7 @@ import argparse
 import json
 import signal
 import sys
+import traceback
 
 import _jsonnet
 import pyhocon
@@ -49,7 +50,8 @@ if __name__ == '__main__':
         try:
             request_data = request.get_json()
             return jsonify(requests_obj.send_request_get_response_for_generation(request_data))
-        except:
+        except Exception:
+            print(traceback.print_exc())
             return jsonify({})
 
 

@@ -8,7 +8,7 @@ from create_offline_files import create_elastic_search_data, create_streamlit_da
 from transformers import LlamaForCausalLM, CodeLlamaTokenizer
 
 from sparse_autoencoders.TransformerModels import CodeLlamaModel
-from flask_server.TokenScoreIntervention import InterventionGenerationController, LMDebuggerIntervention
+from TokenScoreIntervention import InterventionGenerationController, LMDebuggerIntervention
 
 warnings.filterwarnings('ignore')
 
@@ -23,8 +23,8 @@ class ModelingRequests():
             create_streamlit_data(args.streamlit_cluster_to_value_file_path, args.streamlit_value_to_cluster_file_path,
                                   self.model_wrapper.model, args.model_name, args.num_clusters)
 
-        self.intervention_controller = InterventionGenerationController(self.model_wrapper, args.top_k_for_ui)
-        self.intervention_controller.register_method(LMDebuggerIntervention(self.model_wrapper))
+        self.intervention_controller = InterventionGenerationController(self.model_wrapper, args.top_k_tokens_for_ui)
+        self.intervention_controller.register_method(LMDebuggerIntervention())
 
     def json_req_to_prompt_and_interventions_d(self, req_json_path):
         with open(req_json_path) as json_f:
