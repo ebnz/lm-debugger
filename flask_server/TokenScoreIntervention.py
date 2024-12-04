@@ -1,6 +1,10 @@
+import pickle
+
 import torch
 import torch.nn.functional as F
 import numpy as np
+
+from sparse_autoencoder import AutoEncoder
 
 # ToDo's:
 # Implement IntervenedGenerationController
@@ -60,10 +64,10 @@ class TokenScoreInterventionMethod:
     def clear_interventions(self):
         self.interventions = []
 
-    def get_token_scores(self, prompt, interventions):
+    def get_token_scores(self, prompt):
         raise NotImplementedError("This class is an Interface")
 
-    def setup_intervention_hooks(self, prompt, interventions):
+    def setup_intervention_hooks(self, prompt):
         raise NotImplementedError("This class is an Interface")
 
 
@@ -346,3 +350,22 @@ class LMDebuggerIntervention(TokenScoreInterventionMethod):
                 else:
                     new_max_val = 0
                 self.set_control_hooks_gpt2({intervention['layer']: [intervention['dim']], }, coef_value=new_max_val)
+
+
+class SAEIntervention(TokenScoreInterventionMethod):
+    def __init__(self, config_path, device):
+        super().__init__()
+
+        self.config_path = config_path
+
+        with open(self.config_path, "rb") as f:
+            self.config = pickle.load(f)
+
+        self.autoencoder = AutoEncoder.load_model_from_config(self.config_path)
+        self.autoencoder.to(device)
+
+    def get_token_scores(self, prompt):
+        pass
+
+    def setup_intervention_hooks(self, prompt):
+        pass
