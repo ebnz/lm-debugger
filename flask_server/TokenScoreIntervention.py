@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 
-from sparse_autoencoder import AutoEncoder
+from sparse_autoencoders import AutoEncoder
 
 # ToDo's:
 # Implement IntervenedGenerationController
@@ -20,11 +20,40 @@ class InterventionGenerationController:
     def __init__(self, model_wrapper, top_k):
         self.model_wrapper = model_wrapper
         self.TOP_K = top_k
+        self.interventions = []
         self.intervention_methods = []
 
     def register_method(self, method):
         method.controller_setup(self.model_wrapper, self.TOP_K)
         self.intervention_methods.append(method)
+
+    def set_interventions(self, interventions):
+        self.interventions = interventions
+
+        for method in self.intervention_methods:
+            method.clear_interventions()
+
+        for intervention in self.interventions:
+            intervention_type = intervention["type"]
+            fitting_method_found = False
+            for method in self.intervention_methods:
+                print(method.__class__.__name__)
+                if method.__class__.__name__ == intervention_type:
+                    method.add_intervention(intervention)
+                    fitting_method_found = True
+                elif method.__class__.__name__ == intervention_type and method.config["LAYER_INDEX"] == intervention["layer"]:
+                    method.add_intervention(intervention)
+                    fitting_method_found = True
+            if not fitting_method_found:
+                print(f"WARN: Intervention <{intervention}> has no fitting Intervention-Method!")
+
+
+    def clear_interventions(self):
+        self.interventions = []
+
+    def setup_intervention_hooks(self, prompt):
+        for method in self.intervention_methods:
+            method.setup_intervention_hooks(prompt)
 
     def generate(self, prompt, generate_k):
         # Setup Intervention-Hooks
@@ -364,8 +393,23 @@ class SAEIntervention(TokenScoreInterventionMethod):
         self.autoencoder = AutoEncoder.load_model_from_config(self.config_path)
         self.autoencoder.to(device)
 
-    def get_token_scores(self, prompt):
-        pass
-
     def setup_intervention_hooks(self, prompt):
-        pass
+        def get_hook(feature_index, new_value):
+            def hook(module, input, output):
+                # ToDo: Cases
+                activation_vector = output
+                activation_vector[::, feature_index] = new_value
+                return activation_vector
+            return hook
+
+        for intervention in self.interventions:
+            feature_index = intervention["dim"]
+            coeff = intervention["coeff"]
+            layer_id = self.config["LAYER_INDEX"]
+            layer_type = self.config["LAYER_TYPE"]
+
+            self.model_wrapper.setup_hook(
+                get_hook(feature_index, coeff),
+                layer_id,
+                layer_type
+            )

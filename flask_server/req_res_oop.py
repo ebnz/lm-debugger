@@ -43,9 +43,10 @@ class ModelingRequests():
         interventions = req_json_dict['interventions']
 
         # Set Interventions for LM-Debugger-Intervention
-        self.intervention_controller.intervention_methods[0].set_interventions(interventions)
+        self.intervention_controller.set_interventions(interventions)
 
         # Generate Token-Scores
+        # ToDo: Think
         response_dict = self.intervention_controller.intervention_methods[0].get_token_scores(prompt)
 
         return response_dict
@@ -57,12 +58,8 @@ class ModelingRequests():
         generate_k = req_json_dict['generate_k']
 
         # Prepare Intervention-Methods for Generation
-        # LM-Debugger-Intervention
-        self.intervention_controller.intervention_methods[0].set_interventions(interventions)
-        self.intervention_controller.intervention_methods[0].setup_intervention_hooks(prompt)
-
-        # Sparse-AutoEncoders
-        # ToDo: tbd
+        self.intervention_controller.set_interventions(interventions)
+        self.intervention_controller.setup_intervention_hooks(prompt)
 
         # Generate
         response_dict = self.intervention_controller.generate(prompt, generate_k)
