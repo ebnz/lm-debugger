@@ -8,7 +8,7 @@ from create_offline_files import create_elastic_search_data, create_streamlit_da
 from transformers import LlamaForCausalLM, CodeLlamaTokenizer
 
 from sparse_autoencoders.TransformerModels import CodeLlamaModel
-from TokenScoreIntervention import InterventionGenerationController, LMDebuggerIntervention
+from TokenScoreIntervention import InterventionGenerationController, LMDebuggerIntervention, SAEIntervention
 
 warnings.filterwarnings('ignore')
 
@@ -25,6 +25,7 @@ class ModelingRequests():
 
         self.intervention_controller = InterventionGenerationController(self.model_wrapper, args.top_k_tokens_for_ui)
         self.intervention_controller.register_method(LMDebuggerIntervention())
+        self.intervention_controller.register_method(SAEIntervention("/nfs/data/students/ebenz_bsc2024/autoenc_2/autoenc_lr2e-4_0.5_32_nr/50000.pt", "cuda:0"))
 
     def json_req_to_prompt_and_interventions_d(self, req_json_path):
         with open(req_json_path) as json_f:
@@ -73,9 +74,8 @@ class ModelingRequests():
         interventions = req_json_dict['interventions']
         generate_k = req_json_dict['generate_k']
 
-        # Prepare Intervention-Methods for Generation
+        # Set Interventions
         self.intervention_controller.set_interventions(interventions)
-        self.intervention_controller.setup_intervention_hooks(prompt)
 
         # Generate
         response_dict = self.intervention_controller.generate(prompt, generate_k)

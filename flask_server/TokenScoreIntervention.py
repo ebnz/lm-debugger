@@ -32,9 +32,8 @@ class InterventionGenerationController:
             fitting_method_found = False
             for method in self.intervention_methods:
                 if method.__class__.__name__ == intervention_type:
-                    method.add_intervention(intervention)
-                    fitting_method_found = True
-                elif method.__class__.__name__ == intervention_type and method.config["LAYER_INDEX"] == intervention["layer"]:
+                    if intervention_type == "SAEIntervention" and intervention["layer"] != method.config["LAYER_INDEX"]:
+                        continue
                     method.add_intervention(intervention)
                     fitting_method_found = True
             if not fitting_method_found:
@@ -50,8 +49,7 @@ class InterventionGenerationController:
 
     def generate(self, prompt, generate_k):
         # Setup Intervention-Hooks
-        for intervention_method in self.intervention_methods:
-            intervention_method.setup_intervention_hooks(prompt)
+        self.setup_intervention_hooks(prompt)
 
         response_dict = {}
         tokens = self.model_wrapper.tokenizer(prompt, return_tensors="pt")
@@ -383,7 +381,7 @@ class SAEIntervention(TokenScoreInterventionMethod):
         with open(self.config_path, "rb") as f:
             self.config = pickle.load(f)
 
-        self.autoencoder = AutoEncoder.load_model_from_config(self.config_path)
+        self.autoencoder = AutoEncoder.load_model_from_config(self.config)
         self.autoencoder.to(device)
 
     def setup_intervention_hooks(self, prompt):
