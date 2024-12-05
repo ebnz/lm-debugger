@@ -389,7 +389,7 @@ class SAEIntervention(TokenScoreInterventionMethod):
     def setup_intervention_hooks(self, prompt):
         def get_hook(feature_index, new_value, layer_type):
             # mlp_activations
-            def hook_mlp_activations(module, input, output):
+            def hook_mlp_acts(module, input, output):
                 activation_vector = output
                 activation_vector[::, ::, feature_index] = new_value
                 return activation_vector
@@ -404,14 +404,19 @@ class SAEIntervention(TokenScoreInterventionMethod):
                 activation_vector[::, ::, feature_index] = new_value
                 return activation_vector
 
-            return hook_mlp_activations
+            if layer_type == "mlp_activations":
+                return hook_mlp_acts
+            elif layer_type == "attn_sublayer":
+                return hook_attn_sublayer
+            elif layer_type == "mlp_sublayer":
+                return hook_mlp_sublayer
+            else:
+                raise AttributeError(f"layer_type <{layer_type}> unknown")
 
         for intervention in self.interventions:
             feature_index = intervention["dim"]
             coeff = intervention["coeff"]
             layer_id = self.config["LAYER_INDEX"]
-            # ToDo: Make sure, all layer_types are not in [attn_sublayer, mlp_sublayer, mlp_activations]
-            # Instead, they should be written out in layers
             layer_type = self.config["LAYER_TYPE"]
 
             self.model_wrapper.setup_hook(
