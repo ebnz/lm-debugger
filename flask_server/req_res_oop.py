@@ -45,11 +45,27 @@ class ModelingRequests():
         # Set Interventions for LM-Debugger-Intervention
         self.intervention_controller.set_interventions(interventions)
 
-        # Generate Token-Scores
-        # ToDo: Think
-        response_dict = self.intervention_controller.intervention_methods[0].get_token_scores(prompt)
+        response_dict = {'prompt': prompt, 'layers': []}
+        intervention_dict = {'prompt': prompt, 'layers': []}
+        # Assemble Response-Dicts
+        for method in self.intervention_controller.intervention_methods:
+            # Generate Token-Scores
+            rv = method.get_token_scores(prompt)
+            response_dict['layers'] += rv['response']['layers']
+            if 'intervention' in rv.keys():
+                intervention_dict['layers'] += rv['intervention']['layers']
 
-        return response_dict
+        if len(intervention_dict['layers']) != 0:
+            response = {
+                'response': response_dict,
+                'intervention': intervention_dict
+            }
+        else:
+            response = {
+                'response': response_dict
+            }
+
+        return response
 
     def request2response_for_generation(self, req_json_dict, save_json=False, res_json_path=None,
                                         res_json_intervention_path=None):

@@ -37,7 +37,6 @@ class InterventionGenerationController:
             intervention_type = intervention["type"]
             fitting_method_found = False
             for method in self.intervention_methods:
-                print(method.__class__.__name__)
                 if method.__class__.__name__ == intervention_type:
                     method.add_intervention(intervention)
                     fitting_method_found = True
