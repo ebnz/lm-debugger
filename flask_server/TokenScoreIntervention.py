@@ -7,12 +7,6 @@ import numpy as np
 from sparse_autoencoders import AutoEncoder
 
 # ToDo's:
-# Implement IntervenedGenerationController
-# save interventions in InterventionMethods, add setter-method and apply interventions on generation
-# self.TOP_K
-# add_hooks: use model_wrapper functionality
-# remove_hooks: use model_wrapper functionality
-# Implement usage of above to LM-Debugger
 # Move Functionalities to own files
 # Hopefully find no bugs
 
@@ -393,22 +387,35 @@ class SAEIntervention(TokenScoreInterventionMethod):
         self.autoencoder.to(device)
 
     def setup_intervention_hooks(self, prompt):
-        def get_hook(feature_index, new_value):
-            def hook(module, input, output):
-                # ToDo: Cases
+        def get_hook(feature_index, new_value, layer_type):
+            # mlp_activations
+            def hook_mlp_activations(module, input, output):
                 activation_vector = output
-                activation_vector[::, feature_index] = new_value
+                activation_vector[::, ::, feature_index] = new_value
                 return activation_vector
-            return hook
+
+            def hook_mlp_sublayer(module, input, output):
+                activation_vector = output
+                activation_vector[::, ::, feature_index] = new_value
+                return activation_vector
+
+            def hook_attn_sublayer(module, input, output):
+                activation_vector = output
+                activation_vector[::, ::, feature_index] = new_value
+                return activation_vector
+
+            return hook_mlp_activations
 
         for intervention in self.interventions:
             feature_index = intervention["dim"]
             coeff = intervention["coeff"]
             layer_id = self.config["LAYER_INDEX"]
+            # ToDo: Make sure, all layer_types are not in [attn_sublayer, mlp_sublayer, mlp_activations]
+            # Instead, they should be written out in layers
             layer_type = self.config["LAYER_TYPE"]
 
             self.model_wrapper.setup_hook(
-                get_hook(feature_index, coeff),
+                get_hook(feature_index, coeff, layer_type),
                 layer_id,
                 layer_type
             )
