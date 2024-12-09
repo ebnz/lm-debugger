@@ -377,14 +377,80 @@ class SAEIntervention(TokenScoreInterventionMethod):
         super().__init__()
 
         self.config_path = config_path
+        self.device = device
 
         with open(self.config_path, "rb") as f:
             self.config = pickle.load(f)
 
         self.autoencoder = AutoEncoder.load_model_from_config(self.config)
-        self.autoencoder.to(device)
+        self.autoencoder.to(self.device)
+
+    def get_token_scores(self, prompt):
+        # ToDo:
+        # Test
+        # Add Interventions
+        global activation_vector
+        def get_hook(layer_type):
+            # mlp_activations
+            def hook_mlp_acts(module, input, output):
+                global activation_vector
+                activation_vector = output
+
+            def hook_mlp_sublayer(module, input, output):
+                global activation_vector
+                activation_vector = output
+
+            def hook_attn_sublayer(module, input, output):
+                global activation_vector
+                activation_vector = output
+
+            if layer_type == "mlp_activations":
+                return hook_mlp_acts
+            elif layer_type == "attn_sublayer":
+                return hook_attn_sublayer
+            elif layer_type == "mlp_sublayer":
+                return hook_mlp_sublayer
+            else:
+                raise AttributeError(f"layer_type <{layer_type}> unknown")
+
+        layer_id = self.config["LAYER_INDEX"]
+        layer_type = self.config["LAYER_TYPE"]
+
+        self.model_wrapper.setup_hook(
+            get_hook(layer_type),
+            layer_id,
+            layer_type
+        )
+
+        tokens = self.model_wrapper.tokenizer(prompt, return_tensors="pt")
+        tokens.to(self.model_wrapper.device)
+        self.model_wrapper.model(**tokens)
+
+        x_hat, f = self.autoencoder.forward(activation_vector[0, -1].to(self.device))
+
+        top_k_object = f.topk(self.TOP_K)
+        top_features = top_k_object.indices
+        top_scores = top_k_object.values
+
+        response_dict = {"response": {"layers": [
+            {
+                "layer": layer_id,
+                "significant_values": [
+                    {
+                        "dim": feature_index,
+                        "layer": layer_id,
+                        "score": score
+                    } for feature_index, score in zip(top_features, top_scores)
+                ]
+            }
+        ]}}
+
+        return response_dict
+
+
 
     def setup_intervention_hooks(self, prompt):
+        # ToDo: Add AutoEncoder
         def get_hook(feature_index, new_value, layer_type):
             # mlp_activations
             def hook_mlp_acts(module, input, output):
