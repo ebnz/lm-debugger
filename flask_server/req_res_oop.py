@@ -51,10 +51,14 @@ class ModelingRequests():
         # Assemble Response-Dicts
         for method in self.intervention_controller.intervention_methods:
             # Generate Token-Scores
-            rv = method.get_token_scores(prompt)
-            response_dict['layers'] += rv['response']['layers']
-            if 'intervention' in rv.keys():
-                intervention_dict['layers'] += rv['intervention']['layers']
+            try:
+                rv = method.get_token_scores(prompt)
+                response_dict['layers'] += rv['response']['layers']
+                if 'intervention' in rv.keys():
+                    intervention_dict['layers'] += rv['intervention']['layers']
+            except NotImplementedError:
+                print(f"WARN: Intervention-Method <{method}> has no implemented <get_token_scores>")
+                print("It won't be shown as a layer in the Trace-Feature of LM-Debugger")
 
         if len(intervention_dict['layers']) != 0:
             response = {
