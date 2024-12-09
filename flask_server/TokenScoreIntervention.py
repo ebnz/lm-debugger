@@ -386,9 +386,6 @@ class SAEIntervention(TokenScoreInterventionMethod):
         self.autoencoder.to(self.device)
 
     def get_token_scores(self, prompt):
-        # ToDo:
-        # Test
-        # Add Interventions
         global activation_vector
         def get_hook(layer_type):
             # mlp_activations
@@ -413,6 +410,8 @@ class SAEIntervention(TokenScoreInterventionMethod):
             else:
                 raise AttributeError(f"layer_type <{layer_type}> unknown")
 
+        self.setup_intervention_hooks(prompt)
+
         layer_id = self.config["LAYER_INDEX"]
         layer_type = self.config["LAYER_TYPE"]
 
@@ -426,7 +425,7 @@ class SAEIntervention(TokenScoreInterventionMethod):
         tokens.to(self.model_wrapper.device)
         self.model_wrapper.model(**tokens)
 
-        x_hat, f = self.autoencoder.forward(activation_vector[0, -1].to(self.device))
+        f = self.autoencoder.forward_encoder(activation_vector[0, -1].to(self.device))
 
         top_k_object = f.topk(self.TOP_K)
         top_features = top_k_object.indices.tolist()
@@ -450,23 +449,28 @@ class SAEIntervention(TokenScoreInterventionMethod):
 
 
     def setup_intervention_hooks(self, prompt):
-        # ToDo: Add AutoEncoder
         def get_hook(feature_index, new_value, layer_type):
             # mlp_activations
             def hook_mlp_acts(module, input, output):
                 activation_vector = output
-                activation_vector[::, ::, feature_index] = new_value
-                return activation_vector
+                f = self.autoencoder.forward_encoder(activation_vector.to(self.device))
+                f[::, ::, feature_index] = new_value
+                x_hat = self.autoencoder.forward_decoder(f).to(self.model_wrapper.device, dtype=torch.float16)
+                return x_hat
 
             def hook_mlp_sublayer(module, input, output):
                 activation_vector = output
-                activation_vector[::, ::, feature_index] = new_value
-                return activation_vector
+                f = self.autoencoder.forward_encoder(activation_vector.to(self.device))
+                f[::, ::, feature_index] = new_value
+                x_hat = self.autoencoder.forward_decoder(f).to(self.model_wrapper.device, dtype=torch.float16)
+                return x_hat
 
             def hook_attn_sublayer(module, input, output):
                 activation_vector = output
-                activation_vector[::, ::, feature_index] = new_value
-                return activation_vector
+                f = self.autoencoder.forward_encoder(activation_vector.to(self.device))
+                f[::, ::, feature_index] = new_value
+                x_hat = self.autoencoder.forward_decoder(f).to(self.model_wrapper.device, dtype=torch.float16)
+                return x_hat
 
             if layer_type == "mlp_activations":
                 return hook_mlp_acts
