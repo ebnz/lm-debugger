@@ -429,8 +429,8 @@ class SAEIntervention(TokenScoreInterventionMethod):
         x_hat, f = self.autoencoder.forward(activation_vector[0, -1].to(self.device))
 
         top_k_object = f.topk(self.TOP_K)
-        top_features = top_k_object.indices
-        top_scores = top_k_object.values
+        top_features = top_k_object.indices.tolist()
+        top_scores = top_k_object.values.tolist()
 
         response_dict = {"response": {"layers": [
             {
