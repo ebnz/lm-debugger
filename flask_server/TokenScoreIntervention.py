@@ -22,10 +22,9 @@ class InterventionGenerationController:
         self.intervention_methods.append(method)
 
     def set_interventions(self, interventions):
-        self.interventions = interventions
+        self.clear_interventions()
 
-        for method in self.intervention_methods:
-            method.clear_interventions()
+        self.interventions = interventions
 
         for intervention in self.interventions:
             intervention_type = intervention["type"]
@@ -42,6 +41,9 @@ class InterventionGenerationController:
 
     def clear_interventions(self):
         self.interventions = []
+
+        for method in self.intervention_methods:
+            method.clear_interventions()
 
     def setup_intervention_hooks(self, prompt):
         for method in self.intervention_methods:
@@ -85,10 +87,12 @@ class TokenScoreInterventionMethod:
         self.interventions = []
 
     def get_token_scores(self, prompt):
-        raise NotImplementedError("This class is an Interface")
+        print(f"WARN: Intervention-Method <{self}> has no implemented <get_token_scores>")
+        print("It won't be shown as a layer in the Trace-Feature of LM-Debugger")
 
     def setup_intervention_hooks(self, prompt):
-        raise NotImplementedError("This class is an Interface")
+        print(f"WARN: Intervention-Method <{self}> has no implemented <setup_intervention_hooks>")
+        print("Setting up no Intervention-Hooks will result in this Intervention-Method having no effect to the LLM")
 
 
 class LMDebuggerIntervention(TokenScoreInterventionMethod):
@@ -102,6 +106,7 @@ class LMDebuggerIntervention(TokenScoreInterventionMethod):
         for layer_n in range(self.model_wrapper.model.config.num_hidden_layers):
             layer_d = {}
             layer_d['layer'] = layer_n
+            layer_d['type'] = self.__class__.__name__
             layer_d['predictions_before'] = [
                 {'token': pred_df['residual_preds_tokens'][layer_n][k],
                  'score': float(pred_df['residual_preds_probs'][layer_n][k])

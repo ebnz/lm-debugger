@@ -51,26 +51,15 @@ class ModelingRequests():
         # Assemble Response-Dicts
         for method in self.intervention_controller.intervention_methods:
             # Generate Token-Scores
-            try:
-                rv = method.get_token_scores(prompt)
-                response_dict['layers'] += rv['response']['layers']
-                if 'intervention' in rv.keys():
-                    intervention_dict['layers'] += rv['intervention']['layers']
-            except NotImplementedError:
-                print(f"WARN: Intervention-Method <{method}> has no implemented <get_token_scores>")
-                print("It won't be shown as a layer in the Trace-Feature of LM-Debugger")
+            rv = method.get_token_scores(prompt)
+            response_dict['layers'] += rv['response']['layers']
+            if 'intervention' in rv.keys():
+                intervention_dict['layers'] += rv['intervention']['layers']
 
-        if len(intervention_dict['layers']) != 0:
-            response = {
-                'response': response_dict,
-                'intervention': intervention_dict
-            }
-        else:
-            response = {
-                'response': response_dict
-            }
-
-        return response
+        return {
+            'response': response_dict,
+            'intervention': intervention_dict
+        } if len(intervention_dict['layers']) != 0 else {'response': response_dict}
 
     def request2response_for_generation(self, req_json_dict, save_json=False, res_json_path=None,
                                         res_json_intervention_path=None):
