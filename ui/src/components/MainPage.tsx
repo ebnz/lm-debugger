@@ -16,13 +16,10 @@ function MainPage(): JSX.Element {
   const [isLoadingPrediction, setLoadingPrediction] = useState<boolean>(false);
   const [predictionError, setPredictionError] = useState<string | undefined>(undefined);
 
-  console.log(interventions);
-
   // ----------------------------------- //
   // Intervention State Update functions //
   // ----------------------------------- //
   function addIntervention(valueId: ValueId) {
-    console.log(valueId);
     if(!hasIntervention(valueId)){
       setInterventions([{...valueId, coeff: 0.0}, ...interventions])
     }
@@ -74,7 +71,6 @@ function MainPage(): JSX.Element {
     // One hell of a side effect...
     const valueIds = getValueNamesFromCookies();
     const {prompt, layers} = prediction;
-    console.log(layers);
   
   
     const new_layers =  [...layers]

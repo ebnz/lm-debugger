@@ -23,9 +23,6 @@ export async function generate(params: PredictionParams): Promise<GenerationOutp
 }
 
 export async function predict(params: PredictionParams): Promise<NetworkPrediction> {
-
-    console.log(params.interventions);
-
   const response = await fetch(
     `http://${runConfig.server_ip}:${runConfig.server_port}/get_data`,
     {

@@ -30,7 +30,8 @@ function LayersPanel(props: Props): JSX.Element {
     contentRender = <Empty description="Run a query to see the predicted layers"/>
   } else {
     contentRender = (
-      layers.map((item) => (
+      [...layers].sort((a, b) => a.layer >= b.layer ? 1 : -1)
+      .map((item) => (
          <MemoLayer 
             key={`layer_${item.layer}`}
             layer={item} 

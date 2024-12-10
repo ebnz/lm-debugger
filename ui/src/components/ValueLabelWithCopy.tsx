@@ -44,7 +44,7 @@ function ValueLabelWithCopy(props: Props): JSX.Element {
 
             </MainButton>
             <Tooltip title="Send to interventions">
-                <CopyButton onClick={() => {console.log(scoredValue); return onCopy(scoredValue)}} >
+                <CopyButton onClick={() => {return onCopy(scoredValue)}} >
                     <CopyIcon />
                 </CopyButton>
             </Tooltip>
