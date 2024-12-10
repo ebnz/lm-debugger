@@ -160,7 +160,7 @@ class LMDebuggerIntervention(TokenScoreInterventionMethod):
     def set_control_hooks_gpt2(self, values_per_layer, coef_value=0):
         def change_values(values, coef_val):
             def hook(module, input, output):
-                output[:, :, values] = coef_val
+                output[:, :, values] = torch.Tensor([coef_val]).to(self.model_wrapper.model.dtype)
 
             return hook
 

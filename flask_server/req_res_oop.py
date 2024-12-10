@@ -56,6 +56,8 @@ class ModelingRequests():
             if 'intervention' in rv.keys():
                 intervention_dict['layers'] += rv['intervention']['layers']
 
+        self.model_wrapper.clear_hooks()
+
         return {
             'response': response_dict,
             'intervention': intervention_dict
