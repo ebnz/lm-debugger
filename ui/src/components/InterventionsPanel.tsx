@@ -4,12 +4,13 @@ import styled from "styled-components";
 import {Card, Button, Input} from "antd";
 import {partial} from "lodash";
 import InterventionItem from "./InterventionItem";
+import {toType, toAbbr} from "../types/constants";
 
 interface Props {
   interventions: Array<Intervention>;
   addIntervention: (valueId: ValueId) => void;
   updateIntervention: (valueId: ValueId, coeff: number) => void;
-  deleteIntervention: (layer: number, dim: number) => void;
+  deleteIntervention: (layer: number, dim: number, type: string) => void;
   selectIntervention: (valueId: ValueId) => void;
 }
 
@@ -55,9 +56,9 @@ function InterventionsPanel(props: Props): JSX.Element {
       {
         interventions.map((inter) => (
           <InterventionItem 
-            key={`L${inter.layer}D${inter.dim}`}
+            key={`${toAbbr.get(inter.type) ?? "_"}${inter.layer}D${inter.dim}`}
             intervention={inter}
-            deleteIntervention={partial(deleteIntervention, inter.layer, inter.dim)}
+            deleteIntervention={() => deleteIntervention(inter.layer, inter.dim, inter.type)} // ToDo: Check if working {partial(deleteIntervention, inter.layer, inter.dim, inter.type)}
             updateIntervention={partial(updateIntervention, inter)}
             select={partial(selectIntervention, inter)}
           />
@@ -80,14 +81,15 @@ interface ParseFailed {
 type ParseResult = ParseSuccess | ParseFailed;
 
 const parseInput = (str: string): ParseResult => {
-  const pattern = /^L(\d+)D(\d+)$/i
+  const pattern = /^([LS])(\d+)D(\d+)$/i
   const arr = pattern.exec(str);
   if (arr !== null) {
-    const layer = parseInt(arr[1]);
-    const dim = parseInt(arr[2]);
+    const type = toType.get(arr[1]);
+    const layer = parseInt(arr[2]);
+    const dim = parseInt(arr[3]);
     return {
       type: "success",
-      valueId: {layer, dim}
+      valueId: {type: type ?? "", layer: layer, dim: dim}
     }
   } else {
     return {

@@ -4,6 +4,7 @@ import {Switch, Button, Typography} from "antd"
 import styled from "styled-components";
 import CloseCircleOutlined from "@ant-design/icons/CloseCircleOutlined"
 import { ScanOutlined } from '@ant-design/icons';
+import {toAbbr} from "../types/constants";
 
 const {Text} = Typography;
 
@@ -39,7 +40,7 @@ function InterventionItem(props: Props):JSX.Element {
     }
   }
 
-  const actualDesc = desc !== undefined && desc !== "" ? desc : `L${layer}D${dim}` 
+  const actualDesc = desc !== undefined && desc !== "" ? desc : `${toAbbr.get(props.intervention.type) ?? "_"}${layer}D${dim}`
   const useEllipsis = actualDesc.length > 10
 
   return (

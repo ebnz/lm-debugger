@@ -445,7 +445,8 @@ class SAEIntervention(TokenScoreInterventionMethod):
                         "layer": layer_id,
                         "score": score
                     } for feature_index, score in zip(top_features, top_scores)
-                ]
+                ],
+                "type": self.__class__.__name__
             }
         ]}}
 

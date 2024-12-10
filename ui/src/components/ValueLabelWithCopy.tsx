@@ -4,6 +4,7 @@ import { Button, Tag, Tooltip } from 'antd';
 import { DownSquareOutlined, ScanOutlined } from '@ant-design/icons';
 import { ScoredValue, ValueId } from "../types/dataModel";
 import { Typography } from 'antd';
+import {toAbbr} from "../types/constants";
 
 const {Text} = Typography
 
@@ -22,12 +23,13 @@ function ValueLabelWithCopy(props: Props): JSX.Element {
     } = props;
 
     const {
+        type,
         layer,
         dim,
         desc,
         score
     } = scoredValue;
-    const actualDesc = desc !== undefined && desc !== "" ? desc : `L${layer}D${dim}` 
+    const actualDesc = desc !== undefined && desc !== "" ? desc : `${toAbbr.get(props.scoredValue.type) ?? "_"}${layer}D${dim}`
     const useEllipsis = actualDesc.length > 10
 
     return (
@@ -42,7 +44,7 @@ function ValueLabelWithCopy(props: Props): JSX.Element {
 
             </MainButton>
             <Tooltip title="Send to interventions">
-                <CopyButton onClick={() => onCopy(scoredValue)} >
+                <CopyButton onClick={() => {console.log(scoredValue); return onCopy(scoredValue)}} >
                     <CopyIcon />
                 </CopyButton>
             </Tooltip>

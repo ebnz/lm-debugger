@@ -8,15 +8,16 @@ import { ScoredValue, Prediction, ValueId } from "../types/dataModel";
 
 interface Props {
     valueLabels: Array<ScoredValue>;
+    type: string;
     onAnaylze: (valueId: ValueId) => void;
     onCopy: (valueId: ValueId) => void;
 }
 
 export function LabelContainer(props: Props): JSX.Element {
-    const labels = props.valueLabels.map(label => 
+    const labels = props.valueLabels.map((item) => {item["type"] = props.type; return item}).map(label =>
         <ValueLabelWithCopy 
             scoredValue={label}
-            key={`L${label.layer}D${label.dim}`} 
+            key={props.type === "LMDebuggerIntervention" ? `L${label.layer}D${label.dim}` : `AE${label.layer}D${label.dim}`}
             onAnalyze={props.onAnaylze}
             onCopy={props.onCopy} 
         />

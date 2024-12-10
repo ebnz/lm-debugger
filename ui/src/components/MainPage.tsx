@@ -16,23 +16,25 @@ function MainPage(): JSX.Element {
   const [isLoadingPrediction, setLoadingPrediction] = useState<boolean>(false);
   const [predictionError, setPredictionError] = useState<string | undefined>(undefined);
 
-
+  console.log(interventions);
 
   // ----------------------------------- //
   // Intervention State Update functions //
   // ----------------------------------- //
   function addIntervention(valueId: ValueId) {
+    console.log(valueId);
     if(!hasIntervention(valueId)){
       setInterventions([{...valueId, coeff: 0.0}, ...interventions])
     }
   }
 
   function updateIntervention(valueId: ValueId, coeff: number){
-    const {layer, dim, desc} = valueId;
+    const {type, layer, dim, desc} = valueId;
     setInterventions(interventions.map(
       (inter) => {
-        if (inter.layer === layer && inter.dim === dim) {
+        if (inter.layer === layer && inter.dim === dim && inter.type == type) {
           return {
+            type,
             layer,
             dim,
             desc,
@@ -44,12 +46,12 @@ function MainPage(): JSX.Element {
     ))
   }
 
-  function deleteIntervention (l: number, d: number){
-    setInterventions(interventions.filter(({layer, dim}) => (layer !== l) || (dim !== d)))
+  function deleteIntervention (l: number, d: number, t: string){
+    setInterventions(interventions.filter(({type, layer, dim}) => (type !== t) || (layer !== l) || (dim !== d)))
   }
 
   function hasIntervention (valueId: ValueId) {
-    return interventions.filter(({layer, dim}) => (layer === valueId.layer) && (dim === valueId.dim)).length > 0
+    return interventions.filter(({layer, dim, type}) => (layer === valueId.layer) && (dim === valueId.dim) && (type === valueId.type)).length > 0
   }
 
   function selectIntervention(valueId: ValueId): void {
@@ -71,14 +73,15 @@ function MainPage(): JSX.Element {
   function addNamesToValues(prediction: NetworkPrediction) : NetworkPrediction {
     // One hell of a side effect...
     const valueIds = getValueNamesFromCookies();
-    const {prompt, layers} = prediction;  
+    const {prompt, layers} = prediction;
+    console.log(layers);
   
   
     const new_layers =  [...layers]
     valueIds.forEach(valueId => {
       const {layer, dim} = valueId;
       const values = new_layers[layer].significant_values;
-      values.filter(v=> v.dim === dim && v.layer === layer).forEach(value => value.desc = valueId.desc)
+      values.filter(v=> v.dim === dim && v.layer === layer).forEach(value => value.desc = valueId.desc) // ToDo: add type???
     })
     return {
       prompt,
@@ -123,8 +126,8 @@ function MainPage(): JSX.Element {
     setInterventions(namedInterventions)
     setPrediction(newPrediction)
     if (selectedValueId?.layer == valueId.layer && selectedValueId?.dim == valueId.dim) {        
-      const {layer, dim} = valueId
-      const namedValueId = {layer, dim, desc: newName}
+      const {type, layer, dim} = valueId
+      const namedValueId = {type, layer, dim, desc: newName}
       setSelectedValueId(namedValueId);
     }
     
@@ -157,7 +160,7 @@ function MainPage(): JSX.Element {
         <InterventionsPanel 
           interventions={interventions}
           addIntervention={(valueId: ValueId) => addIntervention(valueId)}  
-          deleteIntervention={(l, d) => deleteIntervention(l, d)}
+          deleteIntervention={(l, d, t) => deleteIntervention(l, d, t)}
           updateIntervention={(v, c) => updateIntervention(v, c)}
           selectIntervention={(v) => selectIntervention(v)}
         />

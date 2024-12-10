@@ -22,12 +22,14 @@ function Layer(props: Props): JSX.Element {
   return (
       <LayerLayout>
         <LayerTag color="#a55397">Layer {props.layer.layer}</LayerTag>
+        <LayerTag color="#a55397">Type {props.layer.type}</LayerTag>
         {typeof predictions_before !== "undefined" && <MyDivider orientation="left" orientationMargin="15px">Before:</MyDivider>}
         {typeof predictions_before !== "undefined" && <PredictionContainer predictions={predictions_before}/>}
 
         {typeof props.layer.significant_values !== "undefined" && <MyDivider orientation="left" orientationMargin="15px">Dominant sub-updates:</MyDivider>}
         {typeof props.layer.significant_values !== "undefined" && <LabelContainer
           valueLabels={props.layer.significant_values}
+          type={props.layer.type}
           onAnaylze={props.onAnalyze}
           onCopy={props.onCopy}
         />}

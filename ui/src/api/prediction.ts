@@ -24,6 +24,8 @@ export async function generate(params: PredictionParams): Promise<GenerationOutp
 
 export async function predict(params: PredictionParams): Promise<NetworkPrediction> {
 
+    console.log(params.interventions);
+
   const response = await fetch(
     `http://${runConfig.server_ip}:${runConfig.server_port}/get_data`,
     {
@@ -59,7 +61,7 @@ export function getValueNamesFromCookies(): Array<ValueId> {
     const [before_D, after_D] = _valueId.split("D")
     const layer = parseInt(before_D.replace("new_name_L", ""))
     const dim = parseInt(after_D)
-    const valueId: ValueId = {layer, dim, desc}
+    const valueId: ValueId = {type: "LMDebuggerIntervention", layer, dim, desc}; // ToDo: Check function of this method
     return valueId;
   })
   return newValueIds;

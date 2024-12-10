@@ -14,16 +14,16 @@ import LayersPanel from "./LayersPanel";
 
 function Play(): JSX.Element {
     const labels = [
-        {score: 0.1, layer: 10, dim:2},
-        {score: 0.5, layer: 12, dim:2},
-        {score: 0.85, layer: 4, dim:2},
-        {score: 0.1, layer: 44, dim:2},
-        {score: 0.5, layer: 23, dim:2},
-        {score: 0.85, layer: 200, dim:2},
-        {score: 0.1, layer: 3, dim:2},
-        {score: 0.35, layer: 2, dim:20},
-        {score: 0.71, layer: 202, dim:2},
-        {score: 0.25, layer: 2, dim:10},
+        {type: "LMDebuggerIntervention", score: 0.1, layer: 10, dim:2},
+        {type: "LMDebuggerIntervention", score: 0.5, layer: 12, dim:2},
+        {type: "LMDebuggerIntervention", score: 0.85, layer: 4, dim:2},
+        {type: "LMDebuggerIntervention", score: 0.1, layer: 44, dim:2},
+        {type: "LMDebuggerIntervention", score: 0.5, layer: 23, dim:2},
+        {type: "LMDebuggerIntervention", score: 0.85, layer: 200, dim:2},
+        {type: "LMDebuggerIntervention", score: 0.1, layer: 3, dim:2},
+        {type: "LMDebuggerIntervention", score: 0.35, layer: 2, dim:20},
+        {type: "LMDebuggerIntervention", score: 0.71, layer: 202, dim:2},
+        {type: "LMDebuggerIntervention", score: 0.25, layer: 2, dim:10},
     ]
     const input = {
         predictions_before: [
@@ -47,6 +47,7 @@ function Play(): JSX.Element {
             {"token": "calzone", "score": 0.9},
         ],
         layer: 10,
+        type: "LMDebuggerIntervention",
         significant_values: labels
     }
     const n_layers = 5; 
@@ -54,10 +55,11 @@ function Play(): JSX.Element {
     for(let idx = 0; idx < n_layers; idx++) {
         layer_inputs.push(Object.assign({}, input))
         layer_inputs[idx]['layer'] = n_layers - idx;
+        layer_inputs[idx]['type'] = input['type'];
     }
     return (
         <LayersPanel 
-            layers={layer_inputs} 
+            layers={layer_inputs}
             addIntervention={(v) => console.log(`L${v.layer}D${v.dim}`)}
             setSelectedValueId={(v) => {console.log(v)}}
             isLoading={false}
