@@ -36,7 +36,7 @@ class InterventionGenerationController:
                     method.add_intervention(intervention)
                     fitting_method_found = True
             if not fitting_method_found:
-                print(f"WARN: Intervention <{intervention}> has no fitting Intervention-Method!")
+                raise AttributeError(f"Intervention <{intervention}> has no fitting Intervention-Method!")
 
 
     def clear_interventions(self):
@@ -87,12 +87,10 @@ class TokenScoreInterventionMethod:
         self.interventions = []
 
     def get_token_scores(self, prompt):
-        print(f"WARN: Intervention-Method <{self}> has no implemented <get_token_scores>")
-        print("It won't be shown as a layer in the Trace-Feature of LM-Debugger")
+        raise NotImplementedError(f"Intervention-Method <{self}> has no implemented <get_token_scores>")
 
     def setup_intervention_hooks(self, prompt):
-        print(f"WARN: Intervention-Method <{self}> has no implemented <setup_intervention_hooks>")
-        print("Setting up no Intervention-Hooks will result in this Intervention-Method having no effect to the LLM")
+        raise NotImplementedError(f"Intervention-Method <{self}> has no implemented <setup_intervention_hooks>")
 
 
 class LMDebuggerIntervention(TokenScoreInterventionMethod):

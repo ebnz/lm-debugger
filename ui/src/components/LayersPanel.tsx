@@ -33,7 +33,7 @@ function LayersPanel(props: Props): JSX.Element {
       [...layers].sort((a, b) => a.layer >= b.layer ? 1 : -1)
       .map((item) => (
          <MemoLayer 
-            key={`layer_${item.layer}`}
+            key={`layer_${item.type}_${item.layer}`}
             layer={item} 
             onAnalyze={valueId => setSelectedValueId(valueId)}
             onCopy={addIntervention} 
