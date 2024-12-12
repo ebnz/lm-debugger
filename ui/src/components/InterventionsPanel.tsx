@@ -58,7 +58,7 @@ function InterventionsPanel(props: Props): JSX.Element {
           <InterventionItem 
             key={`${toAbbr.get(inter.type) ?? "_"}${inter.layer}D${inter.dim}`}
             intervention={inter}
-            deleteIntervention={() => deleteIntervention(inter.layer, inter.dim, inter.type)} // ToDo: Check if working {partial(deleteIntervention, inter.layer, inter.dim, inter.type)}
+            deleteIntervention={() => deleteIntervention(inter.layer, inter.dim, inter.type)}
             updateIntervention={partial(updateIntervention, inter)}
             select={partial(selectIntervention, inter)}
           />

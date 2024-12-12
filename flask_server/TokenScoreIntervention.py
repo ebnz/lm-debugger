@@ -6,6 +6,9 @@ import numpy as np
 
 from sparse_autoencoders import AutoEncoder
 
+from create_offline_files import create_elastic_search_data, create_streamlit_data
+
+
 # ToDo's:
 # Move Functionalities to own files
 # Hopefully find no bugs
@@ -18,7 +21,6 @@ class InterventionGenerationController:
         self.intervention_methods = []
 
     def register_method(self, method):
-        method.controller_setup(self.model_wrapper, self.TOP_K)
         self.intervention_methods.append(method)
 
     def set_interventions(self, interventions):
@@ -65,17 +67,25 @@ class InterventionGenerationController:
 
         return response_dict
 
+    def get_projections(self, type, layer, dim):
+        for method in self.intervention_methods:
+            if type != method.__class__.__name__:
+                continue
+            if layer not in method.supported_layers:
+                continue
+            rv = method.get_projections(layer=layer, dim=dim)
+            return rv
+
 
 class TokenScoreInterventionMethod:
-    def __init__(self):
-        self.model_wrapper = None
-        self.TOP_K = None
+    def __init__(self, model_wrapper, args, supported_layers):
+        self.args = args
+        self.model_wrapper = model_wrapper
+        self.TOP_K = self.args.top_k_tokens_for_ui
+
+        self.supported_layers = supported_layers
 
         self.interventions = []
-
-    def controller_setup(self, model_wrapper, top_k):
-        self.model_wrapper = model_wrapper
-        self.TOP_K = top_k
 
     def add_intervention(self, intervention):
         self.interventions.append(intervention)
@@ -92,10 +102,31 @@ class TokenScoreInterventionMethod:
     def setup_intervention_hooks(self, prompt):
         raise NotImplementedError(f"Intervention-Method <{self}> has no implemented <setup_intervention_hooks>")
 
+    def get_projections(self, dim, *args, **kwargs):
+        raise NotImplementedError(f"Intervention-Method <{self}> has no implemented <get_projections>")
+
 
 class LMDebuggerIntervention(TokenScoreInterventionMethod):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model_wrapper, args):
+        supported_layers = [i for i in range(model_wrapper.model.config_class().num_hidden_layers)]
+        super().__init__(model_wrapper, args, supported_layers)
+
+        self.dict_es = create_elastic_search_data(
+            self.args.elastic_projections_path,
+            self.model_wrapper.model,
+            self.args.model_name,
+            self.model_wrapper.tokenizer,
+            self.args.top_k_for_elastic
+        )
+
+        if self.args.create_cluster_files:
+            create_streamlit_data(
+                self.args.streamlit_cluster_to_value_file_path,
+                self.args.streamlit_value_to_cluster_file_path,
+                self.model_wrapper.model,
+                self.args.model_name,
+                self.args.num_clusters
+            )
 
     def process_pred_dict(self, pred_df):
         pred_d = {}
@@ -214,7 +245,7 @@ class LMDebuggerIntervention(TokenScoreInterventionMethod):
             get_activation("input_embedding"),
             0,
             "input_layernorm",
-            permanent=True
+            permanent=False
         )
 
         for i in range(self.model_wrapper.model.config.num_hidden_layers):
@@ -223,39 +254,39 @@ class LMDebuggerIntervention(TokenScoreInterventionMethod):
                     get_activation("layer_residual_" + str(i - 1)),
                     i,
                     "input_layernorm",
-                    permanent=True
+                    permanent=False
                 )
             self.model_wrapper.setup_hook(
                 get_activation("intermediate_residual_" + str(i)),
                 i,
                 "post_attention_layernorm",
-                permanent=True
+                permanent=False
             )
 
             self.model_wrapper.setup_hook(
                 get_activation("attn_" + str(i)),
                 i,
                 "self_attn",
-                permanent=True
+                permanent=False
             )
             self.model_wrapper.setup_hook(
                 get_activation("mlp_" + str(i)),
                 i,
                 "mlp",
-                permanent=True
+                permanent=False
             )
             self.model_wrapper.setup_hook(
                 get_activation("m_coef_" + str(i)),
                 i,
                 "mlp.down_proj",
-                permanent=True
+                permanent=False
             )
 
         self.model_wrapper.setup_hook(
             get_activation("layer_residual_" + str(final_layer)),
             None,
             "norm",
-            permanent=True
+            permanent=False
         )
 
     def get_resid_predictions(self, sentence, start_idx=None, end_idx=None, set_mlp_0=False):
@@ -374,16 +405,29 @@ class LMDebuggerIntervention(TokenScoreInterventionMethod):
                     new_max_val = 0
                 self.set_control_hooks_gpt2({intervention['layer']: [intervention['dim']], }, coef_value=new_max_val)
 
+    def process_clean_token(self, token):
+        return token
+
+    def get_projections(self, dim, layer=None, *args, **kwargs):
+        if layer is None:
+            raise AttributeError(f"No layer provided. Parameter layer: <{layer}>")
+        x = [(x[1], x[2]) for x in self.dict_es[(int(layer), int(dim))]]
+        new_d = {'layer': int(layer), 'dim': int(dim)}
+        top_k = [{'token': self.process_clean_token(x[i][0]), 'logit': float(x[i][1])} for i in range(len(x))]
+        new_d['top_k'] = top_k
+        return new_d
+
 
 class SAEIntervention(TokenScoreInterventionMethod):
-    def __init__(self, config_path, device):
-        super().__init__()
-
+    def __init__(self, model_wrapper, args, config_path, device):
         self.config_path = config_path
         self.device = device
 
         with open(self.config_path, "rb") as f:
             self.config = pickle.load(f)
+
+        supported_layers = [self.config["LAYER_INDEX"]]
+        super().__init__(model_wrapper, args, supported_layers)
 
         self.autoencoder = AutoEncoder.load_model_from_config(self.config)
         self.autoencoder.to(self.device)
@@ -450,8 +494,6 @@ class SAEIntervention(TokenScoreInterventionMethod):
 
         return response_dict
 
-
-
     def setup_intervention_hooks(self, prompt):
         def get_hook(feature_index, new_value, layer_type):
             # mlp_activations
@@ -496,3 +538,36 @@ class SAEIntervention(TokenScoreInterventionMethod):
                 layer_id,
                 layer_type
             )
+
+    # ToDo: Add type to return dict and outsource building of dict to Controller. Only return logits
+    # ToDo: Check for correctness
+    def get_projections(self, dim, *args, **kwargs):
+        layer_id = self.config["LAYER_INDEX"]
+
+        f = torch.zeros(self.autoencoder.m)
+        f[dim] = 1
+
+        x_hat = self.autoencoder.forward_decoder(f.to(self.device)).detach().cpu().to(dtype=torch.float16)
+
+        llm_layer_output = self.model_wrapper.model.model.layers[layer_id].mlp.down_proj(x_hat.to(self.model_wrapper.device))
+
+        #normed_x_hat = self.model_wrapper.model.model.norm(llm_layer_output)
+        logits = self.model_wrapper.model.lm_head(llm_layer_output).detach().cpu()
+        argsorted_logits = np.argsort(-1 * logits)[:self.args.top_k_for_elastic].tolist()
+
+        output_logits = logits[argsorted_logits].tolist()
+        output_tokens = self.model_wrapper.tokenizer._convert_id_to_token(argsorted_logits)
+
+        # Build Response
+        top_k = [{
+            "logit": logit,
+            "token": token
+        } for logit, token in zip(output_logits, output_tokens)]
+
+        return {
+            "dim": dim,
+            "layer": layer_id,
+            "top_k": top_k
+        }
+
+

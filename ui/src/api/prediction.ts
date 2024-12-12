@@ -49,9 +49,11 @@ export async function predict(params: PredictionParams): Promise<NetworkPredicti
 
 export function getValueNamesFromCookies(): Array<ValueId> {
   // Search cookies
+  console.log("invoked")
   const cookieData = document.cookie.split(';');
   const newValueIds = cookieData.filter(cookie=> cookie.trim().startsWith("new_name_L"))
   .map(cookie => {
+    console.log(cookie)
     const pair = cookie.split("=")
     const _valueId = pair[0].trim()
     const desc = pair[1].trim()

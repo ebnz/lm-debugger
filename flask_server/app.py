@@ -30,9 +30,9 @@ if __name__ == '__main__':
     CORS(app)
 
 
-    @app.route('/get_projections/layer/<layer>/dim/<dim>')
-    def get_projections(layer, dim):
-        return jsonify(requests_obj.get_projections(layer, dim))
+    @app.route('/get_projections/type/<type>/layer/<layer>/dim/<dim>')
+    def get_projections(type, layer, dim):
+        return jsonify(requests_obj.get_projections(type, layer, dim))
 
 
     @app.route('/get_data', methods=['POST'])

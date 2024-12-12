@@ -75,9 +75,9 @@ function MainPage(): JSX.Element {
   
     const new_layers =  [...layers]
     valueIds.forEach(valueId => {
-      const {layer, dim} = valueId;
+      const {type, layer, dim} = valueId;
       const values = new_layers[layer].significant_values;
-      values.filter(v=> v.dim === dim && v.layer === layer).forEach(value => value.desc = valueId.desc) // ToDo: add type???
+      values.filter(v=> v.dim === dim && v.layer === layer && v.type === type).forEach(value => value.desc = valueId.desc)
     })
     return {
       prompt,

@@ -1,12 +1,5 @@
 import json
-import traceback
 import warnings
-
-import numpy as np
-import torch
-import torch.nn.functional as F
-from create_offline_files import create_elastic_search_data, create_streamlit_data
-from transformers import LlamaForCausalLM, CodeLlamaTokenizer
 
 from sparse_autoencoders.TransformerModels import CodeLlamaModel
 from TokenScoreIntervention import InterventionGenerationController, LMDebuggerIntervention, SAEIntervention
@@ -17,24 +10,22 @@ warnings.filterwarnings('ignore')
 class ModelingRequests():
     def __init__(self, args):
         self.args = args
+
         self.model_wrapper = CodeLlamaModel(args.model_name, device=args.device)
-        self.dict_es = create_elastic_search_data(args.elastic_projections_path, self.model_wrapper.model, args.model_name,
-                                                  self.model_wrapper.tokenizer, args.top_k_for_elastic)
-        if args.create_cluster_files:
-            create_streamlit_data(args.streamlit_cluster_to_value_file_path, args.streamlit_value_to_cluster_file_path,
-                                  self.model_wrapper.model, args.model_name, args.num_clusters)
 
         self.intervention_controller = InterventionGenerationController(self.model_wrapper, args.top_k_tokens_for_ui)
-        self.intervention_controller.register_method(LMDebuggerIntervention())
-        self.intervention_controller.register_method(SAEIntervention("/nfs/data/students/ebenz_bsc2024/autoenc_2/autoenc_lr2e-4_0.5_32_nr/50000.pt", "cuda:0"))
+        self.intervention_controller.register_method(LMDebuggerIntervention(self.model_wrapper, self.args))
+        self.intervention_controller.register_method(SAEIntervention(
+            self.model_wrapper,
+            self.args,
+            "/nfs/data/students/ebenz_bsc2024/autoenc_2/autoenc_lr2e-4_0.5_32_nr/50000.pt",
+            "cuda:0"    # ToDo: Set AutoEncoder-Device & -Path from config
+        ))
 
     def json_req_to_prompt_and_interventions_d(self, req_json_path):
         with open(req_json_path) as json_f:
             req = json.load(json_f)
         return [req['prompt']], req['interventions']
-
-    def process_clean_token(self, token):
-        return token
 
     def get_new_max_coef(self, layer, old_dict, eps=10e-3):
         curr_max_val = old_dict['top_coef_vals'][layer][0]
@@ -90,9 +81,5 @@ class ModelingRequests():
                                                     res_json_path=None,
                                                     res_json_intervention_path=None)
 
-    def get_projections(self, layer, dim):
-        x = [(x[1], x[2]) for x in self.dict_es[(int(layer), int(dim))]]
-        new_d = {'layer': int(layer), 'dim': int(dim)}
-        top_k = [{'token': self.process_clean_token(x[i][0]), 'logit': float(x[i][1])} for i in range(len(x))]
-        new_d['top_k'] = top_k
-        return new_d
+    def get_projections(self, type, layer, dim):
+        return self.intervention_controller.get_projections(type, int(layer), int(dim))
