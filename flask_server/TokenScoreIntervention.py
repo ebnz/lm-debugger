@@ -539,22 +539,35 @@ class SAEIntervention(TokenScoreInterventionMethod):
                 layer_type
             )
 
-    # ToDo: Add type to return dict and outsource building of dict to Controller. Only return logits
-    # ToDo: Check for correctness
     def get_projections(self, dim, *args, **kwargs):
         layer_id = self.config["LAYER_INDEX"]
+        layer_type = self.config["LAYER_TYPE"]
 
+        # Compute AutoEncoder-Output and set given Feature to high value
         f = torch.zeros(self.autoencoder.m)
-        f[dim] = 1
+        f[dim] = 100
 
+        # Calculate the output of the Decoder of the AutoEncoder
         x_hat = self.autoencoder.forward_decoder(f.to(self.device)).detach().cpu().to(dtype=torch.float16)
 
-        llm_layer_output = self.model_wrapper.model.model.layers[layer_id].mlp.down_proj(x_hat.to(self.model_wrapper.device))
+        # Calculate the Output of the MLP-Block of the Model
+        if layer_type == "mlp_activations":
+            res_stream = self.model_wrapper.model.model.layers[layer_id].mlp.down_proj(
+                x_hat.to(self.model_wrapper.device)
+            )
+        elif layer_type == "attn_sublayer":
+            res_stream = x_hat.to(self.model_wrapper.device)
+        elif layer_type == "mlp_sublayer":
+            res_stream = x_hat.to(self.model_wrapper.device)
+        else:
+            raise AttributeError(f"layer_type <{layer_type}> unknown")
 
-        #normed_x_hat = self.model_wrapper.model.model.norm(llm_layer_output)
-        logits = self.model_wrapper.model.lm_head(llm_layer_output).detach().cpu()
+        # Calculate the Output-Logits of the Model and select those with highest probability
+        normed_res_stream = self.model_wrapper.model.model.norm(res_stream)
+        logits = self.model_wrapper.model.lm_head(normed_res_stream).detach().cpu()
         argsorted_logits = np.argsort(-1 * logits)[:self.args.top_k_for_elastic].tolist()
 
+        # Logits and Tokens with highest probability
         output_logits = logits[argsorted_logits].tolist()
         output_tokens = self.model_wrapper.tokenizer._convert_id_to_token(argsorted_logits)
 
