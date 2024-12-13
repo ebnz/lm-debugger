@@ -17,9 +17,9 @@ warnings.filterwarnings('ignore')
 def get_all_projected_values(model):
     logits = []
     for i in tqdm(range(model.config.num_hidden_layers)):
-        #ToDo
-        #layer_logits = torch.matmul(model.model.embed_tokens.weight, model.model.layers[i].mlp.down_proj.weight).T         #For calculating projected values on same device as model inference
-        layer_logits = torch.matmul(model.model.embed_tokens.weight.to("cuda:1"), model.model.layers[i].mlp.down_proj.weight.to("cuda:1")).T
+        #ToDo: Test. But should be fine like this
+        layer_logits = torch.matmul(model.model.embed_tokens.weight, model.model.layers[i].mlp.down_proj.weight).T
+        #layer_logits = torch.matmul(model.model.embed_tokens.weight.to("cuda:1"), model.model.layers[i].mlp.down_proj.weight.to("cuda:1")).T
         logits.append(layer_logits.detach().cpu())
 
     logits = torch.vstack(logits)

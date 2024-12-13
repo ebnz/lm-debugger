@@ -2,7 +2,7 @@ import json
 import warnings
 
 from sparse_autoencoders.TransformerModels import CodeLlamaModel
-from TokenScoreIntervention import InterventionGenerationController, LMDebuggerIntervention, SAEIntervention
+from flask_server.intervention_methods.TokenScoreIntervention import InterventionGenerationController, LMDebuggerIntervention, SAEIntervention
 
 warnings.filterwarnings('ignore')
 
