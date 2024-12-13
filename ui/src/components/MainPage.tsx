@@ -111,7 +111,7 @@ function MainPage(): JSX.Element {
     const newPrediction = addNamesToValues(prediction)
     const namedValueIds = getValueNamesFromCookies()
     const namedInterventions = interventions.map( inter => {
-      const matches = namedValueIds.filter(v => v.layer == inter.layer && v.dim == inter.dim)
+      const matches = namedValueIds.filter(v => v.layer == inter.layer && v.dim == inter.dim && v.type == inter.type)
       if (matches.length == 0) {
         return inter
       }
@@ -121,7 +121,7 @@ function MainPage(): JSX.Element {
         
     setInterventions(namedInterventions)
     setPrediction(newPrediction)
-    if (selectedValueId?.layer == valueId.layer && selectedValueId?.dim == valueId.dim) {        
+    if (selectedValueId?.layer == valueId.layer && selectedValueId?.dim == valueId.dim && selectedValueId?.type == valueId.type) {
       const {type, layer, dim} = valueId
       const namedValueId = {type, layer, dim, desc: newName}
       setSelectedValueId(namedValueId);

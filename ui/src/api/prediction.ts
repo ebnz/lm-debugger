@@ -71,7 +71,7 @@ export function getValueInterpretation(params: ValueId): [Promise<ValueInterpret
   const controller = new AbortController();
 
   const responsePromise = fetch(
-    `http://${runConfig.server_ip}:${runConfig.server_port}/get_projections/layer/${params.layer}/dim/${params.dim}`,
+    `http://${runConfig.server_ip}:${runConfig.server_port}/get_projections/type/${params.type}/layer/${params.layer}/dim/${params.dim}`,
     {
       signal: controller.signal
     }
