@@ -77,7 +77,7 @@ function MainPage(): JSX.Element {
     const new_layers =  [...layers]
     valueIds.forEach(valueId => {
       const {type, layer, dim} = valueId;
-      const values = new_layers[layer].significant_values;
+      const values = new_layers.filter((prediction) => prediction.layer == layer && prediction.type == type)[0].significant_values
       values.filter(v=> v.dim === dim && v.layer === layer && v.type === type).forEach(value => value.desc = valueId.desc)
     })
     return {
