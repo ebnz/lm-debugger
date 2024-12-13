@@ -1,5 +1,6 @@
 import {PredictionParams, NetworkPrediction, ValueId, ValueInterpretation, GenerationOutput} from "../types/dataModel";
 import runConfig from "../runConfig.json";
+import {toType} from "../types/constants";
 
 export async function generate(params: PredictionParams): Promise<GenerationOutput> {
   const response = await fetch(
@@ -49,18 +50,18 @@ export async function predict(params: PredictionParams): Promise<NetworkPredicti
 
 export function getValueNamesFromCookies(): Array<ValueId> {
   // Search cookies
-  console.log("invoked")
   const cookieData = document.cookie.split(';');
-  const newValueIds = cookieData.filter(cookie=> cookie.trim().startsWith("new_name_L"))
+  const newValueIds = cookieData.filter(cookie=> cookie.trim().startsWith("new_name_"))
   .map(cookie => {
-    console.log(cookie)
     const pair = cookie.split("=")
     const _valueId = pair[0].trim()
     const desc = pair[1].trim()
-    const [before_D, after_D] = _valueId.split("D")
-    const layer = parseInt(before_D.replace("new_name_L", ""))
-    const dim = parseInt(after_D)
-    const valueId: ValueId = {type: "LMDebuggerIntervention", layer, dim, desc}; // ToDo: Check function of this method
+    let [type_and_layer_str, dim_str] = _valueId.split("D")
+    type_and_layer_str = type_and_layer_str.replace("new_name_", "")
+    const type = toType.get(type_and_layer_str[0]) ?? "unknown"
+    const layer = parseInt(type_and_layer_str.slice(1))
+    const dim = parseInt(dim_str)
+    const valueId: ValueId = {type, layer, dim, desc}; // ToDo: Check function of this method
     return valueId;
   })
   return newValueIds;

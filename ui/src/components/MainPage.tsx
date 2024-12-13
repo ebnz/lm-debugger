@@ -7,6 +7,7 @@ import LayersPanel from "./LayersPanel";
 import ValueDetailsPanel from "./ValueDetailsPanel";
 import InterventionsPanel from "./InterventionsPanel";
 import styled, {css} from "styled-components";
+import {toAbbr} from "../types/constants";
 
 function MainPage(): JSX.Element {
 
@@ -103,7 +104,7 @@ function MainPage(): JSX.Element {
 
   function handleValueRename(valueId: ValueId, newName: string) {
     
-    document.cookie = `new_name_L${valueId?.layer}D${valueId?.dim}=${newName};`;
+    document.cookie = `new_name_${toAbbr.get(valueId?.type)}${valueId?.layer}D${valueId?.dim}=${newName};`;
     if (prediction === undefined) {
       return;
     } 

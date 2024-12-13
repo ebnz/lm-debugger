@@ -18,8 +18,8 @@ class ModelingRequests():
         self.intervention_controller.register_method(SAEIntervention(
             self.model_wrapper,
             self.args,
-            "/nfs/data/students/ebenz_bsc2024/autoenc_2/autoenc_lr2e-4_0.5_32_nr/50000.pt",
-            "cuda:0"    # ToDo: Set AutoEncoder-Device & -Path from config
+            self.args.autoencoder_path,
+            self.args.autoencoder_device
         ))
 
     def json_req_to_prompt_and_interventions_d(self, req_json_path):

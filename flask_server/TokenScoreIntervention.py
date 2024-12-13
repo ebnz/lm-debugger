@@ -430,7 +430,7 @@ class SAEIntervention(TokenScoreInterventionMethod):
         super().__init__(model_wrapper, args, supported_layers)
 
         self.autoencoder = AutoEncoder.load_model_from_config(self.config)
-        self.autoencoder.to(self.device)
+        self.autoencoder = self.autoencoder.to(self.device)
 
     def get_token_scores(self, prompt):
         global activation_vector

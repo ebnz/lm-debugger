@@ -3,6 +3,7 @@ import styled from "styled-components";
 import ValueLabelWithCopy from "./ValueLabelWithCopy"
 import TokenLabel from "./TokenLabel";
 import { ScoredValue, Prediction, ValueId } from "../types/dataModel";
+import {toAbbr} from "../types/constants";
 
 
 
@@ -17,7 +18,7 @@ export function LabelContainer(props: Props): JSX.Element {
     const labels = props.valueLabels.map((item) => {item["type"] = props.type; return item}).map(label =>
         <ValueLabelWithCopy 
             scoredValue={label}
-            key={props.type === "LMDebuggerIntervention" ? `L${label.layer}D${label.dim}` : `AE${label.layer}D${label.dim}`}
+            key={`${toAbbr.get(props.type)}${label.layer}D${label.dim}`}
             onAnalyze={props.onAnaylze}
             onCopy={props.onCopy} 
         />
