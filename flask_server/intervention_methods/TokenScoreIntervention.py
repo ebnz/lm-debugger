@@ -1,10 +1,12 @@
 class TokenScoreInterventionMethod:
-    def __init__(self, model_wrapper, args, supported_layers):
+    def __init__(self, model_wrapper, args, supported_layers, changes_model):
         self.args = args
         self.model_wrapper = model_wrapper
         self.TOP_K = self.args.top_k_tokens_for_ui
 
+        # Intervention-specific Variables
         self.supported_layers = supported_layers
+        self.changes_model = changes_model
 
         self.interventions = []
 

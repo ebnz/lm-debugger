@@ -15,7 +15,7 @@ class SAEIntervention(TokenScoreInterventionMethod):
             self.config = pickle.load(f)
 
         supported_layers = [self.config["LAYER_INDEX"]]
-        super().__init__(model_wrapper, args, supported_layers)
+        super().__init__(model_wrapper, args, supported_layers, False)
 
         self.autoencoder = AutoEncoder.load_model_from_config(self.config)
         self.autoencoder = self.autoencoder.to(self.device)
