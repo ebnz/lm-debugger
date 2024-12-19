@@ -10,7 +10,7 @@ from create_offline_files import create_elastic_search_data, create_streamlit_da
 class LMDebuggerIntervention(TokenScoreInterventionMethod):
     def __init__(self, model_wrapper, args):
         supported_layers = [i for i in range(model_wrapper.model.config_class().num_hidden_layers)]
-        super().__init__(model_wrapper, args, supported_layers, False)
+        super().__init__(model_wrapper, args, supported_layers)
 
         self.dict_es = create_elastic_search_data(
             self.args.elastic_projections_path,

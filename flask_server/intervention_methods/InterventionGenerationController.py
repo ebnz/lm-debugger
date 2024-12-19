@@ -36,7 +36,17 @@ class InterventionGenerationController:
         for method in self.intervention_methods:
             method.setup_intervention_hooks(prompt)
 
+    def transform_model(self):
+        for method in self.intervention_methods:
+            method.transform_model()
+
+    def restore_original_model(self):
+        for method in self.intervention_methods:
+            method.restore_original_model()
+
     def generate(self, prompt, generate_k):
+        # Call Model-Editing Interventions
+        self.transform_model()
         # Setup Intervention-Hooks
         self.setup_intervention_hooks(prompt)
 
@@ -48,7 +58,9 @@ class InterventionGenerationController:
         greedy_output = self.model_wrapper.tokenizer.decode(greedy_output[0], skip_special_tokens=True)
         response_dict['generate_text'] = greedy_output
 
+        # Clear Intervention-Hooks and restore original Model (Pre-Transformation)
         self.model_wrapper.clear_hooks()
+        self.restore_original_model()
 
         return response_dict
 
