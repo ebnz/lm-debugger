@@ -1,0 +1,3 @@
+[submodule "flask_server/rome"]
+	path = flask_server/rome
+	url = git@github.com:aip-hd-research/my-rome.git
