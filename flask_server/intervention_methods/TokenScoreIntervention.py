@@ -19,16 +19,16 @@ class TokenScoreInterventionMethod:
         self.interventions = []
 
     def get_token_scores(self, prompt):
-        raise NotImplementedError(f"Intervention-Method <{self}> has no implemented <get_token_scores>")
+        print(f"WARN: Intervention-Method <{self}> has no implemented <get_token_scores>")
 
     def setup_intervention_hooks(self, prompt):
-        raise NotImplementedError(f"Intervention-Method <{self}> has no implemented <setup_intervention_hooks>")
+        print(f"WARN: Intervention-Method <{self}> has no implemented <setup_intervention_hooks>")
 
     def transform_model(self):
-        raise NotImplementedError(f"Intervention-Method <{self}> has no implemented <transform_model>")
+        print(f"WARN: Intervention-Method <{self}> has no implemented <transform_model>")
 
     def restore_original_model(self):
-        raise NotImplementedError(f"Intervention-Method <{self}> has no implemented <restore_original_model>")
+        print(f"WARN: Intervention-Method <{self}> has no implemented <restore_original_model>")
 
     def get_projections(self, dim, *args, **kwargs):
-        raise NotImplementedError(f"Intervention-Method <{self}> has no implemented <get_projections>")
+        print(f"WARN: Intervention-Method <{self}> has no implemented <get_projections>")

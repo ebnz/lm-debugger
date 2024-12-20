@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 
-from TokenScoreIntervention import TokenScoreInterventionMethod
+from .TokenScoreIntervention import TokenScoreInterventionMethod
 
 from create_offline_files import create_elastic_search_data, create_streamlit_data
 

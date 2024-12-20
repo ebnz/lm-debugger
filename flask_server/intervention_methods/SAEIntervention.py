@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import pickle
 
-from TokenScoreIntervention import TokenScoreInterventionMethod
+from .TokenScoreIntervention import TokenScoreInterventionMethod
 from sparse_autoencoders.AutoEncoder import AutoEncoder
 
 

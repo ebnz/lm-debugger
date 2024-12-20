@@ -1,10 +1,14 @@
 import json
 import warnings
 
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
 from sparse_autoencoders.TransformerModels import CodeLlamaModel
 from intervention_methods.InterventionGenerationController import InterventionGenerationController
 from intervention_methods.LMDebuggerIntervention import LMDebuggerIntervention
 from intervention_methods.SAEIntervention import SAEIntervention
+from intervention_methods.ROMEIntervention import ROMEIntervention
 
 
 warnings.filterwarnings('ignore')
@@ -14,15 +18,24 @@ class ModelingRequests():
     def __init__(self, args):
         self.args = args
 
-        self.model_wrapper = CodeLlamaModel(args.model_name, device=args.device)
+        # Use AutoModelForCausalLM and AutoTokenizer for ROME-Support
+        model = AutoModelForCausalLM.from_pretrained(args.model_name, torch_dtype=torch.float16)
+        tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+
+        self.model_wrapper = CodeLlamaModel(model, tokenizer=tokenizer, device=args.device)
 
         self.intervention_controller = InterventionGenerationController(self.model_wrapper, args.top_k_tokens_for_ui)
-        self.intervention_controller.register_method(LMDebuggerIntervention(self.model_wrapper, self.args))
-        self.intervention_controller.register_method(SAEIntervention(
+        # self.intervention_controller.register_method(LMDebuggerIntervention(self.model_wrapper, self.args))
+        # self.intervention_controller.register_method(SAEIntervention(
+        #     self.model_wrapper,
+        #     self.args,
+        #     self.args.autoencoder_path,
+        #     self.args.autoencoder_device
+        # ))
+        self.intervention_controller.register_method(ROMEIntervention(
             self.model_wrapper,
             self.args,
-            self.args.autoencoder_path,
-            self.args.autoencoder_device
+            "/nfs/home/ebenz_bsc2024/lm-debugger/flask_server/intervention_methods/rome_files/hparams/ROME/codellama_CodeLlama-7b-Instruct-hf.json"
         ))
 
     def json_req_to_prompt_and_interventions_d(self, req_json_path):
