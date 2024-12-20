@@ -34,8 +34,7 @@ class ModelingRequests():
         ))
         self.intervention_controller.register_method(ROMEIntervention(
             self.model_wrapper,
-            self.args,
-            "/nfs/home/ebenz_bsc2024/lm-debugger/flask_server/intervention_methods/rome_files/hparams/ROME/codellama_CodeLlama-7b-Instruct-hf.json"
+            self.args
         ))
 
     def json_req_to_prompt_and_interventions_d(self, req_json_path):
