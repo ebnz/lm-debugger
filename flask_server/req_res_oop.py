@@ -25,13 +25,13 @@ class ModelingRequests():
         self.model_wrapper = CodeLlamaModel(model, tokenizer=tokenizer, device=args.device)
 
         self.intervention_controller = InterventionGenerationController(self.model_wrapper, args.top_k_tokens_for_ui)
-        # self.intervention_controller.register_method(LMDebuggerIntervention(self.model_wrapper, self.args))
-        # self.intervention_controller.register_method(SAEIntervention(
-        #     self.model_wrapper,
-        #     self.args,
-        #     self.args.autoencoder_path,
-        #     self.args.autoencoder_device
-        # ))
+        self.intervention_controller.register_method(LMDebuggerIntervention(self.model_wrapper, self.args))
+        self.intervention_controller.register_method(SAEIntervention(
+            self.model_wrapper,
+            self.args,
+            self.args.autoencoder_path,
+            self.args.autoencoder_device
+        ))
         self.intervention_controller.register_method(ROMEIntervention(
             self.model_wrapper,
             self.args,
