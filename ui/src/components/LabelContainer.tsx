@@ -11,7 +11,7 @@ interface Props {
     valueLabels: Array<ScoredValue>;
     type: string;
     onAnaylze: (valueId: ValueId) => void;
-    onCopy: (valueId: ValueId) => void;
+    onCopy: (valueId: any) => void;
 }
 
 export function LabelContainer(props: Props): JSX.Element {

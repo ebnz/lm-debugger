@@ -31,13 +31,7 @@ function MainPage(): JSX.Element {
     setInterventions(interventions.map(
       (inter) => {
         if (inter.layer === layer && inter.dim === dim && inter.type == type) {
-          return {
-            type,
-            layer,
-            dim,
-            desc,
-            coeff
-          };
+          return {...inter, coeff: coeff};
         }
         return inter;
       }

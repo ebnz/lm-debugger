@@ -11,7 +11,7 @@ const {Text} = Typography
 interface Props {
     scoredValue: ScoredValue,
     onAnalyze: (valueId: ValueId) => void;
-    onCopy: (valueId: ValueId) => void;
+    onCopy: (valueId: any) => void;
 }
 
 function ValueLabelWithCopy(props: Props): JSX.Element {

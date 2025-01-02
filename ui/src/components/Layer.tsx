@@ -1,14 +1,15 @@
-import React from "react";
+import React, {useState} from "react";
 import styled from "styled-components";
-import { Divider, Tag } from 'antd';
-import { LayerPrediction, ValueId } from "../types/dataModel";
+import { Divider, Tag, Button } from 'antd';
+import {LayerPrediction, ValueId} from "../types/dataModel";
 import {LabelContainer, PredictionContainer} from "./LabelContainer";
+import { TextInput } from "./TextInput";
 
 
 interface Props {
   layer: LayerPrediction;
   onAnalyze: (valueId: ValueId) => void;
-  onCopy: (valueId: ValueId) => void;
+  onCopy: (valueId: any) => void;
 }
 
 
@@ -18,6 +19,7 @@ function Layer(props: Props): JSX.Element {
     predictions_after
   } = props.layer;
 
+  let [textIntervention, setTextIntervention] = useState(props.layer.text_inputs);
 
   return (
       <LayerLayout>
@@ -33,8 +35,14 @@ function Layer(props: Props): JSX.Element {
           onAnaylze={props.onAnalyze}
           onCopy={props.onCopy}
         />}
+
         {typeof predictions_after !== "undefined" && <MyDivider orientation="left" orientationMargin="15px">After:</MyDivider>}
         {typeof predictions_after !== "undefined" && <PredictionContainer predictions={predictions_after}/>}
+
+        {typeof props.layer.text_inputs !== "undefined" && <TextInput textIntervention={textIntervention} setTextIntervention={setTextIntervention}></TextInput>}
+        {typeof props.layer.text_inputs !== "undefined" && <Button onClick={(e) => {props.onCopy(
+            {text_inputs: textIntervention, type: props.layer.type, layer: props.layer.layer, dim: 0}
+        )}}>Add as Intervention</Button>}
 
 
         {/* </SignificantValuesDiv> */}

@@ -5,6 +5,7 @@ import AimOutlined from "@ant-design/icons/AimOutlined";
 import ValueLabel from "./ValueLabel";
 import {MemoLayer} from "./Layer"
 import LayersPanel from "./LayersPanel";
+import {LayerPrediction} from "../types/dataModel";
 
 // LayerPrediction
 //  layer_name: string;
@@ -48,10 +49,11 @@ function Play(): JSX.Element {
         ],
         layer: 10,
         type: "LMDebuggerIntervention",
-        significant_values: labels
+        significant_values: labels,
+        text_inputs: {}
     }
     const n_layers = 5; 
-    let layer_inputs =[]
+    let layer_inputs = []
     for(let idx = 0; idx < n_layers; idx++) {
         layer_inputs.push(Object.assign({}, input))
         layer_inputs[idx]['layer'] = n_layers - idx;

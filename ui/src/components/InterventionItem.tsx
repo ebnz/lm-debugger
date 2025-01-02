@@ -40,7 +40,18 @@ function InterventionItem(props: Props):JSX.Element {
     }
   }
 
-  const actualDesc = desc !== undefined && desc !== "" ? desc : `${toAbbr.get(props.intervention.type) ?? "_"}${layer}D${dim}`
+  let actualDesc = "";
+
+  // Create Special Naming if Intervention is a TextIntervention (e.g. ROME)
+  // LMDebugger defines Interventions as interfaces
+  // => can't use <intervention instanceof TextIntervention> => check if intervention has property
+  if (intervention.hasOwnProperty("text_inputs")) {
+    // @ts-ignore
+    actualDesc = intervention.text_inputs.subject;
+  }
+  else {
+    actualDesc = desc !== undefined && desc !== "" ? desc : `${toAbbr.get(props.intervention.type) ?? "_"}${layer}D${dim}`
+  }
   const useEllipsis = actualDesc.length > 10
 
   return (

@@ -58,3 +58,18 @@ class ROMEIntervention(TokenScoreInterventionMethod):
             with torch.no_grad():
                 for k, v in self.orig_weights.items():
                     nethook.get_parameter(self.model_wrapper.model, k)[...] = v
+
+    def get_token_scores(self, prompt):
+        response_dict = {"response": {"layers": [
+            {
+                "layer": self.rome_hparams.layers,
+                "text_inputs": {
+                    "prompt": "",
+                    "subject": "",
+                    "target": ""
+                },
+                "type": self.__class__.__name__
+            }
+        ]}}
+
+        return response_dict

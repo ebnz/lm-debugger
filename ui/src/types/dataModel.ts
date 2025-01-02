@@ -5,8 +5,9 @@ export interface ValueId {
   desc?: string;
 }
 
-export interface Intervention extends ValueId{
+export interface Intervention extends ValueId {
   coeff: number;
+  text_inputs?: {subject: string, prompt: string, target: string};
 }
 
 export interface PredictionParams {
@@ -30,6 +31,7 @@ export interface LayerPrediction {
   predictions_before: Array<Prediction>;
   predictions_after: Array<Prediction>;
   significant_values: Array<ScoredValue>;
+  text_inputs: {[key: string]: string};
 }
 
 export interface NetworkPrediction {
