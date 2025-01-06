@@ -1,4 +1,5 @@
-import { Input } from 'antd';
+import {Input, Tag} from 'antd';
+import styled from "styled-components";
 
 interface Props {
     textIntervention: {[key: string]: string}
@@ -8,13 +9,17 @@ interface Props {
 export function TextInput(props: Props): JSX.Element {
     let contentRender = (
         Object.keys(props.textIntervention).map((key) =>
-            <Input
+            <WideInput
                 placeholder={key}
                 value={props.textIntervention[key]}
                 onChange={(e) => {props.setTextIntervention({...props.textIntervention, [key]: e.target.value})}}
-            ></Input>
+            ></WideInput>
         )
     )
 
     return <>{contentRender}</>;
 }
+
+const WideInput = styled(Input)`
+  width: 100%;
+`;

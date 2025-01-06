@@ -21,6 +21,8 @@ function MainPage(): JSX.Element {
   // Intervention State Update functions //
   // ----------------------------------- //
   function addIntervention(valueId: ValueId) {
+    console.log(valueId);
+    console.log(hasIntervention(valueId));
     if(!hasIntervention(valueId)){
       setInterventions([{...valueId, coeff: 0.0}, ...interventions])
     }

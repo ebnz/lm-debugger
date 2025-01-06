@@ -35,10 +35,10 @@ class ROMEIntervention(TokenScoreInterventionMethod):
         # Generate Request-Object for ROME-API
         requests = [
             {
-                "prompt": intervention["prompt"],
-                "subject": intervention["subject"],
-                "target_new": {"str": intervention["target"]},
-            } for intervention in self.interventions
+                "prompt": intervention["text_inputs"]["prompt"],
+                "subject": intervention["text_inputs"]["subject"],
+                "target_new": {"str": intervention["text_inputs"]["target"]},
+            } for intervention in self.interventions if intervention["coeff"] > 0.0
         ]
 
         nethook.set_requires_grad(True, self.model_wrapper.model)

@@ -4,6 +4,7 @@ import { Divider, Tag, Button } from 'antd';
 import {LayerPrediction, ValueId} from "../types/dataModel";
 import {LabelContainer, PredictionContainer} from "./LabelContainer";
 import { TextInput } from "./TextInput";
+import {createHash} from "node:crypto";
 
 
 interface Props {
@@ -39,9 +40,14 @@ function Layer(props: Props): JSX.Element {
         {typeof predictions_after !== "undefined" && <MyDivider orientation="left" orientationMargin="15px">After:</MyDivider>}
         {typeof predictions_after !== "undefined" && <PredictionContainer predictions={predictions_after}/>}
 
+        {typeof props.layer.text_inputs !== "undefined" && <MyDivider orientation="left" orientationMargin="15px">Text Inputs:</MyDivider>}
         {typeof props.layer.text_inputs !== "undefined" && <TextInput textIntervention={textIntervention} setTextIntervention={setTextIntervention}></TextInput>}
+        {typeof props.layer.text_inputs !== "undefined" && <MyDivider orientation="left" orientationMargin="15px">Actions:</MyDivider>}
         {typeof props.layer.text_inputs !== "undefined" && <Button onClick={(e) => {props.onCopy(
-            {text_inputs: textIntervention, type: props.layer.type, layer: props.layer.layer, dim: 0}
+            {text_inputs: textIntervention,
+                type: props.layer.type,
+                layer: props.layer.layer,
+                dim: textIntervention["subject"] + textIntervention["target"] + textIntervention["prompt"]}
         )}}>Add as Intervention</Button>}
 
 
@@ -56,7 +62,7 @@ const LayerLayout = styled.div`
   margin: 2px;
   border: 1px #757373c5 solid;
   border-radius: 5px;
-
+  width: calc(100% - 100px);
 `;
 
 const MyDivider = styled(Divider)`
