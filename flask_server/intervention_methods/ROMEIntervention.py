@@ -31,7 +31,7 @@ class ROMEIntervention(InterventionMethod):
     """
     This Function is adapted from the my-rome/notebooks/rome.ipynb-Notebook of https://github.com/aip-hd-research/my-rome
     """
-    def transform_model(self):
+    def transform_model(self, prompt):
         # Generate Request-Object for ROME-API
         requests = [
             {

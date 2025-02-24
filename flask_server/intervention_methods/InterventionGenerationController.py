@@ -24,11 +24,10 @@ class InterventionGenerationController:
 
         for intervention in self.interventions:
             intervention_type = intervention["type"]
+            intervention_layer = intervention["layer"]
             fitting_method_found = False
             for method in self.intervention_methods:
-                if method.__class__.__name__ == intervention_type:
-                    if intervention_type == "SAEIntervention" and intervention["layer"] != method.config["LAYER_INDEX"]:
-                        continue
+                if method.__class__.__name__ == intervention_type and intervention_layer in method.supported_layers:
                     method.add_intervention(intervention)
                     fitting_method_found = True
             if not fitting_method_found:
@@ -46,7 +45,7 @@ class InterventionGenerationController:
             method.setup_intervention_hooks(prompt)
 
     def transform_model(self, prompt):
-        for idx, method in enumerate(self.intervention_methods):
+        for method in self.intervention_methods:
             method.transform_model(prompt)
 
     """
