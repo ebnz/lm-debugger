@@ -2,11 +2,11 @@ import torch
 import numpy as np
 import pickle
 
-from .TokenScoreIntervention import TokenScoreInterventionMethod
+from .InterventionMethod import InterventionMethod
 from sparse_autoencoders.AutoEncoder import AutoEncoder
 
 
-class SAEIntervention(TokenScoreInterventionMethod):
+class SAEIntervention(InterventionMethod):
     def __init__(self, model_wrapper, args, config_path, device):
         self.config_path = config_path
         self.device = device

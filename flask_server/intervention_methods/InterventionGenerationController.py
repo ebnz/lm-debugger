@@ -45,9 +45,9 @@ class InterventionGenerationController:
         for method in self.intervention_methods:
             method.setup_intervention_hooks(prompt)
 
-    def transform_model(self):
+    def transform_model(self, prompt):
         for idx, method in enumerate(self.intervention_methods):
-            method.transform_model()
+            method.transform_model(prompt)
 
     """
     This Function is inspired from the my-rome/notebooks/rome.ipynb-Notebook of https://github.com/aip-hd-research/my-rome
@@ -62,7 +62,7 @@ class InterventionGenerationController:
 
     def generate(self, prompt, generate_k):
         # Call Model-Editing Interventions
-        self.transform_model()
+        self.transform_model(prompt)
         # Setup Intervention-Hooks
         self.setup_intervention_hooks(prompt)
 

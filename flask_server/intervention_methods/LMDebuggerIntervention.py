@@ -2,12 +2,12 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 
-from .TokenScoreIntervention import TokenScoreInterventionMethod
+from .InterventionMethod import InterventionMethod
 
 from create_offline_files import create_elastic_search_data, create_streamlit_data
 
 
-class LMDebuggerIntervention(TokenScoreInterventionMethod):
+class LMDebuggerIntervention(InterventionMethod):
     def __init__(self, model_wrapper, args):
         supported_layers = [i for i in range(model_wrapper.model.config_class().num_hidden_layers)]
         super().__init__(model_wrapper, args, supported_layers)

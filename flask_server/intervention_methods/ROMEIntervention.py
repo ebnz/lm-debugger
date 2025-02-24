@@ -1,6 +1,6 @@
 import torch
 
-from .TokenScoreIntervention import TokenScoreInterventionMethod
+from .InterventionMethod import InterventionMethod
 
 # ROME
 from .rome_files.rome import ROMEHyperParams
@@ -8,12 +8,10 @@ from .rome_files.rome import apply_rome_to_model
 from .rome_files.util import nethook
 
 
-class ROMEIntervention(TokenScoreInterventionMethod):
+class ROMEIntervention(InterventionMethod):
     def __init__(self, model_wrapper, args):
         self.rome_hparams = ROMEHyperParams.from_json(args.rome_hparams_path)
         super().__init__(model_wrapper, args, self.rome_hparams.layers)
-
-        self.supported_layers = self.rome_hparams.layers
 
         # This if-Statement and its contents are copied from ROME (https://github.com/aip-hd-research/my-rome)
         # Specifically from the my-rome/notebooks/rome.ipynb-Notebook

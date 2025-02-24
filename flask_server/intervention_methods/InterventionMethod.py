@@ -1,4 +1,4 @@
-class TokenScoreInterventionMethod:
+class InterventionMethod:
     def __init__(self, model_wrapper, args, supported_layers):
         self.args = args
         self.model_wrapper = model_wrapper
@@ -26,7 +26,7 @@ class TokenScoreInterventionMethod:
         print(f"WARN: Intervention-Method <{self}> has no implemented <setup_intervention_hooks>")
         return -1
 
-    def transform_model(self):
+    def transform_model(self, prompt):
         print(f"WARN: Intervention-Method <{self}> has no implemented <transform_model>")
         return -1
 
