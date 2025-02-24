@@ -1,5 +1,6 @@
 import json
 import warnings
+from tqdm import tqdm
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -25,17 +26,28 @@ class ModelingRequests():
         self.model_wrapper = CodeLlamaModel(model, tokenizer=tokenizer, device=args.device)
 
         self.intervention_controller = InterventionGenerationController(self.model_wrapper, args.top_k_tokens_for_ui)
-        self.intervention_controller.register_method(LMDebuggerIntervention(self.model_wrapper, self.args))
-        self.intervention_controller.register_method(SAEIntervention(
-            self.model_wrapper,
-            self.args,
-            self.args.autoencoder_path,
-            self.args.autoencoder_device
-        ))
-        self.intervention_controller.register_method(ROMEIntervention(
+
+        # Load LMDebuggerIntervention
+        self.intervention_controller.register_method(LMDebuggerIntervention(
             self.model_wrapper,
             self.args
         ))
+
+        # Load SAEs
+        for config_path in tqdm(self.args.sae_paths, desc="Loading SAE-Instances"):
+            self.intervention_controller.register_method(SAEIntervention(
+                self.model_wrapper,
+                self.args,
+                config_path
+            ))
+
+        # Load ROME Instances
+        for config_path in tqdm(self.args.rome_paths, desc="Loading ROME-Instances"):
+            self.intervention_controller.register_method(ROMEIntervention(
+                self.model_wrapper,
+                self.args,
+                config_path
+            ))
 
     def json_req_to_prompt_and_interventions_d(self, req_json_path):
         with open(req_json_path) as json_f:

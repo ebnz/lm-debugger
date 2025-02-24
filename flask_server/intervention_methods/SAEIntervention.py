@@ -7,9 +7,9 @@ from sparse_autoencoders.AutoEncoder import AutoEncoder
 
 
 class SAEIntervention(InterventionMethod):
-    def __init__(self, model_wrapper, args, config_path, device):
+    def __init__(self, model_wrapper, args, config_path):
         self.config_path = config_path
-        self.device = device
+        self.device = args.autoencoder_device
 
         with open(self.config_path, "rb") as f:
             self.config = pickle.load(f)

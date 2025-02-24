@@ -9,8 +9,8 @@ from .rome_files.util import nethook
 
 
 class ROMEIntervention(InterventionMethod):
-    def __init__(self, model_wrapper, args):
-        self.rome_hparams = ROMEHyperParams.from_json(args.rome_hparams_path)
+    def __init__(self, model_wrapper, args, config_path):
+        self.rome_hparams = ROMEHyperParams.from_json(config_path)
         super().__init__(model_wrapper, args, self.rome_hparams.layers)
 
         # This if-Statement and its contents are copied from ROME (https://github.com/aip-hd-research/my-rome)
