@@ -78,7 +78,7 @@ def get_inv_cov(
         dtype = getattr(torch, mom2_dtype)
         # convert to 32 bit float
         # only 32/64 bit floats supported by inverse
-        mom2 = stat.mom2.moment().float().to("cuda")
+        mom2 = stat.mom2.moment().float().to(model.device)
 
         inv_mom2_cache[key] = torch.inverse(mom2).type(dtype)
         

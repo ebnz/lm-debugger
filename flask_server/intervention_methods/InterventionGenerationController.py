@@ -1,9 +1,18 @@
+import torch
+
 class InterventionGenerationController:
     def __init__(self, model_wrapper, top_k):
         self.model_wrapper = model_wrapper
         self.TOP_K = top_k
         self.interventions = []
         self.intervention_methods = []
+
+        self.original_weights = {}
+        for param_name, param in self.model_wrapper.model.named_parameters():
+            # Exclude Embedding
+            if "embed" in param_name.lower():
+                continue
+            self.original_weights[param_name] = param.detach().clone().cpu()
 
     def register_method(self, method):
         self.intervention_methods.append(method)
@@ -37,12 +46,19 @@ class InterventionGenerationController:
             method.setup_intervention_hooks(prompt)
 
     def transform_model(self):
-        for method in self.intervention_methods:
+        for idx, method in enumerate(self.intervention_methods):
             method.transform_model()
 
+    """
+    This Function is inspired from the my-rome/notebooks/rome.ipynb-Notebook of https://github.com/aip-hd-research/my-rome
+    """
     def restore_original_model(self):
-        for method in self.intervention_methods:
-            method.restore_original_model()
+        if self.original_weights is not None:
+            with torch.no_grad():
+                for key, original_value in self.original_weights.items():
+                    for param_name, param in self.model_wrapper.model.named_parameters():
+                        if param_name == key:
+                            param[...] = original_value.to(self.model_wrapper.device)
 
     def generate(self, prompt, generate_k):
         # Call Model-Editing Interventions

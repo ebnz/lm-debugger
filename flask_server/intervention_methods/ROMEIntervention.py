@@ -13,6 +13,8 @@ class ROMEIntervention(TokenScoreInterventionMethod):
         self.rome_hparams = ROMEHyperParams.from_json(args.rome_hparams_path)
         super().__init__(model_wrapper, args, self.rome_hparams.layers)
 
+        self.supported_layers = self.rome_hparams.layers
+
         # This if-Statement and its contents are copied from ROME (https://github.com/aip-hd-research/my-rome)
         # Specifically from the my-rome/notebooks/rome.ipynb-Notebook
         if self.model_wrapper.tokenizer.pad_token is None:
@@ -44,20 +46,11 @@ class ROMEIntervention(TokenScoreInterventionMethod):
         nethook.set_requires_grad(True, self.model_wrapper.model)
 
         # Retrieve ROME-transformed Model and replace old model
-        model_new, self.orig_weights = apply_rome_to_model(
+        model_new, _ = apply_rome_to_model(
             self.model_wrapper.model, self.model_wrapper.tokenizer, requests, self.rome_hparams, return_orig_weights=True
         )
 
         self.model_wrapper.model = model_new
-
-    """
-    This Function is adapted from the my-rome/notebooks/rome.ipynb-Notebook of https://github.com/aip-hd-research/my-rome
-    """
-    def restore_original_model(self):
-        if self.orig_weights is not None:
-            with torch.no_grad():
-                for k, v in self.orig_weights.items():
-                    nethook.get_parameter(self.model_wrapper.model, k)[...] = v
 
     def get_token_scores(self, prompt):
         response_dict = {"response": {"layers": [
