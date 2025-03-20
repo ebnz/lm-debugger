@@ -32,12 +32,6 @@ class InterventionGenerationController:
                     method.add_intervention(intervention)
                     fitting_method_found = True
             if not fitting_method_found:
-                print(f"Incoming Type: {intervention_type}")
-                print(f"Incoming Layer: {intervention_layer}")
-                for item in self.intervention_methods:
-                    if item.__class__.__name__ == "ROMEIntervention":
-                        print(f"Have Type: {item.__class__.__name__}")
-                        print(f"Have Layer: {item.supported_layers}")
                 raise AttributeError(f"Intervention <{intervention}> has no fitting Intervention-Method!")
 
 
@@ -53,6 +47,7 @@ class InterventionGenerationController:
 
     def transform_model(self, prompt):
         # Sort Methods supporting only one Layer from late to early Layers, other Methods are processed after
+        # ROMEIntervention won't work else when using multiple Interventions of _different_ ROMEIntervention-Instances
         sorted_methods = sorted(
             self.intervention_methods,
             key=lambda item: item.supported_layers[0] if len(item.supported_layers) == 1 else 0,
@@ -91,6 +86,36 @@ class InterventionGenerationController:
         self.restore_original_model()
 
         return response_dict
+
+    def get_token_scores(self, prompt):
+        # Apply Interventions
+        self.transform_model(prompt)
+        self.setup_intervention_hooks(prompt)
+
+        rv_dict = {'prompt': prompt, 'layers': []}
+        # Assemble Response-Dict
+        for method in self.intervention_methods:
+            # Generate Token-Scores
+            rv = method.get_token_scores(prompt)
+            rv_dict['layers'] += rv['layers']
+
+        # Clear Hooks and restore original Model
+        self.model_wrapper.clear_hooks()
+        self.restore_original_model()
+
+        # Replace inf's with 0
+        def replace_infs(dictionary):
+            for key, value in dictionary.items():
+                if isinstance(value, dict):
+                    dictionary[key] = replace_infs(value)
+                elif isinstance(value, list):
+                    for idx, item in enumerate(value):
+                        dictionary[key][idx] = replace_infs(item)
+                elif value == float("inf"):
+                    dictionary[key] = 0
+            return dictionary
+
+        return rv_dict
 
     def get_projections(self, type, layer, dim):
         for method in self.intervention_methods:
