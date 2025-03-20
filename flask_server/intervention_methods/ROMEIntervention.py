@@ -32,6 +32,9 @@ class ROMEIntervention(InterventionMethod):
     This Function is adapted from the my-rome/notebooks/rome.ipynb-Notebook of https://github.com/aip-hd-research/my-rome
     """
     def transform_model(self, prompt):
+        if len(self.interventions) <= 0:
+            return
+
         # Generate Request-Object for ROME-API
         requests = [
             {
@@ -51,16 +54,18 @@ class ROMEIntervention(InterventionMethod):
         self.model_wrapper.model = model_new
 
     def get_token_scores(self, prompt):
-        response_dict = {"response": {"layers": [
-            {
-                "layer": self.rome_hparams.layers,
-                "text_inputs": {
-                    "prompt": "",
-                    "subject": "",
-                    "target": ""
-                },
-                "type": self.__class__.__name__
-            }
-        ]}}
+        response_dict = {
+            "layers": [
+                {
+                    "layer": self.rome_hparams.layers[0],
+                    "text_inputs": {
+                        "prompt": "",
+                        "subject": "",
+                        "target": ""
+                    },
+                    "type": self.__class__.__name__
+                }
+            ]
+        }
 
         return response_dict

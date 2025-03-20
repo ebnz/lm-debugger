@@ -62,20 +62,29 @@ class ModelingRequests():
         prompt = req_json_dict['prompt']
         interventions = req_json_dict['interventions']
 
-        # Set Interventions for LM-Debugger-Intervention
-        self.intervention_controller.set_interventions(interventions)
+        # Clear Interventions
+        self.intervention_controller.clear_interventions()
 
         response_dict = {'prompt': prompt, 'layers': []}
-        intervention_dict = {'prompt': prompt, 'layers': []}
-        # Assemble Response-Dicts
+        # Assemble Response-Dict without Interventions (response_dict)
         for method in self.intervention_controller.intervention_methods:
             # Generate Token-Scores
             rv = method.get_token_scores(prompt)
-            response_dict['layers'] += rv['response']['layers']
-            if 'intervention' in rv.keys():
-                intervention_dict['layers'] += rv['intervention']['layers']
+            response_dict['layers'] += rv['layers']
 
+        # Set Interventions
+        self.intervention_controller.set_interventions(interventions)
+
+        intervention_dict = {'prompt': prompt, 'layers': []}
+        # Assemble Response-Dict with Interventions (intervention_dict)
+        for method in self.intervention_controller.intervention_methods:
+            # Generate Token-Scores
+            rv = method.get_token_scores(prompt)
+            intervention_dict['layers'] += rv['layers']
+
+        # Clear Hooks and Interventions
         self.model_wrapper.clear_hooks()
+        self.intervention_controller.clear_interventions()
 
         return {
             'response': response_dict,

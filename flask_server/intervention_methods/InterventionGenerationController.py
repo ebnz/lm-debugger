@@ -25,12 +25,19 @@ class InterventionGenerationController:
         for intervention in self.interventions:
             intervention_type = intervention["type"]
             intervention_layer = intervention["layer"]
+            print(f"My Layer: {intervention_layer}")
             fitting_method_found = False
             for method in self.intervention_methods:
                 if method.__class__.__name__ == intervention_type and intervention_layer in method.supported_layers:
                     method.add_intervention(intervention)
                     fitting_method_found = True
             if not fitting_method_found:
+                print(f"Incoming Type: {intervention_type}")
+                print(f"Incoming Layer: {intervention_layer}")
+                for item in self.intervention_methods:
+                    if item.__class__.__name__ == "ROMEIntervention":
+                        print(f"Have Type: {item.__class__.__name__}")
+                        print(f"Have Layer: {item.supported_layers}")
                 raise AttributeError(f"Intervention <{intervention}> has no fitting Intervention-Method!")
 
 
@@ -45,7 +52,13 @@ class InterventionGenerationController:
             method.setup_intervention_hooks(prompt)
 
     def transform_model(self, prompt):
-        for method in self.intervention_methods:
+        # Sort Methods supporting only one Layer from late to early Layers, other Methods are processed after
+        sorted_methods = sorted(
+            self.intervention_methods,
+            key=lambda item: item.supported_layers[0] if len(item.supported_layers) == 1 else 0,
+            reverse=True
+        )
+        for method in sorted_methods:
             method.transform_model(prompt)
 
     """

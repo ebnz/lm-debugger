@@ -81,7 +81,11 @@ class LMDebuggerIntervention(InterventionMethod):
             pred_dict_new = self.process_pred_dict(pred_dict_new_raw)
             response_dict['intervention'] = pred_dict_new
             self.model_wrapper.clear_hooks()
-        return response_dict
+
+        if len(self.interventions) == 0:
+            return response_dict["response"]
+
+        return response_dict["intervention"]
 
     """
     Generation-Hook-Setting
@@ -101,13 +105,11 @@ class LMDebuggerIntervention(InterventionMethod):
                 values = []
             self.model_wrapper.setup_hook(
                 change_values(values, coef_value),
-                l,
-                "mlp.gate_proj"
+                self.args["layer_mappings"]["mlp_gate_proj"].format(l)
             )
             self.model_wrapper.setup_hook(
                 change_values(values, coef_value),
-                l,
-                "mlp.up_proj"
+                self.args["layer_mappings"]["mlp_up_proj"].format(l)
             )
 
     def set_hooks_gpt2(self):
@@ -144,50 +146,37 @@ class LMDebuggerIntervention(InterventionMethod):
 
         self.model_wrapper.setup_hook(
             get_activation("input_embedding"),
-            0,
-            "input_layernorm",
-            permanent=False
+            self.args["layer_mappings"]["decoder_input_layernorm"].format(0)
         )
 
         for i in range(self.model_wrapper.model.config.num_hidden_layers):
             if i != 0:
                 self.model_wrapper.setup_hook(
                     get_activation("layer_residual_" + str(i - 1)),
-                    i,
-                    "input_layernorm",
-                    permanent=False
+                    self.args["layer_mappings"]["decoder_input_layernorm"].format(i)
                 )
+
             self.model_wrapper.setup_hook(
                 get_activation("intermediate_residual_" + str(i)),
-                i,
-                "post_attention_layernorm",
-                permanent=False
+                self.args["layer_mappings"]["decoder_post_attention_layernorm"].format(i)
             )
 
             self.model_wrapper.setup_hook(
                 get_activation("attn_" + str(i)),
-                i,
-                "self_attn",
-                permanent=False
+                self.args["layer_mappings"]["attn_sublayer"].format(i)
             )
             self.model_wrapper.setup_hook(
                 get_activation("mlp_" + str(i)),
-                i,
-                "mlp",
-                permanent=False
+                self.args["layer_mappings"]["mlp_sublayer"].format(i)
             )
             self.model_wrapper.setup_hook(
                 get_activation("m_coef_" + str(i)),
-                i,
-                "mlp.down_proj",
-                permanent=False
+                self.args["layer_mappings"]["mlp_down_proj"].format(i)
             )
 
         self.model_wrapper.setup_hook(
             get_activation("layer_residual_" + str(final_layer)),
-            None,
-            "norm",
-            permanent=False
+            self.args["layer_mappings"]["post_decoder_norm"]
         )
 
     def get_resid_predictions(self, sentence, start_idx=None, end_idx=None, set_mlp_0=False):
@@ -296,15 +285,16 @@ class LMDebuggerIntervention(InterventionMethod):
         return curr_max_val + eps
 
     def setup_intervention_hooks(self, prompt):
+        if len(self.interventions) <= 0:
+            return
         pred_dict_raw = self.process_and_get_data(prompt)
-        if len(self.interventions) > 0:
-            maxs_dict = {l: self.get_new_max_coef(l, pred_dict_raw) for l in range(self.model_wrapper.model.config.num_hidden_layers)}
-            for intervention in self.interventions:
-                if intervention['coeff'] > 0:
-                    new_max_val = maxs_dict[intervention['layer']]
-                else:
-                    new_max_val = 0
-                self.set_control_hooks_gpt2({intervention['layer']: [intervention['dim']], }, coef_value=new_max_val)
+        maxs_dict = {l: self.get_new_max_coef(l, pred_dict_raw) for l in range(self.model_wrapper.model.config.num_hidden_layers)}
+        for intervention in self.interventions:
+            if intervention['coeff'] > 0:
+                new_max_val = maxs_dict[intervention['layer']]
+            else:
+                new_max_val = 0
+            self.set_control_hooks_gpt2({intervention['layer']: [intervention['dim']], }, coef_value=new_max_val)
 
     def process_clean_token(self, token):
         return token

@@ -52,8 +52,7 @@ class SAEIntervention(InterventionMethod):
 
         self.model_wrapper.setup_hook(
             get_hook(layer_type),
-            layer_id,
-            layer_type
+            self.args["layer_mappings"][layer_type].format(layer_id)
         )
 
         tokens = self.model_wrapper.tokenizer(prompt, return_tensors="pt")
@@ -66,19 +65,21 @@ class SAEIntervention(InterventionMethod):
         top_features = top_k_object.indices.tolist()
         top_scores = top_k_object.values.tolist()
 
-        response_dict = {"response": {"layers": [
-            {
-                "layer": layer_id,
-                "significant_values": [
-                    {
-                        "dim": feature_index,
-                        "layer": layer_id,
-                        "score": score
-                    } for feature_index, score in zip(top_features, top_scores)
-                ],
-                "type": self.__class__.__name__
-            }
-        ]}}
+        response_dict = {
+            "layers": [
+                {
+                    "layer": layer_id,
+                    "significant_values": [
+                        {
+                            "dim": feature_index,
+                            "layer": layer_id,
+                            "score": score
+                        } for feature_index, score in zip(top_features, top_scores)
+                    ],
+                    "type": self.__class__.__name__
+                }
+            ]
+        }
 
         return response_dict
 
@@ -123,8 +124,7 @@ class SAEIntervention(InterventionMethod):
 
             self.model_wrapper.setup_hook(
                 get_hook(feature_index, coeff, layer_type),
-                layer_id,
-                layer_type
+                self.args["layer_mappings"][layer_type].format(layer_id)
             )
 
     def get_projections(self, dim, *args, **kwargs):

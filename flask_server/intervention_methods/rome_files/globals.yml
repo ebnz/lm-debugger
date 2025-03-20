@@ -4,7 +4,7 @@
 
   # Data files
   DATA_DIR: "data"
-  STATS_DIR: "/nfs/data/students/ebenz_bsc2024/cache"
+  STATS_DIR: "/nfs/data/shared/ROME_Cache/stats"
 
   # Hyperparameters
   HPARAMS_DIR: "hparams"
