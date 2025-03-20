@@ -38,8 +38,8 @@ class LMDebuggerInterventionForTiming(LMDebuggerIntervention):
                                         coef_value=new_max_val)
 
 class InterventionGenerationControllerForTiming(InterventionGenerationController):
-    def __init__(self, model_wrapper, top_k):
-        super().__init__(model_wrapper, top_k)
+    def __init__(self, model_wrapper):
+        super().__init__(model_wrapper)
 
     def generate(self, prompt, generate_k):
         torch.cuda.synchronize()
@@ -95,7 +95,7 @@ model = AutoModelForCausalLM.from_pretrained(args.model_name, torch_dtype=torch.
 tokenizer = AutoTokenizer.from_pretrained(args.model_name)
 model_wrapper = CodeLlamaModel(model, tokenizer=tokenizer, device=args.device)
 
-intervention_controller = InterventionGenerationControllerForTiming(model_wrapper, args.top_k_tokens_for_ui)
+intervention_controller = InterventionGenerationControllerForTiming(model_wrapper)
 
 # Load LMDebuggerInterventionForTiming
 intervention_controller.register_method(LMDebuggerInterventionForTiming(

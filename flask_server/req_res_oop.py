@@ -25,7 +25,7 @@ class ModelingRequests():
 
         self.model_wrapper = CodeLlamaModel(model, tokenizer=tokenizer, device=args.device)
 
-        self.intervention_controller = InterventionGenerationController(self.model_wrapper, args.top_k_tokens_for_ui)
+        self.intervention_controller = InterventionGenerationController(self.model_wrapper)
 
         # Load LMDebuggerIntervention
         self.intervention_controller.register_method(LMDebuggerIntervention(

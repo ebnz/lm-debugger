@@ -1,9 +1,13 @@
 import torch
 
 class InterventionGenerationController:
-    def __init__(self, model_wrapper, top_k):
+    def __init__(self, model_wrapper):
+        """
+        Controller, responsible for managing Intervention-Methods, their Interventions, Feature-Scores and Generation
+        :type model_wrapper: sparse_autoencoders.TransformerModelWrapper
+        :param model_wrapper: Model Wrapper, wrapping a Transformer-like LLM
+        """
         self.model_wrapper = model_wrapper
-        self.TOP_K = top_k
         self.interventions = []
         self.intervention_methods = []
 
@@ -15,9 +19,19 @@ class InterventionGenerationController:
             self.original_weights[param_name] = param.detach().clone().cpu()
 
     def register_method(self, method):
+        """
+        Registers an Intervention Method to this Controller
+        :type method: InterventionMethod
+        :param method: Intervention Method to register
+        """
         self.intervention_methods.append(method)
 
     def set_interventions(self, interventions):
+        """
+        Sets the Interventions and distributes to the fitting Intervention Method
+        :type interventions: list
+        :param interventions: Interventions ot set
+        """
         self.clear_interventions()
 
         self.interventions = interventions
@@ -36,16 +50,31 @@ class InterventionGenerationController:
 
 
     def clear_interventions(self):
+        """
+        Clears all Interventions
+        """
         self.interventions = []
 
         for method in self.intervention_methods:
             method.clear_interventions()
 
     def setup_intervention_hooks(self, prompt):
+        """
+        Installs the Hooks from the Intervention Methods to the LLM.
+        Implementation Logic of Intervention Methods, that use Hooks here.
+        :type prompt: str
+        :param prompt: Prompt, the Model is run on after setup of Hooks
+        """
         for method in self.intervention_methods:
             method.setup_intervention_hooks(prompt)
 
     def transform_model(self, prompt):
+        """
+        Performs the Transformation of the Model's Weights, as defined by the Interventions.
+        Implementation Logic of Intervention Methods, that use Model Transformation here.
+        :type prompt: str
+        :param prompt: Prompt, the Model is run on after Transformation
+        """
         # Sort Methods supporting only one Layer from late to early Layers, other Methods are processed after
         # ROMEIntervention won't work else when using multiple Interventions of _different_ ROMEIntervention-Instances
         sorted_methods = sorted(
@@ -56,10 +85,11 @@ class InterventionGenerationController:
         for method in sorted_methods:
             method.transform_model(prompt)
 
-    """
-    This Function is inspired from the my-rome/notebooks/rome.ipynb-Notebook of https://github.com/aip-hd-research/my-rome
-    """
     def restore_original_model(self):
+        """
+        Restores the original Model's Weights. Inverse of transform_model.
+        This Function is inspired from the my-rome/notebooks/rome.ipynb-Notebook of https://github.com/aip-hd-research/my-rome
+        """
         if self.original_weights is not None:
             with torch.no_grad():
                 for key, original_value in self.original_weights.items():
@@ -68,6 +98,16 @@ class InterventionGenerationController:
                             param[...] = original_value.to(self.model_wrapper.device)
 
     def generate(self, prompt, generate_k):
+        """
+        Generate Text using the Model Wrapper and the set up Interventions.
+        Used in the Generate-Feature.
+        :rtype: str
+        :type prompt: str
+        :type generate_k: int
+        :param prompt: Prompt, used for Generation
+        :param generate_k: Tokens to generate
+        :return: Generated Text
+        """
         # Call Model-Editing Interventions
         self.transform_model(prompt)
         # Setup Intervention-Hooks
@@ -88,6 +128,14 @@ class InterventionGenerationController:
         return response_dict
 
     def get_token_scores(self, prompt):
+        """
+        Generates the Token-Scores.
+        This Method obtains information on the Next-Token-Prediction of a given Prompt. Used in the Trace-Feature.
+        :rtype: dict
+        :type prompt: str
+        :param prompt: Prompt, used to calculate the Features/Token-Scores
+        :return: Token-Scores
+        """
         # Apply Interventions
         self.transform_model(prompt)
         self.setup_intervention_hooks(prompt)
@@ -118,6 +166,18 @@ class InterventionGenerationController:
         return rv_dict
 
     def get_projections(self, type, layer, dim):
+        """
+        Projects Features (their representation as Vectors) to actual Tokens.
+        Used in the Value-Vector-Details Feature.
+        :rtype: dict
+        :type type: str
+        :type layer: int
+        :type dim: int
+        :param type: Type of Intervention Method (Name of the Class, the Intervention Method is implemented in)
+        :param layer: Layer Index
+        :param dim: Dimension/Index of the Feature ot get Projections from
+        :return: Dict of Projections of Features to Tokens
+        """
         for method in self.intervention_methods:
             if type != method.__class__.__name__:
                 continue
