@@ -9,6 +9,13 @@ from create_offline_files import create_elastic_search_data, create_streamlit_da
 
 class LMDebuggerIntervention(InterventionMethod):
     def __init__(self, model_wrapper, args):
+        """
+        Represents the original Intervention Method of LM-Debugger.
+        :type model_wrapper: sparse_autoencoders.TransformerModelWrapper
+        :type args: pyhocon.config_tree.ConfigTree
+        :param model_wrapper: Model Wrapper, the Intervention Method is applied to
+        :param args: Configuration-Options from LM-Debugger++'s JSONNET-Config File
+        """
         supported_layers = [i for i in range(model_wrapper.model.config_class().num_hidden_layers)]
         super().__init__(model_wrapper, args, supported_layers)
 

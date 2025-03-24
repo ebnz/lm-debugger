@@ -10,6 +10,13 @@ from .rome_files.util import nethook
 
 class ROMEIntervention(InterventionMethod):
     def __init__(self, model_wrapper, args, config_path):
+        """
+        Represents the Intervention Method of ROME.
+        :type model_wrapper: sparse_autoencoders.TransformerModelWrapper
+        :type args: pyhocon.config_tree.ConfigTree
+        :param model_wrapper: Model Wrapper, the Intervention Method is applied to
+        :param args: Configuration-Options from LM-Debugger++'s JSONNET-Config File
+        """
         self.rome_hparams = ROMEHyperParams.from_json(config_path)
         super().__init__(model_wrapper, args, self.rome_hparams.layers)
 

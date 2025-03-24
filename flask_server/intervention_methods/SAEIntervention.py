@@ -8,6 +8,13 @@ from sparse_autoencoders.AutoEncoder import AutoEncoder
 
 class SAEIntervention(InterventionMethod):
     def __init__(self, model_wrapper, args, config_path):
+        """
+        Represents the Intervention Method using Sparse Autoencoders.
+        :type model_wrapper: sparse_autoencoders.TransformerModelWrapper
+        :type args: pyhocon.config_tree.ConfigTree
+        :param model_wrapper: Model Wrapper, the Intervention Method is applied to
+        :param args: Configuration-Options from LM-Debugger++'s JSONNET-Config File
+        """
         self.config_path = config_path
         self.device = args.autoencoder_device
 

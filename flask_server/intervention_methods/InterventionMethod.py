@@ -1,7 +1,7 @@
 class InterventionMethod:
     def __init__(self, model_wrapper, args, supported_layers):
         """
-
+        Represents a generic Intervention Method.
         :type model_wrapper: sparse_autoencoders.TransformerModelWrapper
         :type args: pyhocon.config_tree.ConfigTree
         :type supported_layers: list[int]
