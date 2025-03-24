@@ -17,6 +17,8 @@ class SAEIntervention(InterventionMethod):
         supported_layers = [self.config["LAYER_INDEX"]]
         super().__init__(model_wrapper, args, supported_layers)
 
+        self.active_coeff = args.sae_active_coeff
+
         self.autoencoder = AutoEncoder.load_model_from_config(self.config)
         self.autoencoder = self.autoencoder.to(self.device)
 
@@ -118,7 +120,7 @@ class SAEIntervention(InterventionMethod):
 
         for intervention in self.interventions:
             feature_index = intervention["dim"]
-            coeff = intervention["coeff"]
+            coeff = self.active_coeff if intervention["coeff"] > 0 else 0
             layer_id = self.config["LAYER_INDEX"]
             layer_type = self.config["LAYER_TYPE"]
 
@@ -133,7 +135,7 @@ class SAEIntervention(InterventionMethod):
 
         # Compute AutoEncoder-Output and set given Feature to high value
         f = torch.zeros(self.autoencoder.m)
-        f[dim] = 100
+        f[dim] = self.active_coeff
 
         # Calculate the output of the Decoder of the AutoEncoder
         x_hat = self.autoencoder.forward_decoder(f.to(self.device)).detach().cpu().to(dtype=torch.float16)
@@ -157,7 +159,7 @@ class SAEIntervention(InterventionMethod):
 
         # Logits and Tokens with highest probability
         output_logits = logits[argsorted_logits].tolist()
-        output_tokens = self.model_wrapper.tokenizer._convert_id_to_token(argsorted_logits)
+        output_tokens = [self.model_wrapper.tokenizer._convert_id_to_token(item) for item in argsorted_logits]
 
         # Build Response
         top_k = [{

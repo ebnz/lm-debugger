@@ -81,9 +81,16 @@ interface ParseFailed {
 type ParseResult = ParseSuccess | ParseFailed;
 
 const parseInput = (str: string): ParseResult => {
-  const pattern = /^([LS])(\d+)D(\d+)$/i
+  const pattern = /^([a-zA-Z])(\d+)D(\d+)$/i
   const arr = pattern.exec(str);
   if (arr !== null) {
+    const type_abbr = arr[1];
+    if (!toType.has(type_abbr)) {
+      return {
+      type: "failed",
+      msg: "Intervention Method Abbreviation " + type_abbr + " does not exist or is not registered!"
+    }
+    }
     const type = toType.get(arr[1]);
     const layer = parseInt(arr[2]);
     const dim = parseInt(arr[3]);
@@ -94,7 +101,7 @@ const parseInput = (str: string): ParseResult => {
   } else {
     return {
       type: "failed",
-      msg: "Input must be of form 'L12D43'"
+      msg: "Input must be e.g. 'L12D43' or 'S3D69'"
     }
   }
 }

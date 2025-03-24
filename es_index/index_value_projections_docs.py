@@ -40,24 +40,17 @@ if __name__ == "__main__":
     # Arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "api_key", type=str, help="specify the api key", nargs=1
-    )
-    parser.add_argument(
         "--config_path", default='./config_files/gpt2-medium.jsonnet', type=str, help="specify the config file"
-    )
-    parser.add_argument(
-        "--ca_cert_path", default='./config_files/http_ca.crt', type=str, help="specify the ca_cert path"
     )
     args = parser.parse_args()
     config = pyhocon.ConfigFactory.from_dict(json.loads(_jsonnet.evaluate_file(args.config_path)))
-    ca_cert_path = args.ca_cert_path
-    api_key = args.api_key[0]
+    api_key = config.elastic_api_key
 
     # Get Index Name
     es_index_name = config.elastic_index
 
     # Get an ElasticSearch client
-    es = get_esclient(config.elastic_ip, config.elastic_port, ca_cert_path, api_key)
+    es = get_esclient(config.elastic_ip, config.elastic_port, api_key)
 
     settings = {
         "index": {

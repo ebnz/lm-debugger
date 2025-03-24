@@ -39,7 +39,6 @@ class InterventionGenerationController:
         for intervention in self.interventions:
             intervention_type = intervention["type"]
             intervention_layer = intervention["layer"]
-            print(f"My Layer: {intervention_layer}")
             fitting_method_found = False
             for method in self.intervention_methods:
                 if method.__class__.__name__ == intervention_type and intervention_layer in method.supported_layers:
