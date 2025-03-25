@@ -92,6 +92,7 @@ function MainPage(): JSX.Element {
       setPrediction(resultWithNames);
     }catch(e) {
       setPredictionError("Failed prediction");
+      console.log(e)
     } finally {
       setLoadingPrediction(false);
     }

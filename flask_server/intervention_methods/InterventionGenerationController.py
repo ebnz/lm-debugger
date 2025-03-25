@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 
 class InterventionGenerationController:
     def __init__(self, model_wrapper):
@@ -150,19 +151,20 @@ class InterventionGenerationController:
         self.model_wrapper.clear_hooks()
         self.restore_original_model()
 
-        # Replace inf's with 0
-        def replace_infs(dictionary):
-            for key, value in dictionary.items():
-                if isinstance(value, dict):
-                    dictionary[key] = replace_infs(value)
-                elif isinstance(value, list):
-                    for idx, item in enumerate(value):
-                        dictionary[key][idx] = replace_infs(item)
-                elif value == float("inf"):
-                    dictionary[key] = 0
-            return dictionary
+        # Replace inf's and NaN's with 0
+        def replace_inf_nan(iterable):
+            if isinstance(iterable, dict):
+                for key, value in iterable.items():
+                    iterable[key] = replace_inf_nan(value)
+            elif isinstance(iterable, list):
+                for idx, value in enumerate(iterable):
+                    iterable[idx] = replace_inf_nan(value)
+            elif isinstance(iterable, float) and (np.isnan(iterable) or np.isinf(iterable)):
+                return 0
 
-        return rv_dict
+            return iterable
+
+        return replace_inf_nan(rv_dict)
 
     def get_projections(self, type, layer, dim):
         """

@@ -70,7 +70,11 @@ class SAEIntervention(InterventionMethod):
 
         f = self.autoencoder.forward_encoder(activation_vector[0, -1].to(self.device))
 
-        top_k_object = f.topk(self.TOP_K)
+        # Replace NaN's and Inf's to zero
+        f_refined = f.nan_to_num(0.0)
+        f_refined[f_refined == float("Inf")] = 0
+
+        top_k_object = f_refined.topk(self.TOP_K)
         top_features = top_k_object.indices.tolist()
         top_scores = top_k_object.values.tolist()
 

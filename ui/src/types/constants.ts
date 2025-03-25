@@ -9,7 +9,4 @@ export const toType= new Map<string, string> ([
     ["S", "SAEIntervention"]
 ]);
 
-export const toAbbr= new Map<string, string> ([
-    ["LMDebuggerIntervention", "L"],
-    ["SAEIntervention", "S"]
-]);
+export const toAbbr = new Map(Array.from(toType, a => a.reverse() as [string, string]))

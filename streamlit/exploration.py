@@ -66,8 +66,8 @@ with Elasticsearch(
                 dict_for_df["interpretation"].append(None)
             elif es_index_type == "SAEIntervention":
                 dict_for_df["index_type"].append(es_index_type)
-                dict_for_df["layer"].append(None)#item["_source"]["layer"])
-                dict_for_df["dim"].append(None)#item["_source"]["dim"])
+                dict_for_df["layer"].append(item["_source"]["layer"])
+                dict_for_df["dim"].append(item["_source"]["dim"])
                 dict_for_df["tokens"].append(item["_source"]["tokens"])
                 dict_for_df["search_score"].append(item["_score"])
                 dict_for_df["interpretability_score"].append(item["_source"]["score"])

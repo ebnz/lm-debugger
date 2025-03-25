@@ -4,7 +4,7 @@ import numpy as np
 
 from .InterventionMethod import InterventionMethod
 
-from create_offline_files import create_elastic_search_data, create_streamlit_data
+from create_offline_files import create_elastic_search_data
 
 
 class LMDebuggerIntervention(InterventionMethod):
@@ -26,15 +26,6 @@ class LMDebuggerIntervention(InterventionMethod):
             self.model_wrapper.tokenizer,
             self.args.top_k_for_elastic
         )
-
-        if self.args.create_cluster_files:
-            create_streamlit_data(
-                self.args.streamlit_cluster_to_value_file_path,
-                self.args.streamlit_value_to_cluster_file_path,
-                self.model_wrapper.model,
-                self.args.model_name,
-                self.args.num_clusters
-            )
 
     def process_pred_dict(self, pred_df):
         pred_d = {}
