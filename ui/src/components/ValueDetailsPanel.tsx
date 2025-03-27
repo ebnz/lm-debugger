@@ -77,15 +77,10 @@ function ValueDetailsPanel(props: Props): JSX.Element {
     )
   }
 
-  const link = `http://${runConfig.streamlit_ip}:${runConfig.streamlit_port}/?L=${valueId?.layer}&D=${valueId?.dim}&visualize=true`;
-  const anchor = <a target="_blank" rel="noreferrer" href={link}>Analyze</a>;
   const title = (
     <div>
       <Space size="small" split={<Divider type="vertical" />}>
         <Text>Value Vector Details</Text>
-        <div>
-        <a target="_blank" rel="noreferrer" href={link}>Analyze</a>
-        </div>
       </Space>
       <br/><br/>
       <Space size="small" split={<Divider type="vertical" />}>
