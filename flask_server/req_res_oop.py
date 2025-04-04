@@ -1,4 +1,3 @@
-import json
 import warnings
 from tqdm import tqdm
 
@@ -49,16 +48,7 @@ class ModelingRequests():
                 config_path
             ))
 
-    def json_req_to_prompt_and_interventions_d(self, req_json_path):
-        with open(req_json_path) as json_f:
-            req = json.load(json_f)
-        return [req['prompt']], req['interventions']
-
-    def get_new_max_coef(self, layer, old_dict, eps=10e-3):
-        curr_max_val = old_dict['top_coef_vals'][layer][0]
-        return curr_max_val + eps
-
-    def request2response(self, req_json_dict, save_json=False, res_json_path=None, res_json_intervention_path=None):
+    def request2response(self, req_json_dict):
         prompt = req_json_dict['prompt']
         interventions = req_json_dict['interventions']
 
@@ -76,8 +66,7 @@ class ModelingRequests():
             'intervention': intervention_dict
         } if len(intervention_dict['layers']) != 0 else {'response': response_dict}
 
-    def request2response_for_generation(self, req_json_dict, save_json=False, res_json_path=None,
-                                        res_json_intervention_path=None):
+    def request2response_for_generation(self, req_json_dict):
         prompt = req_json_dict['prompt']
         interventions = req_json_dict['interventions']
         generate_k = req_json_dict['generate_k']
@@ -91,16 +80,10 @@ class ModelingRequests():
         return response_dict
 
     def send_request_get_response(self, request_json_dict):
-        return self.request2response(request_json_dict,
-                                     save_json=False,
-                                     res_json_path=None,
-                                     res_json_intervention_path=None)
+        return self.request2response(request_json_dict)
 
     def send_request_get_response_for_generation(self, request_json_dict):
-        return self.request2response_for_generation(request_json_dict,
-                                                    save_json=False,
-                                                    res_json_path=None,
-                                                    res_json_intervention_path=None)
+        return self.request2response_for_generation(request_json_dict)
 
     def get_projections(self, type, layer, dim):
         return self.intervention_controller.get_projections(type, int(layer), int(dim))

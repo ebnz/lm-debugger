@@ -165,7 +165,8 @@ fig_intervention_throughput = go.Figure(layout={
     "title": "Throughput of Preprocessing Interventions",
     "xaxis_title": "Number of Interventions",
     "yaxis_title": "Intervention Throughput [Interventions/s]",
-    "font": dict(size=32)
+    "font": dict(size=32),
+    "yaxis": dict(type="log")
 })
 
 tokens_to_generate = 500

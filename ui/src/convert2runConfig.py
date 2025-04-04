@@ -6,7 +6,7 @@ import pyhocon
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--config_path", default='./config_files/gpt2-medium.jsonnet', type=str, help="specify the config file"
+        "--config_path", default='./config_files/codellama-7b-instruct.jsonnet', type=str, help="specify the config file"
     )
     args = parser.parse_args()
     config = pyhocon.ConfigFactory.from_dict(json.loads(_jsonnet.evaluate_file(args.config_path)))

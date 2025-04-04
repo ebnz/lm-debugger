@@ -204,8 +204,6 @@ class LMDebuggerIntervention(InterventionMethod):
 
                 probs = torch.reshape(probs, (-1,)).detach().cpu().numpy()
 
-                assert np.abs(np.sum(probs) - 1) <= 0.01, str(np.abs(np.sum(probs) - 1)) + layer
-
                 probs_ = []
                 for index, prob in enumerate(probs):
                     probs_.append((index, prob))

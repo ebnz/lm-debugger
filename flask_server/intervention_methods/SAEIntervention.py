@@ -32,25 +32,12 @@ class SAEIntervention(InterventionMethod):
     def get_token_scores(self, prompt):
         global activation_vector
         def get_hook(layer_type):
-            # mlp_activations
-            def hook_mlp_acts(module, input, output):
+            def hook(module, input, output):
                 global activation_vector
                 activation_vector = output
 
-            def hook_mlp_sublayer(module, input, output):
-                global activation_vector
-                activation_vector = output
-
-            def hook_attn_sublayer(module, input, output):
-                global activation_vector
-                activation_vector = output
-
-            if layer_type == "mlp_activations":
-                return hook_mlp_acts
-            elif layer_type == "attn_sublayer":
-                return hook_attn_sublayer
-            elif layer_type == "mlp_sublayer":
-                return hook_mlp_sublayer
+            if layer_type in ["mlp_activations", "attn_sublayer", "mlp_sublayer"]:
+                return hook
             else:
                 raise AttributeError(f"layer_type <{layer_type}> unknown")
 
@@ -68,16 +55,19 @@ class SAEIntervention(InterventionMethod):
         tokens.to(self.model_wrapper.device)
         self.model_wrapper.model(**tokens)
 
+        # Get Activations of the only Batch and last Token
         f = self.autoencoder.forward_encoder(activation_vector[0, -1].to(self.device))
 
         # Replace NaN's and Inf's to zero
         f_refined = f.nan_to_num(0.0)
         f_refined[f_refined == float("Inf")] = 0
 
+        # Extract Top-K Features with Index and Activation-Score
         top_k_object = f_refined.topk(self.TOP_K)
         top_features = top_k_object.indices.tolist()
         top_scores = top_k_object.values.tolist()
 
+        # Assemble Response
         response_dict = {
             "layers": [
                 {
@@ -98,37 +88,19 @@ class SAEIntervention(InterventionMethod):
 
     def setup_intervention_hooks(self, prompt):
         def get_hook(feature_index, new_value, layer_type):
-            # mlp_activations
-            def hook_mlp_acts(module, input, output):
+            def hook(module, input, output):
                 activation_vector = output
                 f = self.autoencoder.forward_encoder(activation_vector.to(self.device))
                 f[::, ::, feature_index] = new_value
                 x_hat = self.autoencoder.forward_decoder(f).to(self.model_wrapper.device, dtype=torch.float16)
                 return x_hat
 
-            def hook_mlp_sublayer(module, input, output):
-                activation_vector = output
-                f = self.autoencoder.forward_encoder(activation_vector.to(self.device))
-                f[::, ::, feature_index] = new_value
-                x_hat = self.autoencoder.forward_decoder(f).to(self.model_wrapper.device, dtype=torch.float16)
-                return x_hat
-
-            def hook_attn_sublayer(module, input, output):
-                activation_vector = output
-                f = self.autoencoder.forward_encoder(activation_vector.to(self.device))
-                f[::, ::, feature_index] = new_value
-                x_hat = self.autoencoder.forward_decoder(f).to(self.model_wrapper.device, dtype=torch.float16)
-                return x_hat
-
-            if layer_type == "mlp_activations":
-                return hook_mlp_acts
-            elif layer_type == "attn_sublayer":
-                return hook_attn_sublayer
-            elif layer_type == "mlp_sublayer":
-                return hook_mlp_sublayer
+            if layer_type in ["mlp_activations", "attn_sublayer", "mlp_sublayer"]:
+                return hook
             else:
                 raise AttributeError(f"layer_type <{layer_type}> unknown")
 
+        # Insert Interventions
         for intervention in self.interventions:
             feature_index = intervention["dim"]
             coeff = self.active_coeff if intervention["coeff"] > 0 else 0

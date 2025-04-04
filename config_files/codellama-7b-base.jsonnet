@@ -1,22 +1,41 @@
 {
-  server_files_dir:: SERVER_FILES_PATH,
+  server_files_dir:: "server_files/",
   model_name:"codellama/CodeLlama-7b-hf",
-  device:"cpu",
-  server_ip:SERVER_IP,
-  server_port:SERVER_PORT,
-  elastic_ip:ELASTIC_IP,
-  elastic_port:ELASTIC_PORT,
-  react_ip:REACT_IP,
-  react_port:REACT_PORT,
-  streamlit_ip:STREAMLIT_IP,
-  streamlit_port:STREAMLIT_PORT,
+  device:"cuda:0",
+  server_ip: "localhost",
+  server_port: 8000,
+  elastic_ip: "localhost",
+  elastic_port: 9200,
+  react_ip: "localhost",
+  react_port: 3000,
+  streamlit_ip: "localhost",
+  streamlit_port: 8501,
   top_k_tokens_for_ui:10,
   top_k_for_elastic:50,
-  create_cluster_files:false,
-  num_clusters:3000,
-  num_layers:24,
-  elastic_index:$.model_name+"_projections_docs",
-  elastic_projections_path:$.server_files_dir + "values_logits_" + $.model_name +"_top_"+$.top_k_for_elastic + ".pkl",
-  streamlit_cluster_to_value_file_path: $.server_files_dir + "cluster_to_value_" + $.model_name +"_num_clusters_"+$.num_clusters + ".pkl",
-  streamlit_value_to_cluster_file_path: $.server_files_dir + "value_to_cluster_" + $.model_name +"_num_clusters_"+$.num_clusters + ".pkl",
+  num_layers:32,
+  elastic_index:"codellama_7b_projections_docs",
+  elastic_projections_path:$.server_files_dir + "values_logits_top_" + $.top_k_for_elastic + ".pkl",
+  elastic_api_key: "VGhlIGNha2UgaXMgYSBsaWU=",
+
+  layer_mappings: {
+    mlp_sublayer: "model.layers.{}.mlp",
+    attn_sublayer: "model.layers.{}.self_attn",
+    mlp_activations: "model.layers.{}.mlp.act_fn",
+    mlp_gate_proj: "model.layers.{}.mlp.gate_proj",
+    mlp_up_proj: "model.layers.{}.mlp.up_proj",
+    mlp_down_proj: "model.layers.{}.mlp.down_proj",
+    decoder_input_layernorm: "model.layers.{}.input_layernorm",
+    decoder_post_attention_layernorm: "model.layers.{}.post_attention_layernorm",
+    post_decoder_norm: "model.norm"
+  },
+
+  sae_paths: [
+    "autoencoders/my_sae.pt"
+  ],
+  autoencoder_device: "cuda:1",
+  sae_active_coeff: 100,
+
+  rome_paths: [
+    "config_files/ROME/codellama_CodeLlama-7b-hf.json"
+  ],
 }
