@@ -247,7 +247,7 @@ dependencies:
   - ncurses=6.5=h2d0b736_3
   - networkx=3.4.2=pyh267e887_2
   - nlohmann_json=3.11.3=he02047a_1
-  - numpy=2.2.0=py310h5851e9f_0
+  - numpy=2.2.4=py310hefbff90_0
   - nvidia-ml-py=12.570.86=pyhd8ed1ab_0
   - openjpeg=2.5.3=h5fbd93e_0
   - openldap=2.6.9=he970967_0
