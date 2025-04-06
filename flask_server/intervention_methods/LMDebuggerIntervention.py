@@ -4,8 +4,6 @@ import numpy as np
 
 from .InterventionMethod import InterventionMethod
 
-from create_offline_files import create_elastic_search_data
-
 
 class LMDebuggerIntervention(InterventionMethod):
     def __init__(self, model_wrapper, args):
@@ -18,14 +16,6 @@ class LMDebuggerIntervention(InterventionMethod):
         """
         supported_layers = [i for i in range(model_wrapper.model.config_class().num_hidden_layers)]
         super().__init__(model_wrapper, args, supported_layers)
-
-        self.dict_es = create_elastic_search_data(
-            self.args.elastic_projections_path,
-            self.model_wrapper.model,
-            self.args.model_name,
-            self.model_wrapper.tokenizer,
-            self.args.top_k_for_elastic
-        )
 
     def process_pred_dict(self, pred_df):
         pred_d = {}
@@ -298,8 +288,30 @@ class LMDebuggerIntervention(InterventionMethod):
     def get_projections(self, dim, layer=None, *args, **kwargs):
         if layer is None:
             raise AttributeError(f"No layer provided. Parameter layer: <{layer}>")
-        x = [(x[1], x[2]) for x in self.dict_es[(int(layer), int(dim))]]
-        new_d = {'layer': int(layer), 'dim': int(dim)}
-        top_k = [{'token': self.process_clean_token(x[i][0]), 'logit': float(x[i][1])} for i in range(len(x))]
-        new_d['top_k'] = top_k
-        return new_d
+        # Project Features with Embedding Matrix
+        feature_projections = torch.matmul(
+            self.model_wrapper.model.model.embed_tokens.weight,
+            self.model_wrapper.model.model.layers[layer].mlp.down_proj.weight
+        ).T
+
+        # Obtain Logits for one Feature
+        feature_logits = feature_projections[dim]
+
+        # Sort top-k Tokens for the specific Feature
+        argsorted_logits = np.argsort(-1 * feature_logits)[:self.args.top_k_for_elastic].tolist()
+
+        output_logits = feature_logits[argsorted_logits].tolist()
+        output_tokens = [self.model_wrapper.tokenizer._convert_id_to_token(item) for item in argsorted_logits]
+
+        top_k = [{
+            "logit": logit,
+            "token": token
+        } for logit, token in zip(output_logits, output_tokens)]
+
+        return {
+            "dim": dim,
+            "layer": layer,
+            "top_k": top_k
+        }
+
+

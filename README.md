@@ -54,7 +54,7 @@ The tool runs in a React and python environment with Flask and Streamlit install
 #### Creating a Configuration File 
 LM-Debugger executes one model at a time, based on a given configuration file. The configuration includes IP addresses and port numbers for running the different services, as well as the following fields:
 - `model_name`: The current version of LM-Debugger supports GPT2 models from [HuggingFace](https://huggingface.co/transformers) (e.g. `gpt2-medium` or `gpt2-large`).
-- `server_files_dir`: A path to store files with preprocessed model information, created by the script [create_offline_files.py](flask_server/intervention_methods/create_offline_files.py). The script creates 3 pickle files with (1) projections to the vocabulary of parameter vectors of the model's feed-forward layers, (2) two separate files with mappings between parameter vectors and clusters (and vice versa).   
+- `server_files_dir`: A path to store files with preprocessed model information, created by the script [create_offline_files.py](es_index/create_offline_files.py). The script creates 3 pickle files with (1) projections to the vocabulary of parameter vectors of the model's feed-forward layers, (2) two separate files with mappings between parameter vectors and clusters (and vice versa).   
 - `create_cluster_files`: A boolean field (`true`/`false`) that indicates whether to run clustering or not. This is optional since clustering of the feed-forward parameter vectors can take several hours and might require extra computation resources (especially for large models).    
 
 Sample configuration files for the medium and large versions of GPT2 are provided in the [config_files](config_files) directory.
