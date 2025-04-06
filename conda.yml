@@ -202,6 +202,7 @@ dependencies:
   - libpq=17.4=h27ae623_1
   - libprotobuf=5.29.3=h501fc15_0
   - libre2-11=2024.07.02=hba17884_3
+  - libsentencepiece=0.2.0=he636bdd_11
   - libsolv=0.7.30=h3509ff9_0
   - libsqlite=3.49.1=hee588c1_2
   - libssh2=1.11.1=hf672d98_0
@@ -316,6 +317,9 @@ dependencies:
   - safetensors=0.5.3=py310h505e2c1_0
   - scikit-learn=1.5.2=py310h27f47ee_1
   - scipy=1.14.1=py310hfcf56fc_2
+  - sentencepiece=0.2.0=h7197b3e_11
+  - sentencepiece-python=0.2.0=py310heea6b5d_11
+  - sentencepiece-spm=0.2.0=he636bdd_11
   - setuptools=75.8.2=pyhff2d567_0
   - simdjson=3.12.3=h84d6215_0
   - six=1.17.0=pyhd8ed1ab_0
