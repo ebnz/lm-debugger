@@ -30,7 +30,6 @@ class SAEIntervention(InterventionMethod):
         self.autoencoder = self.autoencoder.to(self.device)
 
     def get_token_scores(self, prompt):
-        global activation_vector
         def get_hook(layer_type):
             def hook(module, input, output):
                 global activation_vector

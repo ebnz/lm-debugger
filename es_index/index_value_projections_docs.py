@@ -23,7 +23,6 @@ def make_documents(projections_path, es_index_name):
         doc = {
             '_op_type': 'create',
             '_index': es_index_name,
-            #'_type': '_doc',
             '_id': doc_id,
             '_source': {
                 'layer': int(layer),
@@ -79,4 +78,3 @@ if __name__ == "__main__":
     doc_count = res[0]
 
     print("Index {0} is ready. Added {1} documents.".format(es_index_name, doc_count))
-

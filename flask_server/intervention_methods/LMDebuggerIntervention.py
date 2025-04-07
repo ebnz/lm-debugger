@@ -58,7 +58,10 @@ class LMDebuggerIntervention(InterventionMethod):
         pred_dict = self.process_pred_dict(pred_dict_raw)
         response_dict['response'] = pred_dict
         if len(self.interventions) > 0:
-            maxs_dict = {l: self.get_new_max_coef(l, pred_dict_raw) for l in range(self.model_wrapper.model.config.num_hidden_layers)}
+            maxs_dict = {
+                layer: self.get_new_max_coef(layer, pred_dict_raw)
+                for layer in range(self.model_wrapper.model.config.num_hidden_layers)
+            }
             for intervention in self.interventions:
                 if intervention['coeff'] > 0:
                     new_max_val = maxs_dict[intervention['layer']]
@@ -86,18 +89,18 @@ class LMDebuggerIntervention(InterventionMethod):
 
             return hook
 
-        for l in range(self.model_wrapper.model.config.num_hidden_layers):
-            if l in values_per_layer:
-                values = values_per_layer[l]
+        for layer in range(self.model_wrapper.model.config.num_hidden_layers):
+            if layer in values_per_layer:
+                values = values_per_layer[layer]
             else:
                 values = []
             self.model_wrapper.setup_hook(
                 change_values(values, coef_value),
-                self.args["layer_mappings"]["mlp_gate_proj"].format(l)
+                self.args["layer_mappings"]["mlp_gate_proj"].format(layer)
             )
             self.model_wrapper.setup_hook(
                 change_values(values, coef_value),
-                self.args["layer_mappings"]["mlp_up_proj"].format(l)
+                self.args["layer_mappings"]["mlp_up_proj"].format(layer)
             )
 
     def set_hooks_gpt2(self):
@@ -111,24 +114,23 @@ class LMDebuggerIntervention(InterventionMethod):
             def hook(module, input, output):
                 if "mlp" in name or "attn" in name or "m_coef" in name:
                     if "attn" in name:
-                        num_tokens = list(output[0].size())[1]  #(batch, sequence, hidden_state)
+                        num_tokens = list(output[0].size())[1]  # (batch, sequence, hidden_state)
                         self.model_wrapper.model.activations_[name] = output[0][:, num_tokens - 1].detach()
                     elif "mlp" in name:
-                        num_tokens = list(output[0].size())[0]  #(batch, sequence, hidden_state)
+                        num_tokens = list(output[0].size())[0]  # (batch, sequence, hidden_state)
                         self.model_wrapper.model.activations_[name] = output[0][num_tokens - 1].detach()
                     elif "m_coef" in name:
-                        num_tokens = list(input[0].size())[1]  #(batch, sequence, hidden_state)
+                        num_tokens = list(input[0].size())[1]  # (batch, sequence, hidden_state)
                         self.model_wrapper.model.activations_[name] = input[0][:, num_tokens - 1].detach()
                 elif "residual" in name or "embedding" in name:
-                    num_tokens = list(input[0].size())[1]  #(batch, sequence, hidden_state)
+                    num_tokens = list(input[0].size())[1]  # (batch, sequence, hidden_state)
                     if name == "layer_residual_" + str(final_layer):
                         self.model_wrapper.model.activations_[name] = self.model_wrapper.model.activations_[
                                                             "intermediate_residual_" + str(final_layer)] + \
                                                         self.model_wrapper.model.activations_["mlp_" + str(final_layer)]
 
                     else:
-                        self.model_wrapper.model.activations_[name] = input[0][:,
-                                                        num_tokens - 1].detach()
+                        self.model_wrapper.model.activations_[name] = input[0][:, num_tokens - 1].detach()
 
             return hook
 
@@ -168,8 +170,6 @@ class LMDebuggerIntervention(InterventionMethod):
         )
 
     def get_resid_predictions(self, sentence, start_idx=None, end_idx=None, set_mlp_0=False):
-        HIDDEN_SIZE = self.model_wrapper.model.config.hidden_size
-
         layer_residual_preds = []
         intermed_residual_preds = []
 
@@ -182,7 +182,7 @@ class LMDebuggerIntervention(InterventionMethod):
             sentence = " ".join(tokens[start_idx:end_idx])
         tokens = self.model_wrapper.tokenizer(sentence, return_tensors="pt")
         tokens.to(self.model_wrapper.device)
-        output = self.model_wrapper.model(**tokens, output_hidden_states=True)
+        self.model_wrapper.model(**tokens, output_hidden_states=True)
 
         for layer in self.model_wrapper.model.activations_.keys():
             if "layer_residual" in layer or "intermediate_residual" in layer:
@@ -226,7 +226,6 @@ class LMDebuggerIntervention(InterventionMethod):
 
     def process_and_get_data(self, prompt):
         sent_to_hidden_states, sent_to_preds = self.get_preds_and_hidden_states(prompt)
-        records = []
         top_coef_idx = []
         top_coef_vals = []
         residual_preds_probs = []
@@ -237,7 +236,10 @@ class LMDebuggerIntervention(InterventionMethod):
             coefs_ = []
             m_coefs = sent_to_hidden_states["m_coef_" + str(LAYER)].squeeze(0).cpu().numpy()
             res_vec = sent_to_hidden_states["layer_residual_" + str(LAYER)].squeeze(0).cpu().numpy()
-            value_norms = torch.linalg.norm(self.model_wrapper.model.model.layers[LAYER].mlp.down_proj.weight.data, dim=0).cpu()
+            value_norms = torch.linalg.norm(
+                self.model_wrapper.model.model.layers[LAYER].mlp.down_proj.weight.data,
+                dim=0
+            ).cpu()
             scaled_coefs = np.absolute(m_coefs) * value_norms.numpy()
 
             for index, prob in enumerate(scaled_coefs):
@@ -274,7 +276,10 @@ class LMDebuggerIntervention(InterventionMethod):
         if len(self.interventions) <= 0:
             return
         pred_dict_raw = self.process_and_get_data(prompt)
-        maxs_dict = {l: self.get_new_max_coef(l, pred_dict_raw) for l in range(self.model_wrapper.model.config.num_hidden_layers)}
+        maxs_dict = {
+            layer: self.get_new_max_coef(layer, pred_dict_raw)
+            for layer in range(self.model_wrapper.model.config.num_hidden_layers)
+        }
         for intervention in self.interventions:
             if intervention['coeff'] > 0:
                 new_max_val = maxs_dict[intervention['layer']]
@@ -295,7 +300,7 @@ class LMDebuggerIntervention(InterventionMethod):
         ).T
 
         # Obtain Logits for one Feature
-        feature_logits = feature_projections[dim]
+        feature_logits = feature_projections[dim].detach().cpu()
 
         # Sort top-k Tokens for the specific Feature
         argsorted_logits = np.argsort(-1 * feature_logits)[:self.args.top_k_for_elastic].tolist()
@@ -313,5 +318,3 @@ class LMDebuggerIntervention(InterventionMethod):
             "layer": layer,
             "top_k": top_k
         }
-
-

@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 
+
 class InterventionGenerationController:
     def __init__(self, model_wrapper):
         """
@@ -47,7 +48,6 @@ class InterventionGenerationController:
                     fitting_method_found = True
             if not fitting_method_found:
                 raise AttributeError(f"Intervention <{intervention}> has no fitting Intervention-Method!")
-
 
     def clear_interventions(self):
         """
@@ -116,8 +116,7 @@ class InterventionGenerationController:
         response_dict = {}
         tokens = self.model_wrapper.tokenizer(prompt, return_tensors="pt")
         tokens.to(self.model_wrapper.device)
-        greedy_output = self.model_wrapper.model.generate(**tokens,
-                                            max_length=generate_k + len(tokens['input_ids'][0]))
+        greedy_output = self.model_wrapper.model.generate(**tokens, max_length=generate_k + len(tokens['input_ids'][0]))
         greedy_output = self.model_wrapper.tokenizer.decode(greedy_output[0], skip_special_tokens=True)
         response_dict['generate_text'] = greedy_output
 

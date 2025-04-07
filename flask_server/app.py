@@ -29,30 +29,26 @@ if __name__ == '__main__':
     app = Flask(__name__)
     CORS(app)
 
-
     @app.route('/get_projections/type/<type>/layer/<layer>/dim/<dim>')
     def get_projections(type, layer, dim):
         return jsonify(requests_obj.get_projections(type, layer, dim))
-
 
     @app.route('/get_data', methods=['POST'])
     def get_data():
         try:
             request_data = request.get_json()
             return jsonify(requests_obj.send_request_get_response(request_data))
-        except:
+        except Exception:
             print(traceback.print_exc())
             return jsonify({})
-
 
     @app.route('/generate', methods=['POST'])
     def generate():
         try:
             request_data = request.get_json()
             return jsonify(requests_obj.send_request_get_response_for_generation(request_data))
-        except:
+        except Exception:
             print(traceback.print_exc())
             return jsonify({})
-
 
     app.run(debug=False, port=config.server_port, host="0.0.0.0")

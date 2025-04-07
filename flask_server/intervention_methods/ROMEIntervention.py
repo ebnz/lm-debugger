@@ -28,15 +28,18 @@ class ROMEIntervention(InterventionMethod):
             self.model_wrapper.model.model.padding_idx = self.model_wrapper.model.config.pad_token_id
             self.model_wrapper.model.generation_config.pad_token_id = self.model_wrapper.tokenizer.pad_token_id
             # potentially resize embedding and set padding idx
-            new_embedding_size = max(len(self.model_wrapper.tokenizer.vocab), self.model_wrapper.model.config.vocab_size)
-            new_embedding = torch.nn.Embedding(new_embedding_size, self.model_wrapper.model.config.hidden_size, self.model_wrapper.tokenizer.pad_token_id)
+            new_embedding_size = max(len(self.model_wrapper.tokenizer.vocab),
+                                     self.model_wrapper.model.config.vocab_size)
+            new_embedding = torch.nn.Embedding(new_embedding_size, self.model_wrapper.model.config.hidden_size,
+                                               self.model_wrapper.tokenizer.pad_token_id)
             old_embedding = self.model_wrapper.model.get_input_embeddings()
             new_embedding.to(old_embedding.weight.device, old_embedding.weight.dtype)
             new_embedding.weight.data[:self.model_wrapper.model.config.vocab_size] = old_embedding.weight.data
             self.model_wrapper.model.set_input_embeddings(new_embedding)
 
     """
-    This Function is adapted from the my-rome/notebooks/rome.ipynb-Notebook of https://github.com/aip-hd-research/my-rome
+    This Function is adapted from the my-rome/notebooks/rome.ipynb-Notebook
+    of https://github.com/aip-hd-research/my-rome
     """
     def transform_model(self, prompt):
         if len(self.interventions) <= 0:
@@ -55,7 +58,8 @@ class ROMEIntervention(InterventionMethod):
 
         # Retrieve ROME-transformed Model and replace old model
         model_new, _ = apply_rome_to_model(
-            self.model_wrapper.model, self.model_wrapper.tokenizer, requests, self.rome_hparams, return_orig_weights=True
+            self.model_wrapper.model, self.model_wrapper.tokenizer, requests,
+            self.rome_hparams, return_orig_weights=True
         )
 
         self.model_wrapper.model = model_new

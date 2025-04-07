@@ -8,11 +8,11 @@ import _jsonnet
 import numpy as np
 import pyhocon
 import torch
-from sklearn.cluster import AgglomerativeClustering
 from tqdm import tqdm
 from transformers import LlamaForCausalLM, CodeLlamaTokenizer
 
 warnings.filterwarnings('ignore')
+
 
 def get_all_projected_values(model):
     logits = []
@@ -45,12 +45,13 @@ def create_elastic_search_data(path, model, model_name, tokenizer, top_k):
             k = (i, j)
             cnt = inv_d[(i, j)]
             ids = np.argsort(-logits[cnt])[:top_k]
-            ids_list = ids.tolist()     #Converting a copy to a python list, as tokenizer._convert_id_to_token has problems with np.array
+            ids_list = ids.tolist()     # Convert to python list, tokenizer._convert_id_to_token has problems w np.array
             tokens = [tokenizer._convert_id_to_token(x) for x in ids_list]
             dict_es[k] = [(ids[b], tokens[b], logits[cnt][ids[b]]) for b in range(len(tokens))]
     with open(path, 'wb') as handle:
         pickle.dump(dict_es, handle, protocol=pickle.HIGHEST_PROTOCOL)
     return dict_es
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

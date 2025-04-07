@@ -6,5 +6,3 @@ def get_esclient(host, port, api_key):
         f"http://{host}:{port}/",
         api_key=api_key
     )
-
-
