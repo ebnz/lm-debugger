@@ -55,6 +55,7 @@ def calculate_max_similarities(a, b):
 
     return max_similarity_matrix
 
+
 # Load Transformer Model
 model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.float16)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -112,4 +113,4 @@ for sae_config_path in tqdm(sae_config_paths, desc="SAE No.", leave=False):
     )
 
     fig.update_layout({"font": dict(size=64)})
-    fig.write_html(f"similarity_plots/{sae_config_path.split('/')[-1]}.html")
+    fig.write_html(f"similarity_plots/{sae_config_path.split('/')[-1]}_down_proj.html")
