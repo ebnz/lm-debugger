@@ -79,11 +79,5 @@ class ModelingRequests():
 
         return response_dict
 
-    def send_request_get_response(self, request_json_dict):
-        return self.request2response(request_json_dict)
-
-    def send_request_get_response_for_generation(self, request_json_dict):
-        return self.request2response_for_generation(request_json_dict)
-
     def get_projections(self, type, layer, dim):
         return self.intervention_controller.get_projections(type, int(layer), int(dim))
