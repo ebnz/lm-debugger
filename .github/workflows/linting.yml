@@ -1,4 +1,4 @@
-name: Python Package using Conda
+name: Linting with flake8
 
 on: [push]
 
