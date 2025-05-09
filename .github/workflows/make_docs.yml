@@ -25,6 +25,14 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: 'pip' # caching pip dependencies
+    - name: Install Dependencies
+      run: pip install sphinx myst-parser sphinx-rtd-theme
+
     - name: Make HTML
       working-directory: ./docs
       run: make html
