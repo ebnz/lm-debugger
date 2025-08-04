@@ -74,7 +74,7 @@ class ROMEIntervention(InterventionMethod):
                         "subject": "",
                         "target": ""
                     },
-                    "type": self.__class__.__name__
+                    "type": self.get_representation()
                 }
             ]
         }

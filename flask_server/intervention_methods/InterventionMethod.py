@@ -2,7 +2,7 @@ class InterventionMethod:
     def __init__(self, model_wrapper, args, supported_layers):
         """
         Represents a generic Intervention Method.
-        :type model_wrapper: sparse_autoencoders.TransformerModelWrapper
+        :type model_wrapper: transformer_models.TransformerModelWrapper
         :type args: pyhocon.config_tree.ConfigTree
         :type supported_layers: list[int]
         :param model_wrapper: Model Wrapper, the Intervention Method is applied to
@@ -17,6 +17,13 @@ class InterventionMethod:
         self.supported_layers = supported_layers
 
         self.interventions = []
+
+    def get_representation(self):
+        """
+        Set a custom String for Representation of this Method in Frontend
+        :return: Representation
+        """
+        return self.__class__.__name__
 
     def add_intervention(self, intervention):
         """

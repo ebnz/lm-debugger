@@ -38,4 +38,6 @@
   rome_paths: [
     "config_files/ROME/codellama_CodeLlama-7b-hf.json"
   ],
+
+  easy_edit_hparams_path: "config_files/ee_hparams",
 }

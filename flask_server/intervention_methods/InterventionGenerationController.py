@@ -43,7 +43,7 @@ class InterventionGenerationController:
             intervention_layer = intervention["layer"]
             fitting_method_found = False
             for method in self.intervention_methods:
-                if method.__class__.__name__ == intervention_type and intervention_layer in method.supported_layers:
+                if intervention_type == method.get_representation() and intervention_layer in method.supported_layers:
                     method.add_intervention(intervention)
                     fitting_method_found = True
             if not fitting_method_found:
@@ -66,6 +66,8 @@ class InterventionGenerationController:
         :param prompt: Prompt, the Model is run on after setup of Hooks
         """
         for method in self.intervention_methods:
+            if len(method.interventions) == 0:
+                continue
             method.setup_intervention_hooks(prompt)
 
     def transform_model(self, prompt):
@@ -83,6 +85,8 @@ class InterventionGenerationController:
             reverse=True
         )
         for method in sorted_methods:
+            if len(method.interventions) == 0:
+                continue
             method.transform_model(prompt)
 
     def restore_original_model(self):
@@ -179,9 +183,7 @@ class InterventionGenerationController:
         :return: Dict of Projections of Features to Tokens
         """
         for method in self.intervention_methods:
-            if type != method.__class__.__name__:
-                continue
-            if layer not in method.supported_layers:
+            if type != method.get_representation() or layer not in method.supported_layers:
                 continue
             rv = method.get_projections(layer=layer, dim=dim)
             return rv

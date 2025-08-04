@@ -78,7 +78,7 @@ class SAEIntervention(InterventionMethod):
                             "score": score
                         } for feature_index, score in zip(top_features, top_scores)
                     ],
-                    "type": self.__class__.__name__
+                    "type": self.get_representation()
                 }
             ]
         }

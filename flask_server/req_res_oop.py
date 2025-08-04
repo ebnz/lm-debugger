@@ -1,15 +1,30 @@
+import os
 import warnings
+
+import yaml
 from tqdm import tqdm
 
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
-
-from sparse_autoencoders.TransformerModels import CodeLlamaModel
+from transformer_models.TransformerModels import TransformerModelWrapper
 from intervention_methods.InterventionGenerationController import InterventionGenerationController
-from intervention_methods.LMDebuggerIntervention import LMDebuggerIntervention
-from intervention_methods.SAEIntervention import SAEIntervention
-from intervention_methods.ROMEIntervention import ROMEIntervention
+#from intervention_methods.LMDebuggerIntervention import LMDebuggerIntervention
+#from intervention_methods.SAEIntervention import SAEIntervention
+#from intervention_methods.ROMEIntervention import ROMEIntervention
 
+from intervention_methods.EasyEditInterventionMethod import EasyEditInterventionMethod
+from intervention_methods.EasyEdit.easyeditor import (
+    FTHyperParams,
+    IKEHyperParams,
+    KNHyperParams,
+    MEMITHyperParams,
+    ROMEHyperParams,
+    R_ROMEHyperParams,
+    LoRAHyperParams,
+    MENDHyperParams,
+    SERACHparams,
+    GraceHyperParams,
+    WISEHyperParams,
+    AlphaEditHyperParams,
+)
 
 warnings.filterwarnings('ignore')
 
@@ -18,14 +33,50 @@ class ModelingRequests():
     def __init__(self, args):
         self.args = args
 
-        # Use AutoModelForCausalLM and AutoTokenizer for ROME-Support
-        model = AutoModelForCausalLM.from_pretrained(args.model_name, torch_dtype=torch.float16)
-        tokenizer = AutoTokenizer.from_pretrained(args.model_name)
-
-        self.model_wrapper = CodeLlamaModel(model, tokenizer=tokenizer, device=args.device)
+        self.model_wrapper = TransformerModelWrapper(args.model_name, device=args.device)
 
         self.intervention_controller = InterventionGenerationController(self.model_wrapper)
 
+        for file_name in tqdm(os.listdir(args.easy_edit_hparams_path), desc="Loading EasyEdit Methods"):
+            path_to_conf = os.path.join(args.easy_edit_hparams_path, file_name)
+            with open(path_to_conf) as file_desc:
+                config = yaml.safe_load(file_desc)
+
+            # ToDo: Make dict and add rest
+            if config["alg_name"] == 'FT':
+                editing_hparams = FTHyperParams
+            elif config["alg_name"] == 'IKE':
+                editing_hparams = IKEHyperParams
+            elif config["alg_name"] == 'KN':
+                editing_hparams = KNHyperParams
+            elif config["alg_name"] == 'MEMIT':
+                editing_hparams = MEMITHyperParams
+            elif config["alg_name"] == 'ROME':
+                editing_hparams = ROMEHyperParams
+            elif config["alg_name"] == "R-ROME":
+                editing_hparams = R_ROMEHyperParams
+            elif config["alg_name"] == 'LoRA':
+                editing_hparams = LoRAHyperParams
+            elif config["alg_name"] == 'MEND':
+                editing_hparams = MENDHyperParams
+            elif config["alg_name"] == 'GRACE':
+                editing_hparams = GraceHyperParams
+            elif config["alg_name"] == 'WISE':
+                editing_hparams = WISEHyperParams
+            elif config["alg_name"] == 'AlphaEdit':
+                editing_hparams = AlphaEditHyperParams
+            else:
+                raise NotImplementedError
+
+            ee_hparams = editing_hparams.from_hparams(path_to_conf)
+            self.intervention_controller.register_method(EasyEditInterventionMethod(
+                self.model_wrapper,
+                ee_hparams,
+                self.args,
+                ee_hparams.layers
+            ))
+
+        """
         # Load LMDebuggerIntervention
         self.intervention_controller.register_method(LMDebuggerIntervention(
             self.model_wrapper,
@@ -47,6 +98,7 @@ class ModelingRequests():
                 self.args,
                 config_path
             ))
+        """
 
     def request2response(self, req_json_dict):
         prompt = req_json_dict['prompt']

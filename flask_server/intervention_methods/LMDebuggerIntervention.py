@@ -24,7 +24,7 @@ class LMDebuggerIntervention(InterventionMethod):
         for layer_n in range(self.model_wrapper.model.config.num_hidden_layers):
             layer_d = {}
             layer_d['layer'] = layer_n
-            layer_d['type'] = self.__class__.__name__
+            layer_d['type'] = self.get_representation()
             layer_d['predictions_before'] = [
                 {'token': pred_df['residual_preds_tokens'][layer_n][k],
                  'score': float(pred_df['residual_preds_probs'][layer_n][k])

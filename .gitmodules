@@ -1,3 +1,3 @@
 [submodule "EasyEdit"]
-	path = EasyEdit
+	path = flask_server/intervention_methods/EasyEdit
 	url = https://github.com/zjunlp/EasyEdit/
