@@ -3,8 +3,8 @@ from .InterventionMethod import InterventionMethod
 from .EasyEdit.easyeditor.util.alg_dict import ALG_DICT
 
 class EasyEditInterventionMethod(InterventionMethod):
-    def __init__(self, model_wrapper, ee_hparams, args, supported_layers):
-        super().__init__(model_wrapper, args, supported_layers)
+    def __init__(self, controller, ee_hparams, args, layer):
+        super().__init__(controller, args, layer)
 
         self.ee_hparams = ee_hparams
         self.invoke_method = ALG_DICT[self.ee_hparams.alg_name]
@@ -30,7 +30,6 @@ class EasyEditInterventionMethod(InterventionMethod):
         return self.ee_hparams.alg_name
 
     def transform_model(self, prompt):
-        print(self.get_representation())
         request = [{
             "prompt": intervention["text_inputs"]["prompt"],
             "subject": intervention["text_inputs"]["prompt"],
@@ -52,22 +51,14 @@ class EasyEditInterventionMethod(InterventionMethod):
 
         self.model_wrapper.model = edited_model
 
-    def get_token_scores(self, prompt):
-        response_dict = {
-            "layers": [
-                {
-                    "layer": self.ee_hparams.layers[0],
-                    "text_inputs": {
-                        "prompt": "",
-                        "subject": "",
-                        "target": ""
-                    },
-                    "type": self.get_representation()
-                }
-            ]
+    def get_frontend_representation(self):
+        return {
+            "text_inputs": {
+                "prompt": "",
+                "subject": "",
+                "target": ""
+            }
         }
-
-        return response_dict
 
     def add_intervention(self, intervention):
         super().add_intervention(intervention)

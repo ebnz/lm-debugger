@@ -12,6 +12,7 @@ class InterventionGenerationController:
         self.model_wrapper = model_wrapper
         self.interventions = []
         self.intervention_methods = []
+        self.metrics = []
 
         self.original_weights = {}
         for param_name, param in self.model_wrapper.model.named_parameters():
@@ -28,6 +29,9 @@ class InterventionGenerationController:
         """
         self.intervention_methods.append(method)
 
+    def register_metric(self, metric):
+        self.metrics.append(metric)
+
     def set_interventions(self, interventions):
         """
         Sets the Interventions and distributes to the fitting Intervention Method
@@ -43,7 +47,7 @@ class InterventionGenerationController:
             intervention_layer = intervention["layer"]
             fitting_method_found = False
             for method in self.intervention_methods:
-                if intervention_type == method.get_representation() and intervention_layer in method.supported_layers:
+                if intervention_type == method.get_representation() and intervention_layer == method.layer:
                     method.add_intervention(intervention)
                     fitting_method_found = True
             if not fitting_method_found:
@@ -81,11 +85,12 @@ class InterventionGenerationController:
         # ROMEIntervention won't work else when using multiple Interventions of _different_ ROMEIntervention-Instances
         sorted_methods = sorted(
             self.intervention_methods,
-            key=lambda item: item.supported_layers[0] if len(item.supported_layers) == 1 else 0,
+            key=lambda item: item.layer,
             reverse=True
         )
         for method in sorted_methods:
-            if len(method.interventions) == 0:
+            nonzero_interventions = list(filter(lambda x: x["coeff"] > 0.0, method.interventions))
+            if len(nonzero_interventions) == 0:
                 continue
             method.transform_model(prompt)
 
@@ -100,6 +105,24 @@ class InterventionGenerationController:
                     for param_name, param in self.model_wrapper.model.named_parameters():
                         if param_name == key:
                             param[...] = original_value.to(self.model_wrapper.device)
+
+    def get_weight_deltas(self, layer=None):
+        deltas = {}
+
+        if self.original_weights is None:
+            return {}
+
+        with torch.no_grad():
+            for key, original_value in self.original_weights.items():
+                for param_name, param in self.model_wrapper.model.named_parameters():
+                    if param_name == key and layer is None:
+                        # Deltas of all Layers are calculated
+                        deltas[param_name] = original_value - param.detach().clone().cpu()
+                    elif param_name == key and f".{layer}." in param_name:
+                        # Deltas only of requested Layers are calculated
+                        deltas[param_name] = original_value - param.detach().clone().cpu()
+
+        return deltas
 
     def generate(self, prompt, generate_k):
         """
@@ -150,6 +173,12 @@ class InterventionGenerationController:
             rv = method.get_token_scores(prompt)
             rv_dict['layers'] += rv['layers']
 
+        for metric in self.metrics:
+            # Calculate Metric Value
+            metric.calculate_metric()
+            rv = metric.get_token_scores(prompt)
+            rv_dict["layers"] += rv["layers"]
+
         # Clear Hooks and restore original Model
         self.model_wrapper.clear_hooks()
         self.restore_original_model()
@@ -183,7 +212,7 @@ class InterventionGenerationController:
         :return: Dict of Projections of Features to Tokens
         """
         for method in self.intervention_methods:
-            if type != method.get_representation() or layer not in method.supported_layers:
+            if type != method.get_representation() or layer != method.layer:
                 continue
             rv = method.get_projections(layer=layer, dim=dim)
             return rv

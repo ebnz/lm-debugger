@@ -4,6 +4,7 @@ import warnings
 import yaml
 from tqdm import tqdm
 
+from intervention_methods.ExcessiveWeightDeltasMetric import ExcessiveWeightDeltasMetric
 from transformer_models.TransformerModels import TransformerModelWrapper
 from intervention_methods.InterventionGenerationController import InterventionGenerationController
 #from intervention_methods.LMDebuggerIntervention import LMDebuggerIntervention
@@ -70,11 +71,17 @@ class ModelingRequests():
 
             ee_hparams = editing_hparams.from_hparams(path_to_conf)
             self.intervention_controller.register_method(EasyEditInterventionMethod(
-                self.model_wrapper,
+                self.intervention_controller,
                 ee_hparams,
                 self.args,
-                ee_hparams.layers
+                ee_hparams.layers[0]
             ))
+
+        self.intervention_controller.register_metric(ExcessiveWeightDeltasMetric(
+            self.intervention_controller,
+            self.args,
+            5
+        ))
 
         """
         # Load LMDebuggerIntervention

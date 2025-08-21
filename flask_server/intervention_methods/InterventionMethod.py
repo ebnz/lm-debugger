@@ -1,22 +1,11 @@
-class InterventionMethod:
-    def __init__(self, model_wrapper, args, supported_layers):
-        """
-        Represents a generic Intervention Method.
-        :type model_wrapper: transformer_models.TransformerModelWrapper
-        :type args: pyhocon.config_tree.ConfigTree
-        :type supported_layers: list[int]
-        :param model_wrapper: Model Wrapper, the Intervention Method is applied to
-        :param args: Configuration-Options from LM-Debugger++'s JSONNET-Config File
-        :param supported_layers: Layers, supported by this Intervention Method
-        """
+import torch
+
+class InteractionItem:
+    def __init__(self, controller, args, layer=0):
+        self.controller = controller
+        self.model_wrapper = self.controller.model_wrapper
         self.args = args
-        self.model_wrapper = model_wrapper
-        self.TOP_K = self.args.top_k_tokens_for_ui
-
-        # Intervention-specific Variables
-        self.supported_layers = supported_layers
-
-        self.interventions = []
+        self.layer = layer
 
     def get_representation(self):
         """
@@ -24,6 +13,57 @@ class InterventionMethod:
         :return: Representation
         """
         return self.__class__.__name__
+
+    def get_frontend_representation(self):
+        return {}
+
+    def get_token_scores(self, prompt):
+        """
+        Generates the Token-Scores.
+        This Method obtains information on the Next-Token-Prediction of a given Prompt. Used in the Trace-Feature.
+        :type prompt: str
+        :param prompt: Prompt, used to calculate the Features/Token-Scores
+        :return: Response
+        """
+        response_dict = {
+            "layers": [
+                {
+                    "layer": self.layer,
+                    "type": self.get_representation()
+                }
+            ]
+        }
+
+        for key in self.get_frontend_representation().keys():
+            frontend_representation = self.get_frontend_representation()
+            response_dict["layers"][0][key] = frontend_representation[key]
+
+        return response_dict
+
+
+class MetricItem(InteractionItem):
+    def __init__(self, controller, args, layer=0):
+        super().__init__(controller, args, layer=layer)
+        self.metric_value = 0
+
+    def calculate_metric(self):
+        self.metric_value = 0
+
+
+class InterventionMethod(InteractionItem):
+    def __init__(self, controller, args, layer):
+        """
+        Represents a generic Intervention Method.
+        :type controller: InterventionGenerationController
+        :type args: pyhocon.config_tree.ConfigTree
+        :type layer: int
+        :param controller: InterventionGenerationController, the Intervention Method is applied to
+        :param args: Configuration-Options from LM-Debugger++'s JSONNET-Config File
+        :param layer: Layer, supported by this Intervention Method
+        """
+        super().__init__(controller, args, layer=layer)
+
+        self.interventions = []
 
     def add_intervention(self, intervention):
         """
@@ -45,16 +85,12 @@ class InterventionMethod:
         """
         self.interventions = []
 
-    def get_token_scores(self, prompt):
+    def get_frontend_representation(self):
         """
-        Generates the Token-Scores.
-        This Method obtains information on the Next-Token-Prediction of a given Prompt. Used in the Trace-Feature.
-        :type prompt: str
-        :param prompt: Prompt, used to calculate the Features/Token-Scores
-        :return: Exit Code
+        Returns the Frontend-Representation
+        :return: Dict of Items to be represented in the Frontend
         """
-        print(f"WARN: Intervention-Method <{self}> has no implemented <get_token_scores>")
-        return -1
+        return {}
 
     def setup_intervention_hooks(self, prompt):
         """
