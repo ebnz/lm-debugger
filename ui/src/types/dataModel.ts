@@ -32,6 +32,7 @@ export interface LayerPrediction {
   predictions_after: Array<Prediction>;
   significant_values: Array<ScoredValue>;
   text_inputs: {[key: string]: string};
+  text_outputs: {[key: string]: string};
 }
 
 export interface NetworkPrediction {

@@ -50,7 +50,8 @@ function Play(): JSX.Element {
         layer: 10,
         type: "LMDebuggerIntervention",
         significant_values: labels,
-        text_inputs: {}
+        text_inputs: {},
+        text_outputs: {},
     }
     const n_layers = 5; 
     let layer_inputs = []

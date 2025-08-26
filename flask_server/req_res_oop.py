@@ -5,6 +5,8 @@ import yaml
 from tqdm import tqdm
 
 from intervention_methods.ExcessiveWeightDeltasMetric import ExcessiveWeightDeltasMetric
+from intervention_methods.PerplexityMetric import PerplexityMetric
+from intervention_methods.OutOfDistributionKeys import OutOfDistributionKeysMetric
 from transformer_models.TransformerModels import TransformerModelWrapper
 from intervention_methods.InterventionGenerationController import InterventionGenerationController
 #from intervention_methods.LMDebuggerIntervention import LMDebuggerIntervention
@@ -78,6 +80,18 @@ class ModelingRequests():
             ))
 
         self.intervention_controller.register_metric(ExcessiveWeightDeltasMetric(
+            self.intervention_controller,
+            self.args,
+            5
+        ))
+
+        self.intervention_controller.register_metric(PerplexityMetric(
+            self.intervention_controller,
+            self.args,
+            5
+        ))
+
+        self.intervention_controller.register_metric(OutOfDistributionKeysMetric(
             self.intervention_controller,
             self.args,
             5

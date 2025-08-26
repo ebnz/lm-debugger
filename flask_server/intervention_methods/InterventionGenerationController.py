@@ -173,9 +173,15 @@ class InterventionGenerationController:
             rv = method.get_token_scores(prompt)
             rv_dict['layers'] += rv['layers']
 
+        # Generate Next-Token-Logits
+        tokenizer_output = self.model_wrapper.tokenizer(prompt, return_tensors="pt")
+        tokens = tokenizer_output["input_ids"].to(self.model_wrapper.device)
+        raw_model_output = self.model_wrapper.model(tokens)[0].detach().clone().cpu()
+        token_logits = raw_model_output[0]
+
         for metric in self.metrics:
             # Calculate Metric Value
-            metric.calculate_metric()
+            metric.calculate_metric(token_logits)
             rv = metric.get_token_scores(prompt)
             rv_dict["layers"] += rv["layers"]
 

@@ -1,5 +1,3 @@
-import torch
-
 class InteractionItem:
     def __init__(self, controller, args, layer=0):
         self.controller = controller
@@ -46,7 +44,7 @@ class MetricItem(InteractionItem):
         super().__init__(controller, args, layer=layer)
         self.metric_value = 0
 
-    def calculate_metric(self):
+    def calculate_metric(self, token_logits):
         self.metric_value = 0
 
 

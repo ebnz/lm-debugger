@@ -1,6 +1,6 @@
 import React, {useState} from "react";
 import styled from "styled-components";
-import { Divider, Tag, Button } from 'antd';
+import {Divider, Tag, Button, Table} from 'antd';
 import {LayerPrediction, ValueId} from "../types/dataModel";
 import {LabelContainer, PredictionContainer} from "./LabelContainer";
 import { TextInput } from "./TextInput";
@@ -22,6 +22,38 @@ function Layer(props: Props): JSX.Element {
 
   let [textIntervention, setTextIntervention] = useState(props.layer.text_inputs);
 
+  let [textOutputs, setTextOutputs] = useState(props.layer.text_outputs);
+  var text_outputs_table_data: object[] = [];
+
+  let textOutputsMap = new Map();
+  for (let key of Object.keys(textOutputs || {})) {
+    textOutputsMap.set(key, textOutputs[key]);
+  }
+
+
+  var index = 0;
+  textOutputsMap.forEach((val, key) => {
+    text_outputs_table_data.push({
+      key: index.toString(),
+      descriptor: key,
+      datafield: val,
+    });
+    index += 1;
+  })
+
+  const columns = [
+  {
+    title: 'Descriptor',
+    dataIndex: 'descriptor',
+    key: 'descriptor',
+  },
+  {
+    title: 'Data',
+    dataIndex: 'datafield',
+    key: 'datafield',
+  }
+];
+
   return (
       <LayerLayout>
         <LayerTag color="#a55397">Layer {props.layer.layer}</LayerTag>
@@ -39,6 +71,9 @@ function Layer(props: Props): JSX.Element {
 
         {typeof predictions_after !== "undefined" && <MyDivider orientation="left" orientationMargin="15px">After:</MyDivider>}
         {typeof predictions_after !== "undefined" && <PredictionContainer predictions={predictions_after}/>}
+
+        {typeof props.layer.text_outputs !== "undefined" && <MyDivider orientation="left" orientationMargin="15px">Data:</MyDivider>}
+        {typeof props.layer.text_outputs !== "undefined" && <Table dataSource={text_outputs_table_data} columns={columns} />}
 
         {typeof props.layer.text_inputs !== "undefined" && <MyDivider orientation="left" orientationMargin="15px">Text Inputs:</MyDivider>}
         {typeof props.layer.text_inputs !== "undefined" && <TextInput textIntervention={textIntervention} setTextIntervention={setTextIntervention}></TextInput>}

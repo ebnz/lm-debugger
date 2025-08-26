@@ -37,7 +37,10 @@ if __name__ == '__main__':
     def get_data():
         try:
             request_data = request.get_json()
-            return jsonify(requests_obj.request2response(request_data))
+            print(request_data)
+            rv = requests_obj.request2response(request_data)
+            print(rv)
+            return jsonify(rv)
         except Exception:
             print(traceback.print_exc())
             return jsonify({})
@@ -46,7 +49,10 @@ if __name__ == '__main__':
     def generate():
         try:
             request_data = request.get_json()
-            return jsonify(requests_obj.request2response_for_generation(request_data))
+            print(request_data)
+            rv = requests_obj.request2response_for_generation(request_data)
+            print(rv)
+            return jsonify(rv)
         except Exception:
             print(traceback.print_exc())
             return jsonify({})
