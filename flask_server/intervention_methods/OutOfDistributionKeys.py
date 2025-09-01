@@ -3,19 +3,19 @@ from .EasyEdit.easyeditor.models.rome.compute_u import get_inv_cov, compute_u
 from .EasyEdit.easyeditor.models.rome.rome_main import get_context_templates
 
 class OutOfDistributionKeysMetric(MetricItem):
-    def __init__(self, controller, args, layer):
-        super().__init__(controller, args, layer=layer)
+    def __init__(self, controller):
+        super().__init__(controller)
 
-    def calculate_metric(self, token_logits):
+    def get_text_outputs(self, token_logits):
         # Find ROME-Modules
         rome_modules = list(
             filter(
-                lambda x: x.get_representation() == "ROME",
+                lambda x: x.get_name() == "ROME",
                 self.controller.intervention_methods
             )
         )
 
-        self.metric_value = {}
+        metric_values = {}
 
         for rome_module in rome_modules:
             hparams = rome_module.ee_hparams
@@ -51,9 +51,6 @@ class OutOfDistributionKeysMetric(MetricItem):
 
                 k_vec_new_dt = k_vec.to(inv_cov.dtype)
 
-                self.metric_value[f"L{rome_module.layer} | {request['subject']}"] = (k_vec_new_dt.T @ inv_cov @ k_vec_new_dt).item()
+                metric_values[f"L{rome_module.layer} | {request['subject']}"] = (k_vec_new_dt.T @ inv_cov @ k_vec_new_dt).item()
 
-    def get_frontend_representation(self):
-        return {
-            "text_outputs": self.metric_value
-        }
+        return metric_values

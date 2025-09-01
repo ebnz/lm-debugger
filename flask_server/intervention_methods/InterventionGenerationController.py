@@ -3,13 +3,17 @@ import numpy as np
 
 
 class InterventionGenerationController:
-    def __init__(self, model_wrapper):
+    def __init__(self, model_wrapper, config):
         """
         Controller, responsible for managing Intervention-Methods, their Interventions, Feature-Scores and Generation
-        :type model_wrapper: sparse_autoencoders.TransformerModelWrapper
+        :type model_wrapper: TransformerModelWrapper
         :param model_wrapper: Model Wrapper, wrapping a Transformer-like LLM
+        :param config: Configuration of Backend (jsonnet)
+        :type config: dict
         """
         self.model_wrapper = model_wrapper
+        self.config = config
+
         self.interventions = []
         self.intervention_methods = []
         self.metrics = []
@@ -45,11 +49,13 @@ class InterventionGenerationController:
         for intervention in self.interventions:
             intervention_type = intervention["type"]
             intervention_layer = intervention["layer"]
+
             fitting_method_found = False
             for method in self.intervention_methods:
-                if intervention_type == method.get_representation() and intervention_layer == method.layer:
+                if intervention_type == method.get_name() and intervention_layer == method.layer:
                     method.add_intervention(intervention)
                     fitting_method_found = True
+
             if not fitting_method_found:
                 raise AttributeError(f"Intervention <{intervention}> has no fitting Intervention-Method!")
 
@@ -166,24 +172,25 @@ class InterventionGenerationController:
         self.transform_model(prompt)
         self.setup_intervention_hooks(prompt)
 
+        # Assemble API-Response-Dict
         rv_dict = {'prompt': prompt, 'layers': []}
-        # Assemble Response-Dict
+
+        # Apply all Interventions
         for method in self.intervention_methods:
             # Generate Token-Scores
-            rv = method.get_token_scores(prompt)
-            rv_dict['layers'] += rv['layers']
+            layers = method.get_api_layers()
+            rv_dict['layers'] += layers
 
-        # Generate Next-Token-Logits
+        # Generate Next-Token-Logits, needed for Metric-Parameters
         tokenizer_output = self.model_wrapper.tokenizer(prompt, return_tensors="pt")
         tokens = tokenizer_output["input_ids"].to(self.model_wrapper.device)
         raw_model_output = self.model_wrapper.model(tokens)[0].detach().clone().cpu()
         token_logits = raw_model_output[0]
 
+        # Apply all Metrics
         for metric in self.metrics:
-            # Calculate Metric Value
-            metric.calculate_metric(token_logits)
-            rv = metric.get_token_scores(prompt)
-            rv_dict["layers"] += rv["layers"]
+            # Calculate Metric and append its Frontend-Layers to API-Response
+            rv_dict["layers"] += metric.get_api_layers(token_logits)
 
         # Clear Hooks and restore original Model
         self.model_wrapper.clear_hooks()
@@ -218,7 +225,7 @@ class InterventionGenerationController:
         :return: Dict of Projections of Features to Tokens
         """
         for method in self.intervention_methods:
-            if type != method.get_representation() or layer != method.layer:
+            if type != method.get_name() or layer != method.layer:
                 continue
             rv = method.get_projections(layer=layer, dim=dim)
             return rv

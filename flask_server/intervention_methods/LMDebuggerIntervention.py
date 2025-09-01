@@ -6,16 +6,16 @@ from .InterventionMethod import InterventionMethod
 
 
 class LMDebuggerIntervention(InterventionMethod):
-    def __init__(self, model_wrapper, args):
+    def __init__(self, model_wrapper, config):
         """
         Represents the original Intervention Method of LM-Debugger.
         :type model_wrapper: sparse_autoencoders.TransformerModelWrapper
-        :type args: pyhocon.config_tree.ConfigTree
+        :type config: pyhocon.config_tree.ConfigTree
         :param model_wrapper: Model Wrapper, the Intervention Method is applied to
-        :param args: Configuration-Options from LM-Debugger++'s JSONNET-Config File
+        :param config: Configuration-Options from LM-Debugger++'s JSONNET-Config File
         """
         supported_layers = [i for i in range(model_wrapper.model.config_class().num_hidden_layers)]
-        super().__init__(model_wrapper, args, supported_layers)
+        super().__init__(model_wrapper, config, supported_layers)
 
     def process_pred_dict(self, pred_df):
         pred_d = {}
@@ -24,7 +24,7 @@ class LMDebuggerIntervention(InterventionMethod):
         for layer_n in range(self.model_wrapper.model.config.num_hidden_layers):
             layer_d = {}
             layer_d['layer'] = layer_n
-            layer_d['type'] = self.get_representation()
+            layer_d['type'] = self.get_name()
             layer_d['predictions_before'] = [
                 {'token': pred_df['residual_preds_tokens'][layer_n][k],
                  'score': float(pred_df['residual_preds_probs'][layer_n][k])

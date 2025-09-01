@@ -7,24 +7,24 @@ from sparse_autoencoders.AutoEncoder import AutoEncoder
 
 
 class SAEIntervention(InterventionMethod):
-    def __init__(self, model_wrapper, args, config_path):
+    def __init__(self, model_wrapper, config, config_path):
         """
         Represents the Intervention Method using Sparse Autoencoders.
         :type model_wrapper: sparse_autoencoders.TransformerModelWrapper
-        :type args: pyhocon.config_tree.ConfigTree
+        :type config: pyhocon.config_tree.ConfigTree
         :param model_wrapper: Model Wrapper, the Intervention Method is applied to
-        :param args: Configuration-Options from LM-Debugger++'s JSONNET-Config File
+        :param config: Configuration-Options from LM-Debugger++'s JSONNET-Config File
         """
         self.config_path = config_path
-        self.device = args.autoencoder_device
+        self.device = config.autoencoder_device
 
         with open(self.config_path, "rb") as f:
             self.config = pickle.load(f)
 
         supported_layers = [self.config["LAYER_INDEX"]]
-        super().__init__(model_wrapper, args, supported_layers)
+        super().__init__(model_wrapper, config, supported_layers)
 
-        self.active_coeff = args.sae_active_coeff
+        self.active_coeff = config.sae_active_coeff
 
         self.autoencoder = AutoEncoder.load_model_from_config(self.config)
         self.autoencoder = self.autoencoder.to(self.device)
@@ -78,7 +78,7 @@ class SAEIntervention(InterventionMethod):
                             "score": score
                         } for feature_index, score in zip(top_features, top_scores)
                     ],
-                    "type": self.get_representation()
+                    "type": self.get_name()
                 }
             ]
         }

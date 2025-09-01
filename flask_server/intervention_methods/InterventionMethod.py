@@ -1,19 +1,29 @@
-class InteractionItem:
-    def __init__(self, controller, args, layer=0):
+from abc import ABC, abstractmethod
+
+class InteractionItem(ABC):
+    def __init__(self, controller):
         self.controller = controller
         self.model_wrapper = self.controller.model_wrapper
-        self.args = args
-        self.layer = layer
+        self.config = self.controller.config
 
-    def get_representation(self):
+    def get_name(self):
         """
         Set a custom String for Representation of this Method in Frontend
         :return: Representation
         """
         return self.__class__.__name__
 
-    def get_frontend_representation(self):
-        return {}
+    @abstractmethod
+    def get_frontend_items(self, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def get_api_layers(self, *args, **kwargs):
+        """
+        Returns the Frontend-Representation
+        :return: Dict of Items to be represented in the Frontend
+        """
+        pass
 
     def get_token_scores(self, prompt):
         """
@@ -23,45 +33,73 @@ class InteractionItem:
         :param prompt: Prompt, used to calculate the Features/Token-Scores
         :return: Response
         """
-        response_dict = {
-            "layers": [
-                {
-                    "layer": self.layer,
-                    "type": self.get_representation()
-                }
-            ]
+
+
+
+class MetricItem(InteractionItem):
+    def __init__(self, controller):
+        super().__init__(controller)
+
+    @abstractmethod
+    def get_text_outputs(self, token_logits):
+        pass
+
+    def get_frontend_items(self, token_logits):
+        return {
+            "text_outputs": self.get_text_outputs(token_logits)
         }
 
-        for key in self.get_frontend_representation().keys():
-            frontend_representation = self.get_frontend_representation()
-            response_dict["layers"][0][key] = frontend_representation[key]
+    def get_api_layers(self, token_logits):
+        response_dict = [
+            {
+                "layer": self.__getattribute__("layer") if hasattr(self, "layer") else -1,
+                "type": self.get_name()
+            }
+        ]
+
+        frontend_items = self.get_frontend_items(token_logits)
+        for key in frontend_items.keys():
+            response_dict[0][key] = frontend_items[key]
 
         return response_dict
 
 
-class MetricItem(InteractionItem):
-    def __init__(self, controller, args, layer=0):
-        super().__init__(controller, args, layer=layer)
-        self.metric_value = 0
-
-    def calculate_metric(self, token_logits):
-        self.metric_value = 0
-
-
 class InterventionMethod(InteractionItem):
-    def __init__(self, controller, args, layer):
+    def __init__(self, controller, layer):
         """
         Represents a generic Intervention Method.
         :type controller: InterventionGenerationController
-        :type args: pyhocon.config_tree.ConfigTree
         :type layer: int
         :param controller: InterventionGenerationController, the Intervention Method is applied to
-        :param args: Configuration-Options from LM-Debugger++'s JSONNET-Config File
         :param layer: Layer, supported by this Intervention Method
         """
-        super().__init__(controller, args, layer=layer)
+        super().__init__(controller)
 
+        self.layer = layer
         self.interventions = []
+
+    @abstractmethod
+    def get_text_inputs(self):
+        pass
+
+    def get_frontend_items(self, *args, **kwargs):
+        return {
+            "text_inputs": self.get_text_inputs()
+        }
+
+    def get_api_layers(self):
+        response_dict = [
+            {
+                "layer": self.layer,
+                "type": self.get_name()
+            }
+        ]
+
+        frontend_items = self.get_frontend_items()
+        for key in frontend_items.keys():
+            response_dict[0][key] = frontend_items[key]
+
+        return response_dict
 
     def add_intervention(self, intervention):
         """
@@ -83,34 +121,26 @@ class InterventionMethod(InteractionItem):
         """
         self.interventions = []
 
-    def get_frontend_representation(self):
-        """
-        Returns the Frontend-Representation
-        :return: Dict of Items to be represented in the Frontend
-        """
-        return {}
-
+    @abstractmethod
     def setup_intervention_hooks(self, prompt):
         """
         Installs the Hooks from the Interventions to the LLM.
         Implementation Logic of Intervention Methods, that use Hooks here.
         :type prompt: str
         :param prompt: Prompt, the Model is run on after setup of Hooks
-        :return: Exit Code
         """
-        print(f"WARN: Intervention-Method <{self}> has no implemented <setup_intervention_hooks>")
-        return -1
+        pass
 
+    @abstractmethod
     def transform_model(self, prompt):
         """
         Performs the Transformation of the Model's Weights, as defined by the Interventions.
         Implementation Logic of Intervention Methods, that use Model Transformation here.
         :param prompt: Prompt, the Model is run on after Transformation
-        :return:
         """
-        print(f"WARN: Intervention-Method <{self}> has no implemented <transform_model>")
-        return -1
+        pass
 
+    @abstractmethod
     def get_projections(self, dim, *args, **kwargs):
         """
         Projects Features (their representation as Vectors) to actual Tokens.
@@ -122,5 +152,4 @@ class InterventionMethod(InteractionItem):
         :param **kwargs
         :return: Exit Code
         """
-        print(f"WARN: Intervention-Method <{self}> has no implemented <get_projections>")
-        return -1
+        pass

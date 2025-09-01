@@ -33,40 +33,40 @@ warnings.filterwarnings('ignore')
 
 
 class ModelingRequests():
-    def __init__(self, args):
-        self.args = args
+    def __init__(self, config):
+        self.config = config
 
-        self.model_wrapper = TransformerModelWrapper(args.model_name, device=args.device)
+        self.model_wrapper = TransformerModelWrapper(config.model_name, device=config.device)
 
-        self.intervention_controller = InterventionGenerationController(self.model_wrapper)
+        self.intervention_controller = InterventionGenerationController(self.model_wrapper, self.config)
 
-        for file_name in tqdm(os.listdir(args.easy_edit_hparams_path), desc="Loading EasyEdit Methods"):
-            path_to_conf = os.path.join(args.easy_edit_hparams_path, file_name)
+        for file_name in tqdm(os.listdir(config.easy_edit_hparams_path), desc="Loading EasyEdit Methods"):
+            path_to_conf = os.path.join(config.easy_edit_hparams_path, file_name)
             with open(path_to_conf) as file_desc:
-                config = yaml.safe_load(file_desc)
+                method_config = yaml.safe_load(file_desc)
 
             # ToDo: Make dict and add rest
-            if config["alg_name"] == 'FT':
+            if method_config["alg_name"] == 'FT':
                 editing_hparams = FTHyperParams
-            elif config["alg_name"] == 'IKE':
+            elif method_config["alg_name"] == 'IKE':
                 editing_hparams = IKEHyperParams
-            elif config["alg_name"] == 'KN':
+            elif method_config["alg_name"] == 'KN':
                 editing_hparams = KNHyperParams
-            elif config["alg_name"] == 'MEMIT':
+            elif method_config["alg_name"] == 'MEMIT':
                 editing_hparams = MEMITHyperParams
-            elif config["alg_name"] == 'ROME':
+            elif method_config["alg_name"] == 'ROME':
                 editing_hparams = ROMEHyperParams
-            elif config["alg_name"] == "R-ROME":
+            elif method_config["alg_name"] == "R-ROME":
                 editing_hparams = R_ROMEHyperParams
-            elif config["alg_name"] == 'LoRA':
+            elif method_config["alg_name"] == 'LoRA':
                 editing_hparams = LoRAHyperParams
-            elif config["alg_name"] == 'MEND':
+            elif method_config["alg_name"] == 'MEND':
                 editing_hparams = MENDHyperParams
-            elif config["alg_name"] == 'GRACE':
+            elif method_config["alg_name"] == 'GRACE':
                 editing_hparams = GraceHyperParams
-            elif config["alg_name"] == 'WISE':
+            elif method_config["alg_name"] == 'WISE':
                 editing_hparams = WISEHyperParams
-            elif config["alg_name"] == 'AlphaEdit':
+            elif method_config["alg_name"] == 'AlphaEdit':
                 editing_hparams = AlphaEditHyperParams
             else:
                 raise NotImplementedError
@@ -74,27 +74,20 @@ class ModelingRequests():
             ee_hparams = editing_hparams.from_hparams(path_to_conf)
             self.intervention_controller.register_method(EasyEditInterventionMethod(
                 self.intervention_controller,
-                ee_hparams,
-                self.args,
-                ee_hparams.layers[0]
+                ee_hparams.layers[0],
+                ee_hparams
             ))
 
         self.intervention_controller.register_metric(ExcessiveWeightDeltasMetric(
-            self.intervention_controller,
-            self.args,
-            5
+            self.intervention_controller
         ))
 
         self.intervention_controller.register_metric(PerplexityMetric(
-            self.intervention_controller,
-            self.args,
-            5
+            self.intervention_controller
         ))
 
         self.intervention_controller.register_metric(OutOfDistributionKeysMetric(
-            self.intervention_controller,
-            self.args,
-            5
+            self.intervention_controller
         ))
 
         """

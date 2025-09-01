@@ -9,16 +9,16 @@ from .rome_files.util import nethook
 
 
 class ROMEIntervention(InterventionMethod):
-    def __init__(self, model_wrapper, args, config_path):
+    def __init__(self, model_wrapper, config, config_path):
         """
         Represents the Intervention Method of ROME.
         :type model_wrapper: sparse_autoencoders.TransformerModelWrapper
-        :type args: pyhocon.config_tree.ConfigTree
+        :type config: pyhocon.config_tree.ConfigTree
         :param model_wrapper: Model Wrapper, the Intervention Method is applied to
-        :param args: Configuration-Options from LM-Debugger++'s JSONNET-Config File
+        :param config: Configuration-Options from LM-Debugger++'s JSONNET-Config File
         """
         self.rome_hparams = ROMEHyperParams.from_json(config_path)
-        super().__init__(model_wrapper, args, self.rome_hparams.layers)
+        super().__init__(model_wrapper, config, self.rome_hparams.layers)
 
         # This if-Statement and its contents are copied from ROME (https://github.com/aip-hd-research/my-rome)
         # Specifically from the my-rome/notebooks/rome.ipynb-Notebook
@@ -74,7 +74,7 @@ class ROMEIntervention(InterventionMethod):
                         "subject": "",
                         "target": ""
                     },
-                    "type": self.get_representation()
+                    "type": self.get_name()
                 }
             ]
         }

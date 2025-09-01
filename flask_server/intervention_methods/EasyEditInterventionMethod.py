@@ -3,8 +3,8 @@ from .InterventionMethod import InterventionMethod
 from .EasyEdit.easyeditor.util.alg_dict import ALG_DICT
 
 class EasyEditInterventionMethod(InterventionMethod):
-    def __init__(self, controller, ee_hparams, args, layer):
-        super().__init__(controller, args, layer)
+    def __init__(self, controller, layer, ee_hparams):
+        super().__init__(controller, layer)
 
         self.ee_hparams = ee_hparams
         self.invoke_method = ALG_DICT[self.ee_hparams.alg_name]
@@ -26,7 +26,7 @@ class EasyEditInterventionMethod(InterventionMethod):
             new_embedding.weight.data[:self.model_wrapper.model.config.vocab_size] = old_embedding.weight.data
             self.model_wrapper.model.set_input_embeddings(new_embedding)
 
-    def get_representation(self):
+    def get_name(self):
         return self.ee_hparams.alg_name
 
     def transform_model(self, prompt):
@@ -51,20 +51,15 @@ class EasyEditInterventionMethod(InterventionMethod):
 
         self.model_wrapper.model = edited_model
 
-    def get_frontend_representation(self):
+    def get_text_inputs(self):
         return {
-            "text_inputs": {
-                "prompt": "",
-                "subject": "",
-                "target": ""
-            }
+            "prompt": "",
+            "subject": "",
+            "target": ""
         }
 
-    def add_intervention(self, intervention):
-        super().add_intervention(intervention)
+    def get_projections(self, dim, *args, **kwargs):
+        return super().get_projections(dim, *args, **kwargs)
 
-    def set_interventions(self, interventions):
-        super().set_interventions(interventions)
-
-    def clear_interventions(self):
-        super().clear_interventions()
+    def setup_intervention_hooks(self, prompt):
+        return super().setup_intervention_hooks(prompt)
