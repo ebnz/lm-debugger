@@ -1,5 +1,5 @@
 import torch
-from .InterventionMethod import MetricItem
+from .MetricItem import MetricItem
 
 class ExcessiveWeightDeltasMetric(MetricItem):
     def __init__(self, controller):

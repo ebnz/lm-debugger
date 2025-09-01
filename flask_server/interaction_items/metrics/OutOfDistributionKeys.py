@@ -1,6 +1,6 @@
-from .InterventionMethod import MetricItem
-from .EasyEdit.easyeditor.models.rome.compute_u import get_inv_cov, compute_u
-from .EasyEdit.easyeditor.models.rome.rome_main import get_context_templates
+from .MetricItem import MetricItem
+from ..intervention_methods.EasyEdit.easyeditor.models.rome.compute_u import get_inv_cov, compute_u
+from ..intervention_methods.EasyEdit.easyeditor.models.rome.rome_main import get_context_templates
 
 class OutOfDistributionKeysMetric(MetricItem):
     def __init__(self, controller):

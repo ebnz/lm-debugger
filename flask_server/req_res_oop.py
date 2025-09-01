@@ -4,17 +4,14 @@ import warnings
 import yaml
 from tqdm import tqdm
 
-from intervention_methods.ExcessiveWeightDeltasMetric import ExcessiveWeightDeltasMetric
-from intervention_methods.PerplexityMetric import PerplexityMetric
-from intervention_methods.OutOfDistributionKeys import OutOfDistributionKeysMetric
-from transformer_models.TransformerModels import TransformerModelWrapper
-from intervention_methods.InterventionGenerationController import InterventionGenerationController
-#from intervention_methods.LMDebuggerIntervention import LMDebuggerIntervention
-#from intervention_methods.SAEIntervention import SAEIntervention
-#from intervention_methods.ROMEIntervention import ROMEIntervention
+from interaction_items.metrics.ExcessiveWeightDeltasMetric import ExcessiveWeightDeltasMetric
+from interaction_items.metrics.PerplexityMetric import PerplexityMetric
+from interaction_items.metrics.OutOfDistributionKeys import OutOfDistributionKeysMetric
+from controller.TransformerModels import TransformerModelWrapper
+from controller.InterventionGenerationController import InterventionGenerationController
 
-from intervention_methods.EasyEditInterventionMethod import EasyEditInterventionMethod
-from intervention_methods.EasyEdit.easyeditor import (
+from interaction_items.intervention_methods.EasyEditInterventionMethod import EasyEditInterventionMethod
+from interaction_items.intervention_methods.EasyEdit.easyeditor import (
     FTHyperParams,
     IKEHyperParams,
     KNHyperParams,
@@ -89,30 +86,6 @@ class ModelingRequests():
         self.intervention_controller.register_metric(OutOfDistributionKeysMetric(
             self.intervention_controller
         ))
-
-        """
-        # Load LMDebuggerIntervention
-        self.intervention_controller.register_method(LMDebuggerIntervention(
-            self.model_wrapper,
-            self.args
-        ))
-
-        # Load SAEs
-        for config_path in tqdm(self.args.sae_paths, desc="Loading SAE-Instances"):
-            self.intervention_controller.register_method(SAEIntervention(
-                self.model_wrapper,
-                self.args,
-                config_path
-            ))
-
-        # Load ROME Instances
-        for config_path in tqdm(self.args.rome_paths, desc="Loading ROME-Instances"):
-            self.intervention_controller.register_method(ROMEIntervention(
-                self.model_wrapper,
-                self.args,
-                config_path
-            ))
-        """
 
     def request2response(self, req_json_dict):
         prompt = req_json_dict['prompt']
