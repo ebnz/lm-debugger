@@ -5,7 +5,7 @@ class PerplexityMetric(MetricItem):
     def __init__(self, controller):
         super().__init__(controller)
 
-    def get_text_outputs(self, token_logits):
+    def get_text_outputs(self, token_logits, additional_params=None):
         log_probs = torch.nn.functional.log_softmax(token_logits)
         max_log_probs = torch.max(log_probs, dim=1).values
         return {

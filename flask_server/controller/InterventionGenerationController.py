@@ -112,23 +112,50 @@ class InterventionGenerationController:
                         if param_name == key:
                             param[...] = original_value.to(self.model_wrapper.device)
 
-    def get_weight_deltas(self, layer=None):
+    def get_weight_deltas(self, layers=None):
         deltas = {}
 
         if self.original_weights is None:
             return {}
 
-        with torch.no_grad():
-            for key, original_value in self.original_weights.items():
-                for param_name, param in self.model_wrapper.model.named_parameters():
-                    if param_name == key and layer is None:
-                        # Deltas of all Layers are calculated
-                        deltas[param_name] = original_value - param.detach().clone().cpu()
-                    elif param_name == key and f".{layer}." in param_name:
-                        # Deltas only of requested Layers are calculated
-                        deltas[param_name] = original_value - param.detach().clone().cpu()
+        if type(layers) is int:
+            layers_list = [layers]
+        elif type(layers) is list:
+            layers_list = layers
+        else:
+            raise ValueError("Parameter layers of InterventionGenerationController.get_weight_deltas isn't int or list")
+
+        for layer in layers_list:
+            with torch.no_grad():
+                for key, original_value in self.original_weights.items():
+                    for param_name, param in self.model_wrapper.model.named_parameters():
+                        if param_name == key and layer is None:
+                            # Deltas of all Layers are calculated
+                            deltas[param_name] = original_value - param.detach().clone().cpu()
+                        elif param_name == key and f".{layer}." in param_name:
+                            # Deltas only of requested Layers are calculated
+                            deltas[param_name] = original_value - param.detach().clone().cpu()
 
         return deltas
+
+    def get_manipulated_layers(self, intervention_method_name=None):
+        # If no keyword, find all LLM-Layers that have Interventions attached
+        if intervention_method_name is None:
+            manip_layers = map(lambda x: x.layer, self.intervention_methods)
+        # Else find all LLM-Layers with Interventions where name of InterventionMethod matches intervention_method_name
+        else:
+            manip_layers = map(
+                lambda x: x.layer
+                if intervention_method_name == x.get_representation()
+                else None,
+                self.intervention_methods
+            )
+
+        # Filter None's
+        manip_layers = filter(lambda x: x is not None, manip_layers)
+
+        # Remove Duplicates
+        return list(set(manip_layers))
 
     def generate(self, prompt, generate_k):
         """
@@ -189,8 +216,11 @@ class InterventionGenerationController:
 
         # Apply all Metrics
         for metric in self.metrics:
+            # Retrieve additional Parameters for this Metric
+            additional_params = metric.parameters.return_parameters_object()
+
             # Calculate Metric and append its Frontend-Layers to API-Response
-            rv_dict["layers"] += metric.get_api_layers(token_logits)
+            rv_dict["layers"] += metric.get_api_layers(token_logits, additional_params=additional_params)
 
         # Clear Hooks and restore original Model
         self.model_wrapper.clear_hooks()

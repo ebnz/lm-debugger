@@ -4,12 +4,16 @@ import warnings
 import yaml
 from tqdm import tqdm
 
+# Controller
+from controller.InterventionGenerationController import InterventionGenerationController
+from controller.TransformerModels import TransformerModelWrapper
+
+# Metrics
 from interaction_items.metrics.ExcessiveWeightDeltasMetric import ExcessiveWeightDeltasMetric
 from interaction_items.metrics.PerplexityMetric import PerplexityMetric
 from interaction_items.metrics.OutOfDistributionKeys import OutOfDistributionKeysMetric
-from controller.TransformerModels import TransformerModelWrapper
-from controller.InterventionGenerationController import InterventionGenerationController
 
+# Intervention Methods
 from interaction_items.intervention_methods.EasyEditInterventionMethod import EasyEditInterventionMethod
 from interaction_items.intervention_methods.EasyEdit.easyeditor import (
     FTHyperParams,
@@ -29,7 +33,7 @@ from interaction_items.intervention_methods.EasyEdit.easyeditor import (
 warnings.filterwarnings('ignore')
 
 
-class ModelingRequests():
+class ModelingRequests:
     def __init__(self, config):
         self.config = config
 

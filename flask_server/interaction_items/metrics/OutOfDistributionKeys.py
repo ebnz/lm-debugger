@@ -6,7 +6,7 @@ class OutOfDistributionKeysMetric(MetricItem):
     def __init__(self, controller):
         super().__init__(controller)
 
-    def get_text_outputs(self, token_logits):
+    def get_text_outputs(self, token_logits, additional_params=None):
         # Find ROME-Modules
         rome_modules = list(
             filter(
