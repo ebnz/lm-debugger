@@ -12,6 +12,7 @@ from controller.TransformerModels import TransformerModelWrapper
 from interaction_items.metrics.ExcessiveWeightDeltasMetric import ExcessiveWeightDeltasMetric
 from interaction_items.metrics.PerplexityMetric import PerplexityMetric
 from interaction_items.metrics.OutOfDistributionKeys import OutOfDistributionKeysMetric
+from interaction_items.metrics.LocalizationVEditing import LocalizationVEditingMetric
 
 # Intervention Methods
 from interaction_items.intervention_methods.EasyEditInterventionMethod import EasyEditInterventionMethod
@@ -79,17 +80,33 @@ class ModelingRequests:
                 ee_hparams
             ))
 
-        self.intervention_controller.register_metric(ExcessiveWeightDeltasMetric(
-            self.intervention_controller
-        ))
+        self.intervention_controller.register_metric(
+            ExcessiveWeightDeltasMetric(
+                self.intervention_controller
+            ),
+            "post"
+        )
 
-        self.intervention_controller.register_metric(PerplexityMetric(
-            self.intervention_controller
-        ))
+        self.intervention_controller.register_metric(
+            PerplexityMetric(
+                self.intervention_controller
+            ),
+            "post"
+        )
 
-        self.intervention_controller.register_metric(OutOfDistributionKeysMetric(
-            self.intervention_controller
-        ))
+        self.intervention_controller.register_metric(
+            OutOfDistributionKeysMetric(
+                self.intervention_controller
+            ),
+            "post"
+        )
+
+        self.intervention_controller.register_metric(
+            LocalizationVEditingMetric(
+                self.intervention_controller
+            ),
+            "pre"
+        )
 
     def request2response(self, req_json_dict):
         prompt = req_json_dict['prompt']

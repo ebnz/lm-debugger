@@ -16,7 +16,11 @@ class InterventionGenerationController:
 
         self.interventions = []
         self.intervention_methods = []
-        self.metrics = []
+
+        # Pre-Intervention-Metrics are calculated using the LLM without applied Interventions
+        self.pre_intervention_metrics = []
+        # Post-Intervention-Metrics are calculated using the LLM with applied Interventions
+        self.post_intervention_metrics = []
 
         self.original_weights = {}
         for param_name, param in self.model_wrapper.model.named_parameters():
@@ -33,8 +37,20 @@ class InterventionGenerationController:
         """
         self.intervention_methods.append(method)
 
-    def register_metric(self, metric):
-        self.metrics.append(metric)
+    def register_metric(self, metric, metric_type):
+        """
+        Registers a new Metric to this Controller
+        :type metric: MetricItem
+        :param metric: Metric to register
+        :type metric_type: "pre" | "post"
+        :param metric_type: Is this Metric a Pre-/Post-Intervention-Metric
+        """
+        if metric_type == "pre":
+            self.pre_intervention_metrics.append(metric)
+        elif metric_type == "post":
+            self.post_intervention_metrics.append(metric)
+        else:
+            raise ValueError(f"Parameter metric_type is {metric_type} which is not 'post' or 'pre'")
 
     def set_interventions(self, interventions):
         """
@@ -195,32 +211,42 @@ class InterventionGenerationController:
         :param prompt: Prompt, used to calculate the Features/Token-Scores
         :return: Token-Scores
         """
-        # Apply Interventions
-        self.transform_model(prompt)
-        self.setup_intervention_hooks(prompt)
-
         # Assemble API-Response-Dict
         rv_dict = {'prompt': prompt, 'layers': []}
 
-        # Apply all Interventions
+        # Get Frontend-representations of all Interventions
         for method in self.intervention_methods:
-            # Generate Token-Scores
-            layers = method.get_api_layers()
-            rv_dict['layers'] += layers
+            rv_dict['layers'] += method.get_api_layers()
 
-        # Generate Next-Token-Logits, needed for Metric-Parameters
+        # Generate Next-Token-Logits for Metric-Parameters (Pre-Intervention)
         tokenizer_output = self.model_wrapper.tokenizer(prompt, return_tensors="pt")
         tokens = tokenizer_output["input_ids"].to(self.model_wrapper.device)
         raw_model_output = self.model_wrapper.model(tokens)[0].detach().clone().cpu()
         token_logits = raw_model_output[0]
 
-        # Apply all Metrics
-        for metric in self.metrics:
+        # Apply Pre-Intervention-Metrics
+        for metric in self.pre_intervention_metrics:
             # Retrieve additional Parameters for this Metric
             additional_params = metric.parameters.return_parameters_object()
 
             # Calculate Metric and append its Frontend-Layers to API-Response
-            rv_dict["layers"] += metric.get_api_layers(token_logits, additional_params=additional_params)
+            rv_dict["layers"] += metric.get_api_layers(prompt, token_logits, additional_params=additional_params)
+
+        # Apply Interventions
+        self.transform_model(prompt)
+        self.setup_intervention_hooks(prompt)
+
+        # Generate Next-Token-Logits for Metric-Parameters (Post-Intervention)
+        raw_model_output = self.model_wrapper.model(tokens)[0].detach().clone().cpu()
+        token_logits = raw_model_output[0]
+
+        # Apply Post-Intervention-Metrics
+        for metric in self.post_intervention_metrics:
+            # Retrieve additional Parameters for this Metric
+            additional_params = metric.parameters.return_parameters_object()
+
+            # Calculate Metric and append its Frontend-Layers to API-Response
+            rv_dict["layers"] += metric.get_api_layers(prompt, token_logits, additional_params=additional_params)
 
         # Clear Hooks and restore original Model
         self.model_wrapper.clear_hooks()

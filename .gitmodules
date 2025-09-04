@@ -1,6 +1,3 @@
 [submodule "flask_server/intervention_methods/EasyEdit"]
 	path = flask_server/interactions_items/intervention_methods/EasyEdit
 	url = https://github.com/zjunlp/EasyEdit/
-[submodule "flask_server/interaction_items/metrics/my_rome"]
-	path = flask_server/interaction_items/metrics/my_rome
-	url = git@github.com:aip-hd-research/my-rome.git

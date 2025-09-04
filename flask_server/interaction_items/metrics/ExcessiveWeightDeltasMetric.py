@@ -4,9 +4,11 @@ from .MetricItem import MetricItem
 class ExcessiveWeightDeltasMetric(MetricItem):
     def __init__(self, controller):
         super().__init__(controller)
+
+        # Request for additional Parameter 'weight_deltas'
         self.parameters.need_parameter("weight_deltas")
 
-    def get_text_outputs(self, token_logits, additional_params=None):
+    def get_text_outputs(self, prompt, token_logits, additional_params=None):
         metric_values = {}
 
         # Get all Layers that are manipulated by Intervention Methods

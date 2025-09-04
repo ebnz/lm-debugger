@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from ..InteractionItem import InteractionItem
 
 
@@ -11,7 +11,8 @@ class MetricParameters:
         self.parameters_retrieval_functions = {
             "weight_deltas": lambda: self.metric.controller.get_weight_deltas(
                 layers=self.metric.controller.get_manipulated_layers()
-            )
+            ),
+            "interventions": lambda: self.metric.controller.interventions
         }
 
     def need_parameter(self, parameter):
@@ -37,15 +38,15 @@ class MetricItem(InteractionItem):
         self.parameters = MetricParameters(self)
 
     @abstractmethod
-    def get_text_outputs(self, token_logits, additional_params=None):
+    def get_text_outputs(self, prompt, token_logits, additional_params=None):
         pass
 
-    def get_frontend_items(self, token_logits, additional_params=None):
+    def get_frontend_items(self, prompt, token_logits, additional_params=None):
         return {
-            "text_outputs": self.get_text_outputs(token_logits, additional_params=additional_params)
+            "text_outputs": self.get_text_outputs(prompt, token_logits, additional_params=additional_params)
         }
 
-    def get_api_layers(self, token_logits, additional_params=None):
+    def get_api_layers(self, prompt, token_logits, additional_params=None):
         response_dict = [
             {
                 "layer": -1,
@@ -53,7 +54,7 @@ class MetricItem(InteractionItem):
             }
         ]
 
-        frontend_items = self.get_frontend_items(token_logits, additional_params=additional_params)
+        frontend_items = self.get_frontend_items(prompt, token_logits, additional_params=additional_params)
         for key in frontend_items.keys():
             response_dict[0][key] = frontend_items[key]
 
