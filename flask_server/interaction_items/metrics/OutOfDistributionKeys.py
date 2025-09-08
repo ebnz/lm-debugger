@@ -2,15 +2,17 @@ from .MetricItem import MetricItem
 from ..intervention_methods.EasyEdit.easyeditor.models.rome.compute_u import get_inv_cov, compute_u
 from ..intervention_methods.EasyEdit.easyeditor.models.rome.rome_main import get_context_templates
 
+
 class OutOfDistributionKeysMetric(MetricItem):
     def __init__(self, controller):
         super().__init__(controller)
+        self.applicable_intervention_methods = ["ROME", "R-ROME"]
 
     def get_text_outputs(self, prompt, token_logits, additional_params=None):
         # Find ROME-Modules
         rome_modules = list(
             filter(
-                lambda x: x.get_name() == "ROME",
+                lambda x: x.get_name() in self.applicable_intervention_methods,
                 self.controller.intervention_methods
             )
         )

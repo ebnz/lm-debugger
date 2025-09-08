@@ -16,7 +16,7 @@ class LocalizationVEditingMetric(MetricItem):
             tokenizer=self.controller.model_wrapper.tokenizer
         )
 
-    def get_text_outputs(self, prompt, token_logits, additional_params=None):
+    def pre_intervention_hook(self, prompt, additional_params=None):
         metric_values = {}
 
         for intervention in additional_params["interventions"]:
@@ -34,8 +34,6 @@ class LocalizationVEditingMetric(MetricItem):
                     device=self.controller.model_wrapper.model.device
                 )
 
-                print(hidden_flow_rv["scores"])
-
                 score_per_layer = torch.max(hidden_flow_rv["scores"], dim=0).values
 
                 highest_scoring_layer = torch.argmax(score_per_layer).item()
@@ -45,4 +43,8 @@ class LocalizationVEditingMetric(MetricItem):
             except ValueError:
                 metric_values[subject] = "Invalid: Subject not in Prompt"
 
-        return metric_values
+        self.parameters.parameters_retrieval_functions["metric_values"] = lambda: metric_values
+        self.parameters.need_parameter("metric_values")
+
+    def get_text_outputs(self, prompt, token_logits, additional_params=None):
+        return additional_params["metric_values"]

@@ -1,6 +1,7 @@
 import torch
 from .MetricItem import MetricItem
 
+
 class PerplexityMetric(MetricItem):
     def __init__(self, controller):
         super().__init__(controller)

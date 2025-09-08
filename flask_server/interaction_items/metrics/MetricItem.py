@@ -19,7 +19,8 @@ class MetricParameters:
         if parameter not in self.parameters_retrieval_functions.keys():
             raise KeyError(f"No Parameter-Retrieval-Function defined for Parameter {parameter}")
 
-        self.returned_parameters.append(parameter)
+        if parameter not in self.returned_parameters:
+            self.returned_parameters.append(parameter)
 
         return self
 
@@ -39,6 +40,9 @@ class MetricItem(InteractionItem):
 
     @abstractmethod
     def get_text_outputs(self, prompt, token_logits, additional_params=None):
+        pass
+
+    def pre_intervention_hook(self, prompt, additional_params=None):
         pass
 
     def get_frontend_items(self, prompt, token_logits, additional_params=None):
