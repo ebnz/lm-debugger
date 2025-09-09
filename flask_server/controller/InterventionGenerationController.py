@@ -11,15 +11,19 @@ class InterventionGenerationController:
         :param config: Configuration of Backend (jsonnet)
         :type config: dict
         """
+        # Model, Config, History
         self.model_wrapper = model_wrapper
         self.config = config
+        self.history = []
 
+        # Interventions
         self.interventions = []
         self.intervention_methods = []
 
         # Metrics
         self.metrics = []
 
+        # Weight Manipulation
         self.original_weights = {}
         for param_name, param in self.model_wrapper.model.named_parameters():
             # Exclude Embedding
@@ -191,6 +195,15 @@ class InterventionGenerationController:
         self.model_wrapper.clear_hooks()
         self.restore_original_model()
 
+        # History handling
+        self.history.append(dict(
+            endpoint="generate",
+            prompt=prompt,
+            generate_k=generate_k,
+            interventions=self.interventions,
+            response_dict=response_dict
+        ))
+
         return response_dict
 
     def get_token_scores(self, prompt):
@@ -253,7 +266,18 @@ class InterventionGenerationController:
 
             return iterable
 
-        return replace_inf_nan(rv_dict)
+        response_dict = replace_inf_nan(rv_dict)
+
+        # History handling
+        self.history.append(dict(
+            endpoint="get_token_scores",
+            prompt=prompt,
+            generate_k=1,
+            interventions=self.interventions,
+            response_dict=response_dict
+        ))
+
+        return response_dict
 
     def get_projections(self, type, layer, dim):
         """

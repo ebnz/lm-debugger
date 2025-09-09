@@ -5,7 +5,6 @@ from .MetricItem import MetricItem
 class EfficacyMetric(MetricItem):
     def __init__(self, controller):
         super().__init__(controller)
-        self.parameters.need_parameter("interventions")
 
     def calculate_efficacy_metric(self, prompt, target_token_id, true_token_id):
         print(target_token_id)
@@ -19,7 +18,8 @@ class EfficacyMetric(MetricItem):
         pred_token_logits = raw_model_output[0][-1]
 
         print(pred_token_logits.shape)
-        
+
+        # ToDo: Change to >
         return 1.0 if pred_token_logits[target_token_id] >= pred_token_logits[true_token_id] else 0.0
     
     def calculate_efficacy_from_history(self, prompt_history, target_token_ids, true_token_ids):
@@ -43,7 +43,8 @@ class EfficacyMetric(MetricItem):
     def pre_intervention_hook(self, prompt, additional_params=None):
         true_token_ids = []
 
-        prompt_history = ["Elon Musk was born in the city of", "Ian Fleming was born in the city of", "Barack Obama was born in the city of"]
+        prompt_history = ["Elon Musk was born in the city of", "Ian Fleming was born in the city of",
+                          "Barack Obama was born in the city of"]
         target_history = ["Pretoria", "London", "Honolulu"]
 
         # Run Model on all History Prompts
@@ -63,12 +64,6 @@ class EfficacyMetric(MetricItem):
         self.parameters.need_parameter("true_token_ids")
 
     def get_text_outputs(self, prompt, token_logits, additional_params=None):
-        interventions = additional_params["interventions"]
-
-        # No Efficacy Score calculated, if no target_str defined via Interventions
-        if len(interventions) <= 0:
-            return {}
-
         prompt_history = ["Elon Musk was born in the city of", "Ian Fleming was born in the city of",
                           "Barack Obama was born in the city of"]
         target_history = ["Pretoria", "London", "Honolulu"]
