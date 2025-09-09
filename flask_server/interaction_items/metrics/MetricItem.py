@@ -60,7 +60,23 @@ class MetricItem(InteractionItem):
 
         frontend_items = self.get_frontend_items(prompt, token_logits, additional_params=additional_params)
         for key in frontend_items.keys():
-            response_dict[0][key] = frontend_items[key]
+            response_dict[0][key] = round_dict_recursively(frontend_items[key])
 
         return response_dict
 
+
+def round_dict_recursively(struct, decimals=3):
+    if isinstance(struct, float):
+        return round(struct, decimals)
+    elif isinstance(struct, dict):
+        rv = {}
+        for key in struct.keys():
+            rv[key] = round_dict_recursively(struct[key], decimals=decimals)
+        return rv
+    elif isinstance(struct, list):
+        rv = []
+        for idx in range(len(struct)):
+            rv[idx] = round_dict_recursively(struct[idx], decimals=decimals)
+        return rv
+    else:
+        return struct

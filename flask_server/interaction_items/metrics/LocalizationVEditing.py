@@ -39,7 +39,7 @@ class LocalizationVEditingMetric(MetricItem):
                 highest_scoring_layer = torch.argmax(score_per_layer).item()
                 score = torch.max(score_per_layer).item()
 
-                metric_values[subject] = f"L{highest_scoring_layer} | {score}"
+                metric_values[subject] = f"L{highest_scoring_layer} | {round(score, 3)}"
             except ValueError:
                 metric_values[subject] = "Invalid: Subject not in Prompt"
 
