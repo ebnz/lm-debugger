@@ -9,7 +9,6 @@ class InterventionGenerationController:
         :type model_wrapper: TransformerModelWrapper
         :param model_wrapper: Model Wrapper, wrapping a Transformer-like LLM
         :param config: Configuration of Backend (jsonnet)
-        :type config: dict
         """
         # Model, Config, History
         self.model_wrapper = model_wrapper
@@ -41,10 +40,15 @@ class InterventionGenerationController:
 
     def register_metric(self, metric):
         """
-        Registers a new Metric to this Controller
+        Applies Attributes to Metric and registers it to this Controller
         :type metric: MetricItem
         :param metric: Metric to register
         """
+        if metric.__class__.__name__ in self.config.metric_configs.keys():
+            metric.config = self.config.metric_configs[metric.__class__.__name__]
+        else:
+            print(f"WARN: No Metric-Config found for Metric Type <{metric.__class__.__name__}>!")
+
         self.metrics.append(metric)
 
     def set_interventions(self, interventions):
@@ -226,12 +230,14 @@ class InterventionGenerationController:
         tokenizer_output = self.model_wrapper.tokenizer(prompt, return_tensors="pt")
         tokens = tokenizer_output["input_ids"].to(self.model_wrapper.device)
 
-        # Execute Pre-Intervention-Hooks
+        # Execute Pre-Intervention-Hooks and store Return Values
+        pre_hook_rvs = []
         for metric in self.metrics:
             # Retrieve additional Parameters for this Metric
             additional_params = metric.parameters.return_parameters_object()
             # Execute Pre-Intervention-Hook
-            metric.pre_intervention_hook(prompt, additional_params=additional_params)
+            pre_hook_rv = metric.pre_intervention_hook(prompt, **additional_params)
+            pre_hook_rvs.append(pre_hook_rv)
 
         # Apply Interventions
         self.transform_model(prompt)
@@ -241,13 +247,19 @@ class InterventionGenerationController:
         raw_model_output = self.model_wrapper.model(tokens)[0].detach().clone().cpu()
         token_logits = raw_model_output[0]
 
-        # Calculaate Metrics
-        for metric in self.metrics:
+        # Calculate Metrics
+        for idx, metric in enumerate(self.metrics):
             # Retrieve additional Parameters for this Metric
             additional_params = metric.parameters.return_parameters_object()
 
             # Calculate Metric and append its Frontend-Layers to API-Response
-            rv_dict["layers"] += metric.get_api_layers(prompt, token_logits, additional_params=additional_params)
+            # Metrics receive Return Values of Pre-Intervention-Hook as Parameter
+            rv_dict["layers"] += metric.get_api_layers(
+                prompt,
+                token_logits,
+                pre_hook_rv=pre_hook_rvs[idx],
+                **additional_params
+            )
 
         # Clear Hooks and restore original Model
         self.model_wrapper.clear_hooks()

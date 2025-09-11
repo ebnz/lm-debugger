@@ -1,5 +1,5 @@
 import torch
-from .MetricItem import MetricItem
+from .MetricItem import MetricItem, Attributes
 
 from .causal_trace.causal_trace import ModelAndTokenizer, calculate_hidden_flow
 
@@ -8,18 +8,18 @@ class LocalizationVEditingMetric(MetricItem):
     def __init__(self, controller):
         super().__init__(controller)
 
-        # Request for additional Parameter 'interventions'
-        self.parameters.need_parameter("interventions")
+        # Request for additional Parameters
+        self.parameters.need_parameter(Attributes.INTERVENTIONS)
 
         self.model_and_tokenizer = ModelAndTokenizer(
             model=self.controller.model_wrapper.model,
             tokenizer=self.controller.model_wrapper.tokenizer
         )
 
-    def pre_intervention_hook(self, prompt, additional_params=None):
+    def pre_intervention_hook(self, prompt, INTERVENTIONS=None):
         metric_values = {}
 
-        for intervention in additional_params["interventions"]:
+        for intervention in INTERVENTIONS:
             subject = intervention["text_inputs"]["subject"]
 
             try:
@@ -27,10 +27,10 @@ class LocalizationVEditingMetric(MetricItem):
                     self.model_and_tokenizer,
                     prompt,
                     subject=subject,
-                    samples=10,
-                    noise=0.1,
-                    window=10,
-                    kind="mlp",
+                    samples=self.config.samples,
+                    noise=self.config.noise,
+                    window=self.config.window,
+                    kind=self.config.kind,
                     device=self.controller.model_wrapper.model.device
                 )
 
@@ -43,8 +43,7 @@ class LocalizationVEditingMetric(MetricItem):
             except ValueError:
                 metric_values[subject] = "Invalid: Subject not in Prompt"
 
-        self.parameters.parameters_retrieval_functions["metric_values"] = lambda: metric_values
-        self.parameters.need_parameter("metric_values")
+        return metric_values
 
-    def get_text_outputs(self, prompt, token_logits, additional_params=None):
-        return additional_params["metric_values"]
+    def get_text_outputs(self, prompt, token_logits, pre_hook_rv=None, **kwargs):
+        return pre_hook_rv

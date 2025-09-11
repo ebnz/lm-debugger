@@ -8,7 +8,7 @@ class OutOfDistributionKeysMetric(MetricItem):
         super().__init__(controller)
         self.applicable_intervention_methods = ["ROME", "R-ROME"]
 
-    def get_text_outputs(self, prompt, token_logits, additional_params=None):
+    def get_text_outputs(self, prompt, token_logits, pre_hook_rv=None, **kwargs):
         # Find ROME-Modules
         rome_modules = list(
             filter(

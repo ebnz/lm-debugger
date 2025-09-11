@@ -11,8 +11,8 @@ from controller.TransformerModels import TransformerModelWrapper
 # Metrics
 from interaction_items.metrics.ExcessiveWeightDeltasMetric import ExcessiveWeightDeltasMetric
 from interaction_items.metrics.PerplexityMetric import PerplexityMetric
-from interaction_items.metrics.OutOfDistributionKeys import OutOfDistributionKeysMetric
-from interaction_items.metrics.LocalizationVEditing import LocalizationVEditingMetric
+from interaction_items.metrics.OutOfDistributionKeysMetric import OutOfDistributionKeysMetric
+from interaction_items.metrics.LocalizationVEditingMetric import LocalizationVEditingMetric
 from interaction_items.metrics.EfficacyMetric import EfficacyMetric
 
 # Intervention Methods
