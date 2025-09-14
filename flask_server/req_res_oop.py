@@ -11,7 +11,9 @@ from controller.TransformerModels import TransformerModelWrapper
 # Metrics
 from interaction_items.metrics.ExcessiveWeightDeltasMetric import ExcessiveWeightDeltasMetric
 from interaction_items.metrics.PerplexityMetric import PerplexityMetric
-from interaction_items.metrics.OutOfDistributionKeys import OutOfDistributionKeysMetric
+from interaction_items.metrics.OutOfDistributionKeysMetric import OutOfDistributionKeysMetric
+from interaction_items.metrics.LocalizationVEditingMetric import LocalizationVEditingMetric
+from interaction_items.metrics.EfficacyMetric import EfficacyMetric
 
 # Intervention Methods
 from interaction_items.intervention_methods.EasyEditInterventionMethod import EasyEditInterventionMethod
@@ -79,22 +81,41 @@ class ModelingRequests:
                 ee_hparams
             ))
 
-        self.intervention_controller.register_metric(ExcessiveWeightDeltasMetric(
-            self.intervention_controller
-        ))
+        self.intervention_controller.register_metric(
+            ExcessiveWeightDeltasMetric(
+                self.intervention_controller
+            )
+        )
 
-        self.intervention_controller.register_metric(PerplexityMetric(
-            self.intervention_controller
-        ))
+        self.intervention_controller.register_metric(
+            PerplexityMetric(
+                self.intervention_controller
+            )
+        )
 
-        self.intervention_controller.register_metric(OutOfDistributionKeysMetric(
-            self.intervention_controller
-        ))
+        self.intervention_controller.register_metric(
+            OutOfDistributionKeysMetric(
+                self.intervention_controller
+            )
+        )
+
+        self.intervention_controller.register_metric(
+            LocalizationVEditingMetric(
+                self.intervention_controller
+            )
+        )
+
+        self.intervention_controller.register_metric(
+            EfficacyMetric(
+                self.intervention_controller
+            )
+        )
 
     def request2response(self, req_json_dict):
         prompt = req_json_dict['prompt']
         interventions = req_json_dict['interventions']
 
+        # ToDo: Only one invocation
         # Generate Response-Dict without Interventions
         self.intervention_controller.clear_interventions()
         response_dict = self.intervention_controller.get_token_scores(prompt)

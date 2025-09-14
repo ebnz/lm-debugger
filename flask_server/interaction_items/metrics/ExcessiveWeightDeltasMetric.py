@@ -1,21 +1,21 @@
 import torch
-from .MetricItem import MetricItem
+from .MetricItem import MetricItem, Attributes
+
 
 class ExcessiveWeightDeltasMetric(MetricItem):
     def __init__(self, controller):
         super().__init__(controller)
-        self.parameters.need_parameter("weight_deltas")
 
-    def get_text_outputs(self, token_logits, additional_params=None):
+        # Request for additional Parameters
+        self.parameters.need_parameter(Attributes.WEIGHT_DELTAS)
+        self.parameters.need_parameter(Attributes.MANIPULATED_LAYERS)
+
+    def get_text_outputs(self, prompt, token_logits, pre_hook_rv=None, MANIPULATED_LAYERS=None, WEIGHT_DELTAS=None):
         metric_values = {}
 
-        # Get all Layers that are manipulated by Intervention Methods
-        manip_layers = self.controller.get_manipulated_layers()
-        deltas = additional_params["weight_deltas"]
+        for layer in MANIPULATED_LAYERS:
+            down_descriptor = self.controller.config.layer_mappings["mlp_down_proj"].format(layer) + ".weight"
 
-        for layer in manip_layers:
-            down_descriptor = self.config.layer_mappings["mlp_down_proj"].format(layer) + ".weight"
-
-            metric_values[f"L{layer}"] = torch.linalg.matrix_norm(deltas[down_descriptor]).item()
+            metric_values[f"L{layer}"] = torch.linalg.matrix_norm(WEIGHT_DELTAS[down_descriptor]).item()
 
         return metric_values

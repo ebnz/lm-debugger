@@ -1,5 +1,6 @@
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
+from copy import deepcopy
 
 class TransformerModelWrapper:
     def __init__(self, model_name, dtype=torch.float16, device="cpu"):
