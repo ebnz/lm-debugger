@@ -8,9 +8,12 @@ import ValueDetailsPanel from "./ValueDetailsPanel";
 import InterventionsPanel from "./InterventionsPanel";
 import styled, {css} from "styled-components";
 import {toAbbr} from "../types/constants";
+import {result} from "lodash";
+import {Upload} from "antd";
 
 function MainPage(): JSX.Element {
 
+  const [promptValue, setPromptValue] = useState<string>("");
   const [prediction, setPrediction] = useState<NetworkPrediction | undefined>(undefined);
   const [interventions, setInterventions] = useState<Array<Intervention>>([]);
   const [selectedValueId, setSelectedValueId] = useState<ValueId | undefined>(undefined);
@@ -58,7 +61,7 @@ function MainPage(): JSX.Element {
       const result = await generate({prompt, interventions, generate_k});
       const {generate_text} = result;
       return generate_text;
-    }catch(e) {
+    } catch(e) {
       setPredictionError("Failed generation");
       return prompt;
     }
@@ -90,7 +93,7 @@ function MainPage(): JSX.Element {
       const result = await predict({prompt, interventions, generate_k: 1});
       const resultWithNames = addNamesToValues(result);
       setPrediction(resultWithNames);
-    }catch(e) {
+    } catch(e) {
       setPredictionError("Failed prediction");
       console.log(e)
     } finally {
@@ -98,6 +101,61 @@ function MainPage(): JSX.Element {
     }
   }
 
+  // ------------------------------- //
+  // Serialization of Trace/Generate //
+  // ------------------------------- //
+
+  function handleDownload() {
+    let result_serialized = JSON.stringify({
+      promptValue: promptValue,
+      prediction: prediction,
+      interventions: interventions
+    });
+    const blob = new Blob([result_serialized], { type: "application/json" });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "export.json"; // File name
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleUpload(file: any) {
+    const isJson = file.type === 'application/json' || file.name.endsWith('.json');
+
+    if (!isJson) {
+      console.error('You can only upload JSON files!');
+      return Upload.LIST_IGNORE;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      try {
+        const result = e.target?.result;
+        if (typeof result === "string") {
+          const parsed = JSON.parse(result);
+
+          // Use it in your app
+          setInterventions(parsed.interventions);
+          if (parsed.hasOwnProperty("prediction")) {
+            setPrediction(parsed.prediction);
+          }
+          setPromptValue(parsed.promptValue);
+          console.log(parsed);
+
+          console.log('JSON file uploaded and parsed successfully!');
+        } else {
+          console.error('JSON-Parsing: invalid file');
+        }
+      } catch (err) {
+        console.error('Error parsing JSON:', err);
+      }
+    };
+
+    reader.readAsText(file);
+  }
 
   function handleValueRename(valueId: ValueId, newName: string) {
     
@@ -135,7 +193,9 @@ function MainPage(): JSX.Element {
         <Prompt 
           onRun={handleRun}
           onGenerate={handleGenerate}
-          isLoading={isLoadingPrediction}           
+          isLoading={isLoadingPrediction}
+          promptValue={promptValue}
+          setPromptValue={setPromptValue}
         />
       </PromptArea>
       <ValueDetailsArea detailsVisible={detailsVisible}>
@@ -157,6 +217,8 @@ function MainPage(): JSX.Element {
           deleteIntervention={(l, d, t) => deleteIntervention(l, d, t)}
           updateIntervention={(v, c) => updateIntervention(v, c)}
           selectIntervention={(v) => selectIntervention(v)}
+          handleDownload={handleDownload}
+          handleUpload={handleUpload}
         />
       </InterventionArea>
     </MainLayout>

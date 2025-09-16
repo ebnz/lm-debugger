@@ -1,10 +1,11 @@
 import React, {ChangeEvent, useState} from "react";
 import { Intervention, ValueId } from "../types/dataModel";
 import styled from "styled-components";
-import {Card, Button, Input} from "antd";
+import {Card, Button, Input, Upload} from "antd";
 import {partial} from "lodash";
 import InterventionItem from "./InterventionItem";
 import {toType, toAbbr} from "../types/constants";
+import {UploadOutlined} from "@ant-design/icons";
 
 interface Props {
   interventions: Array<Intervention>;
@@ -12,6 +13,8 @@ interface Props {
   updateIntervention: (valueId: ValueId, coeff: number) => void;
   deleteIntervention: (layer: number, dim: number, type: string) => void;
   selectIntervention: (valueId: ValueId) => void;
+  handleDownload: () => void;
+  handleUpload: (file: any) => void;
 }
 
 function InterventionsPanel(props: Props): JSX.Element {
@@ -20,7 +23,9 @@ function InterventionsPanel(props: Props): JSX.Element {
     addIntervention,
     updateIntervention,
     deleteIntervention,
-    selectIntervention
+    selectIntervention,
+    handleDownload,
+    handleUpload
   } = props;
 
   const [inputContent, setInputContent] = useState<string>("");
@@ -43,11 +48,15 @@ function InterventionsPanel(props: Props): JSX.Element {
       title={
         <TitleLayout>
           <TitleText>Interventions</TitleText>
-          <ValueInput 
+          <ExportButton onClick={handleDownload}>Export Run</ExportButton>
+          <StyledUpload beforeUpload={handleUpload} showUploadList={false}>
+            <ImportButton icon={<UploadOutlined />}>Import Run</ImportButton>
+          </StyledUpload>
+          <ValueInput
             // validInput={isValid || inputContent === ""}
             placeholder="L12D34"
             value={inputContent}
-            onChange={handleInputChange} 
+            onChange={handleInputChange}
           />
           <AddButton disabled={!isValid} onClick={handleAdd}>Add</AddButton>
         </TitleLayout>
@@ -127,11 +136,11 @@ const MainLayout = styled(Card).attrs({
 
 const TitleLayout = styled.div`
   display: grid;
-  grid-template-columns: min-content 1fr 150px min-content;
+  grid-template-columns: min-content 10px min-content 10px min-content 1fr 150px min-content;
   grid-template-rows: 1fr;
   gap: 4px;
   grid-template-areas: 
-    "text . input button";
+    "text . button_export . upload . input button_add";
 
   align-items: center;
 `;
@@ -160,13 +169,34 @@ const ValueInput = styled(Input)`
 //   };
 // `;
 
+const ExportButton = styled(Button).attrs({
+  type: "primary",
+  size: "small"
+})`
+  grid-area: button_export;
+  height: 32px;
+`;
 
+const ImportButton = styled(Button).attrs({
+  type: "primary",
+  size: "small"
+})`
+  grid-area: button_import;
+  height: 32px;
+`;
+
+const StyledUpload = styled(Upload).attrs({
+  size: "small"
+})`
+  grid-area: upload;
+  height: 32px;
+`;
 
 const AddButton = styled(Button).attrs({
   type: "primary",
   size: "small"
 })`
-  grid-area: button;
+  grid-area: button_add;
   height: 32px;
 `;
 
