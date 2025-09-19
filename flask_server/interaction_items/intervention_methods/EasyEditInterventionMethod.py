@@ -30,26 +30,31 @@ class EasyEditInterventionMethod(InterventionMethod):
         return self.ee_hparams.alg_name
 
     def transform_model(self, prompt):
-        request = [{
-            "prompt": intervention["text_inputs"]["prompt"],
-            "subject": intervention["text_inputs"]["prompt"],
-            "target_new": intervention["text_inputs"]["target"]
-        } for intervention in self.interventions if intervention["coeff"] > 0.0]
+        for intervention in self.interventions:
+            # Skip disabled Interventions
+            if intervention["coeff"] <= 0.0:
+                continue
 
-        rv = self.invoke_method(
-            self.model_wrapper.model,
-            self.model_wrapper.tokenizer,
-            request,
-            self.ee_hparams,
-            copy=False
-        )
+            request = [{
+                "prompt": intervention["text_inputs"]["prompt"],
+                "subject": intervention["text_inputs"]["prompt"],
+                "target_new": intervention["text_inputs"]["target"]
+            }]
 
-        if isinstance(rv, tuple):
-            edited_model = rv[0]
-        else:
-            edited_model = rv
+            rv = self.invoke_method(
+                self.model_wrapper.model,
+                self.model_wrapper.tokenizer,
+                request,
+                self.ee_hparams,
+                copy=False
+            )
 
-        self.model_wrapper.model = edited_model
+            if isinstance(rv, tuple):
+                edited_model = rv[0]
+            else:
+                edited_model = rv
+
+            self.model_wrapper.model = edited_model
 
     def get_text_inputs(self):
         return {
