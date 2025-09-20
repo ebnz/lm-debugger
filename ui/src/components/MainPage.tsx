@@ -77,32 +77,12 @@ function MainPage(): JSX.Element {
     }
   }
 
-  function addNamesToValues(prediction: NetworkPrediction) : NetworkPrediction {
-    // One hell of a side effect...
-    const valueIds = getValueNamesFromCookies();
-    const {prompt, layers} = prediction;
-  
-  
-    const new_layers =  [...layers]
-    valueIds.forEach(valueId => {
-      const {type, layer, dim} = valueId;
-      const values = new_layers.filter((prediction) => prediction.layer == layer && prediction.type == type)[0].significant_values
-      values.filter(v=> v.dim === dim && v.layer === layer && v.type === type).forEach(value => value.desc = valueId.desc)
-    })
-    return {
-      prompt,
-      layers: new_layers
-    }
-  }
-
-
   async function handleRun(prompt: string){
     setLoadingPrediction(true);
     setPredictionError(undefined);
     try {
       const result = await predict({prompt, interventions, generate_k: 1});
-      const resultWithNames = addNamesToValues(result);
-      setPrediction(resultWithNames);
+      setPrediction(result);
     } catch(e) {
       setPredictionError("Failed prediction");
       console.log(e)
@@ -167,34 +147,6 @@ function MainPage(): JSX.Element {
     reader.readAsText(file);
   }
 
-  function handleValueRename(valueId: ValueId, newName: string) {
-    
-    document.cookie = `new_name_${toAbbr.get(valueId?.type)}${valueId?.layer}D${valueId?.dim}=${newName};`;
-    if (prediction === undefined) {
-      return;
-    } 
-    
-    const newPrediction = addNamesToValues(prediction)
-    const namedValueIds = getValueNamesFromCookies()
-    const namedInterventions = interventions.map( inter => {
-      const matches = namedValueIds.filter(v => v.layer == inter.layer && v.dim == inter.dim && v.type == inter.type)
-      if (matches.length == 0) {
-        return inter
-      }
-      const matched = matches[0]
-      return {...inter, desc: matched.desc}
-    });
-        
-    setInterventions(namedInterventions)
-    setPrediction(newPrediction)
-    if (selectedValueId?.layer == valueId.layer && selectedValueId?.dim == valueId.dim && selectedValueId?.type == valueId.type) {
-      const {type, layer, dim} = valueId
-      const namedValueId = {type, layer, dim, desc: newName}
-      setSelectedValueId(namedValueId);
-    }
-    
-  }
-
   const detailsVisible = selectedValueId !== undefined;
 
   return (
@@ -209,7 +161,7 @@ function MainPage(): JSX.Element {
         />
       </PromptArea>
       <ValueDetailsArea detailsVisible={detailsVisible}>
-        <ValueDetailsPanel valueId={selectedValueId} onValueRename={handleValueRename} />
+        <ValueDetailsPanel valueId={selectedValueId} />
       </ValueDetailsArea>
       <LayersViewArea>
         <LayersPanel 
