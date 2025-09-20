@@ -28,7 +28,7 @@ class OutOfDistributionKeysMetric(MetricItem):
                 "prompt": intervention["text_inputs"]["prompt"],
                 "subject": intervention["text_inputs"]["subject"],
                 "target_new": intervention["text_inputs"]["target"]
-            } for intervention in rome_module.interventions if intervention["coeff"] > 0.0]
+            } for intervention in rome_module.interventions]
 
             for request in requests:
                 left_vector = compute_u(
