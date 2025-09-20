@@ -2,13 +2,11 @@ import React, {useState} from "react";
 import { hot } from "react-hot-loader";
 import Prompt from "./Prompt";
 import {NetworkPrediction, Intervention, ValueId} from "../types/dataModel";
-import {predict, generate, getValueNamesFromCookies} from "../api/prediction";
+import {predict, generate} from "../api/prediction";
 import LayersPanel from "./LayersPanel";
 import ValueDetailsPanel from "./ValueDetailsPanel";
 import InterventionsPanel from "./InterventionsPanel";
 import styled, {css} from "styled-components";
-import {toAbbr} from "../types/constants";
-import {result} from "lodash";
 import {Upload} from "antd";
 
 // Sortable Interventions
@@ -84,7 +82,9 @@ function MainPage(): JSX.Element {
       const result = await predict({prompt, interventions, generate_k: 1});
       setPrediction(result);
     } catch(e) {
-      setPredictionError("Failed prediction");
+      if (e instanceof Error) {
+        setPredictionError(e.message);
+      }
       console.log(e)
     } finally {
       setLoadingPrediction(false);
