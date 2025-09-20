@@ -90,30 +90,37 @@ class InterventionGenerationController:
         :type prompt: str
         :param prompt: Prompt, the Model is run on after setup of Hooks
         """
-        for method in self.intervention_methods:
-            if len(method.interventions) == 0:
-                continue
-            method.setup_intervention_hooks(prompt)
+        for intervention in self.interventions:
+            intervention_type = intervention["type"]
+            intervention_layer = intervention["layer"]
+            fitting_method_found = False
 
-    def transform_model(self, prompt):
+            for method in self.intervention_methods:
+                if intervention_type == method.get_name() and intervention_layer == method.layer:
+                    method.setup_intervention_hook(intervention, prompt)
+                    fitting_method_found = True
+                    break
+
+            if not fitting_method_found:
+                print(f"WARN: Intervention <{intervention}> has no fitting Intervention Method")
+
+    def transform_model(self):
         """
-        Performs the Transformation of the Model's Weights, as defined by the Interventions.
-        Implementation Logic of Intervention Methods, that use Model Transformation here.
-        :type prompt: str
-        :param prompt: Prompt, the Model is run on after Transformation
+        Applies all Model-Transformation Interventions to the Model.
         """
-        # Sort Methods supporting only one Layer from late to early Layers, other Methods are processed after
-        # ROMEIntervention won't work else when using multiple Interventions of _different_ ROMEIntervention-Instances
-        sorted_methods = sorted(
-            self.intervention_methods,
-            key=lambda item: item.layer,
-            reverse=True
-        )
-        for method in sorted_methods:
-            nonzero_interventions = list(filter(lambda x: x["coeff"] > 0.0, method.interventions))
-            if len(nonzero_interventions) == 0:
-                continue
-            method.transform_model(prompt)
+        for intervention in self.interventions:
+            intervention_type = intervention["type"]
+            intervention_layer = intervention["layer"]
+            fitting_method_found = False
+
+            for method in self.intervention_methods:
+                if intervention_type == method.get_name() and intervention_layer == method.layer:
+                    method.transform_model(intervention)
+                    fitting_method_found = True
+                    break
+
+            if not fitting_method_found:
+                print(f"WARN: Intervention <{intervention}> has no fitting Intervention Method")
 
     def restore_original_model(self):
         """
@@ -184,7 +191,7 @@ class InterventionGenerationController:
         :return: Generated Text
         """
         # Call Model-Editing Interventions
-        self.transform_model(prompt)
+        self.transform_model()
         # Setup Intervention-Hooks
         self.setup_intervention_hooks(prompt)
 
@@ -240,7 +247,7 @@ class InterventionGenerationController:
             pre_hook_rvs.append(pre_hook_rv)
 
         # Apply Interventions
-        self.transform_model(prompt)
+        self.transform_model()
         self.setup_intervention_hooks(prompt)
 
         # Generate Next-Token-Logits for Metric-Parameters (Post-Intervention)

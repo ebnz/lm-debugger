@@ -59,21 +59,23 @@ class InterventionMethod(InteractionItem):
         self.interventions = []
 
     @abstractmethod
-    def setup_intervention_hooks(self, prompt):
+    def setup_intervention_hook(self, intervention, prompt):
         """
-        Installs the Hooks from the Interventions to the LLM.
+        Installs the Hook, according to the Intervention to the LLM.
         Implementation Logic of Intervention Methods, that use Hooks here.
+        :type intervention: dict
+        :param intervention: Intervention, to be applied to the Model
         :type prompt: str
         :param prompt: Prompt, the Model is run on after setup of Hooks
         """
         pass
 
     @abstractmethod
-    def transform_model(self, prompt):
+    def transform_model(self, intervention):
         """
-        Performs the Transformation of the Model's Weights, as defined by the Interventions.
+        Performs the Transformation of the Model's Weights, as defined by the given Intervention.
         Implementation Logic of Intervention Methods, that use Model Transformation here.
-        :param prompt: Prompt, the Model is run on after Transformation
+        :param intervention: Intervention to apply
         """
         pass
 
