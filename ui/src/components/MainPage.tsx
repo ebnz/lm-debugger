@@ -11,6 +11,9 @@ import {toAbbr} from "../types/constants";
 import {result} from "lodash";
 import {Upload} from "antd";
 
+// Sortable Interventions
+import {arrayMove} from "@dnd-kit/sortable";
+
 function MainPage(): JSX.Element {
 
   const [promptValue, setPromptValue] = useState<string>("");
@@ -24,8 +27,6 @@ function MainPage(): JSX.Element {
   // Intervention State Update functions //
   // ----------------------------------- //
   function addIntervention(valueId: ValueId) {
-    console.log(valueId);
-    console.log(hasIntervention(valueId));
     if(!hasIntervention(valueId)){
       setInterventions([{...valueId, coeff: 0.0}, ...interventions])
     }
@@ -53,6 +54,15 @@ function MainPage(): JSX.Element {
 
   function selectIntervention(valueId: ValueId): void {
     setSelectedValueId(valueId)
+  }
+
+  function setIndexOfIntervention(oldIdx: number, newIdx: number) {
+    if (oldIdx % 1 !== 0 || newIdx % 1 !== 0) {
+      return;
+    }
+
+    // Rearrange items
+    setInterventions((prevItems) => arrayMove(prevItems, oldIdx, newIdx));
   }
 
   async function handleGenerate(prompt: string, generate_k: Number): Promise<string> {
@@ -217,6 +227,7 @@ function MainPage(): JSX.Element {
           deleteIntervention={(l, d, t) => deleteIntervention(l, d, t)}
           updateIntervention={(v, c) => updateIntervention(v, c)}
           selectIntervention={(v) => selectIntervention(v)}
+          setIndexOfIntervention={setIndexOfIntervention}
           handleDownload={handleDownload}
           handleUpload={handleUpload}
         />

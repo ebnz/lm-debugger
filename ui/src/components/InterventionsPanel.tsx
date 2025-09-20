@@ -3,9 +3,26 @@ import { Intervention, ValueId } from "../types/dataModel";
 import styled from "styled-components";
 import {Card, Button, Input, Upload} from "antd";
 import {partial} from "lodash";
-import InterventionItem from "./InterventionItem";
+import SortableInterventionItem from "./InterventionItem";
 import {toType, toAbbr} from "../types/constants";
 import {UploadOutlined} from "@ant-design/icons";
+
+// Sortable Interventions
+import {
+  DndContext,
+  useSensors,
+  useSensor,
+  MouseSensor,
+  TouchSensor,
+  DragStartEvent,
+  DragEndEvent,
+  DragOverEvent,
+  DragOverlay,
+  UniqueIdentifier
+} from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, horizontalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import InterventionItem from "./InterventionItem";
+
 
 interface Props {
   interventions: Array<Intervention>;
@@ -13,6 +30,7 @@ interface Props {
   updateIntervention: (valueId: ValueId, coeff: number) => void;
   deleteIntervention: (layer: number, dim: number, type: string) => void;
   selectIntervention: (valueId: ValueId) => void;
+  setIndexOfIntervention: (oldIdx: number, newIdx: number) => void;
   handleDownload: () => void;
   handleUpload: (file: any) => void;
 }
@@ -24,11 +42,45 @@ function InterventionsPanel(props: Props): JSX.Element {
     updateIntervention,
     deleteIntervention,
     selectIntervention,
+    setIndexOfIntervention,
     handleDownload,
     handleUpload
   } = props;
 
   const [inputContent, setInputContent] = useState<string>("");
+  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
+
+  // Set up Draggability-Sensors (Mouse and Touch)
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+    // Press delay of 250ms, with tolerance of 5px of movement
+    activationConstraint: {
+      delay: 250,
+      tolerance: 5,
+    },
+  }),
+    useSensor(TouchSensor)
+  );
+
+  // Handle the start/end of the drag operation (dragging finished)
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (active.id !== over?.id) {
+      // Rearrange items
+      const oldIdx = interventions.findIndex((item) => item.type + item.layer + item.dim === active.id);
+      const newIdx = interventions.findIndex((item) => item.type + item.layer + item.dim === over?.id);
+
+      // Splice Interventions
+      setIndexOfIntervention(oldIdx, newIdx);
+    }
+  };
+
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setInputContent(e.target.value)
@@ -43,8 +95,10 @@ function InterventionsPanel(props: Props): JSX.Element {
     setInputContent("");
   }
 
+  const activeItem = interventions.find((item) => item.layer === activeId);
+
   return (
-    <MainLayout 
+    <MainLayout
       title={
         <TitleLayout>
           <TitleText>Interventions</TitleText>
@@ -62,17 +116,39 @@ function InterventionsPanel(props: Props): JSX.Element {
         </TitleLayout>
       }
     >
-      {
-        interventions.map((inter) => (
-          <InterventionItem 
-            key={`${toAbbr.get(inter.type) ?? "_"}${inter.layer}D${inter.dim}`}
-            intervention={inter}
-            deleteIntervention={() => deleteIntervention(inter.layer, inter.dim, inter.type)}
-            updateIntervention={partial(updateIntervention, inter)}
-            select={partial(selectIntervention, inter)}
-          />
-        ))
-      }
+      <DndContext
+        sensors={sensors}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={interventions.map((item) => item.type + item.layer + item.dim)}
+          strategy={horizontalListSortingStrategy} // Horizontal sorting
+        >
+          {
+            interventions.map((inter) => (
+              <SortableInterventionItem
+                intervention={inter}
+                deleteIntervention={() => deleteIntervention(inter.layer, inter.dim, inter.type)}
+                updateIntervention={partial(updateIntervention, inter)}
+                select={partial(selectIntervention, inter)}
+              />
+            ))
+          }
+        </SortableContext>
+
+        <DragOverlay dropAnimation={null}>
+          {activeItem ? (
+            // Render a floating copy of the dragged item
+            <InterventionItem
+              intervention={activeItem}
+              deleteIntervention={() => deleteIntervention(activeItem.layer, activeItem.dim, activeItem.type)}
+              updateIntervention={partial(updateIntervention, activeItem)}
+              select={partial(selectIntervention, activeItem)}
+            />
+          ) : null}
+        </DragOverlay>
+
+      </DndContext>
     </MainLayout>
   );
 }

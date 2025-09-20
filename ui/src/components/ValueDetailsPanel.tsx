@@ -59,7 +59,8 @@ function ValueDetailsPanel(props: Props): JSX.Element {
     renderedContent = (<Spin tip="Loading..." />);
   } else if (error !== undefined) {
     renderedContent = (<Alert message={error} type="error" />);
-  } else if (interpretation !== undefined) {
+  } else if (interpretation !== undefined && interpretation !== null) {
+    console.log(interpretation)
     const dataSource = interpretation.top_k.map(v => ({token: fixToken(v.token), logit: v.logit.toFixed(3),  key: UUIDv4()}));
     renderedContent = (
       <ValuesTable 

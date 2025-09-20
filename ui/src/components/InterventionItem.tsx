@@ -5,6 +5,7 @@ import styled from "styled-components";
 import CloseCircleOutlined from "@ant-design/icons/CloseCircleOutlined"
 import { ScanOutlined } from '@ant-design/icons';
 import {toAbbr} from "../types/constants";
+import {useSortable} from "@dnd-kit/sortable";
 
 const {Text} = Typography;
 
@@ -70,6 +71,46 @@ function InterventionItem(props: Props):JSX.Element {
   );
 }
 
+const SortableInterventionItem = (props: Props) => {
+  const {
+    intervention,
+    updateIntervention,
+    deleteIntervention,
+    select
+  } = props;
+  const {
+      attributes,
+      listeners,
+      setNodeRef,
+      isDragging,
+      transform,
+      transition
+  } = useSortable({ id: intervention.type + intervention.layer + intervention.dim });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      style={{
+        opacity: isDragging ? 0.5 : 1,
+        transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+        transition: isDragging ? transition : 'none',
+        display: 'inline-block',
+        margin: '0 8px',
+        cursor: 'grab',
+      }}
+    >
+      <InterventionItem
+        intervention={intervention}
+        deleteIntervention={deleteIntervention}
+        updateIntervention={updateIntervention}
+        select={select}
+      />
+    </div>
+  );
+};
+
 interface Toggle {
   checked: boolean;
 }
@@ -114,4 +155,4 @@ const CoeffToggle = styled(Switch)`
   grid-area: control;
 `;
 
-export default InterventionItem;
+export default SortableInterventionItem;
