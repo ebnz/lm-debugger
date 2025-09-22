@@ -77,7 +77,6 @@ class ModelingRequests:
             ee_hparams = editing_hparams.from_hparams(path_to_conf)
             self.intervention_controller.register_method(EasyEditInterventionMethod(
                 self.intervention_controller,
-                ee_hparams.layers[0],
                 ee_hparams
             ))
 

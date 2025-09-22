@@ -4,7 +4,8 @@ from .EasyEdit.easyeditor.util.alg_dict import ALG_DICT
 
 
 class EasyEditInterventionMethod(InterventionMethod):
-    def __init__(self, controller, layer, ee_hparams):
+    def __init__(self, controller, ee_hparams):
+        layer = ee_hparams.layers[0] if hasattr(ee_hparams, "layers") else -2
         super().__init__(controller, layer)
 
         self.ee_hparams = ee_hparams
