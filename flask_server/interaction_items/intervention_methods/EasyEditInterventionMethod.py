@@ -65,7 +65,11 @@ class EasyEditInterventionMethod(InterventionMethod):
         }
 
     def get_projections(self, dim, *args, **kwargs):
-        return super().get_projections(dim, *args, **kwargs)
+        return {
+            "dim": dim,
+            "layer": self.layer,
+            "top_k": []
+        }
 
     def setup_intervention_hook(self, intervention, prompt):
         return super().setup_intervention_hook(intervention, prompt)

@@ -94,7 +94,7 @@ function Layer(props: Props): JSX.Element {
               {text_inputs: textIntervention,
               type: props.layer.type,
               layer: props.layer.layer,
-              dim: textIntervention["subject"] + textIntervention["target"] + textIntervention["prompt"]}
+              dim: 0}
             )}}>Add as Intervention</Button>
           </ContentLayout>
         }

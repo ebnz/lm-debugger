@@ -43,12 +43,9 @@ function InterventionItem(props: Props):JSX.Element {
 
   let actualDesc = "";
 
-  // Create Special Naming if Intervention is a TextIntervention (e.g. ROME)
-  // LMDebugger defines Interventions as interfaces
-  // => can't use <intervention instanceof TextIntervention> => check if intervention has property
   if (intervention.hasOwnProperty("text_inputs")) {
     // @ts-ignore
-    actualDesc = intervention.text_inputs.subject;
+    actualDesc = `L${intervention.layer}: ${intervention.text_inputs.subject}`;
   }
   else {
     actualDesc = desc !== undefined && desc !== "" ? desc : `${toAbbr.get(props.intervention.type) ?? "_"}${layer}D${dim}`
@@ -59,8 +56,8 @@ function InterventionItem(props: Props):JSX.Element {
     <MainLayout checked={isOn}>
       <Label onClick={select}>
         <ScanOutlined />
-        <Text strong 
-          style={useEllipsis ? { width: 55 } : undefined}
+        <Text strong
+          style={useEllipsis ? { width: 85 } : undefined}
           ellipsis={useEllipsis ? { tooltip: true } : false}>{actualDesc}</Text>
       </Label>
       <CoeffToggle checked={isOn} onChange={handleChange}/>
@@ -130,7 +127,7 @@ const MainLayout = styled.div<Toggle>`
   gap: 4px;
 
   grid-template-areas: 
-    "label  close"
+    "label close"
     "control control";
 `;
 

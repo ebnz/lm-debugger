@@ -54,7 +54,8 @@ class OutOfDistributionKeysMetric(MetricItem):
                     fact_token_strategy=hparams.fact_token,
                 )
 
-                datapoint_name = f"L{rome_module.layer} | {request['subject']}"
+                subject = request['subject']
+                datapoint_name = f'Layer {rome_module.layer} | Subject "{subject}"'
                 metric_values[datapoint_name] = torch.dot(cur_input, left_vector).item()
 
         return metric_values

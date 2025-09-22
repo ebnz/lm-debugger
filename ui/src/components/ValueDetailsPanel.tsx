@@ -39,6 +39,7 @@ function ValueDetailsPanel(props: Props): JSX.Element {
         setLoading(false)
       }).catch((e) => {
         setError("Failed getting details")
+        console.log(e);
         setLoading(false);
       });
 
