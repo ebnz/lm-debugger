@@ -114,7 +114,6 @@ class ModelingRequests:
         prompt = req_json_dict['prompt']
         interventions = req_json_dict['interventions']
 
-        # ToDo: Only one invocation
         # Generate Response-Dict without Interventions
         self.intervention_controller.clear_interventions()
         response_dict = self.intervention_controller.get_token_scores(prompt)

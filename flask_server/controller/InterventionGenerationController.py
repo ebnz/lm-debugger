@@ -10,14 +10,14 @@ class InterventionGenerationController:
         :param model_wrapper: Model Wrapper, wrapping a Transformer-like LLM
         :param config: Configuration of Backend (jsonnet)
         """
-        # Model, Config, History
+        # Model, Config
         self.model_wrapper = model_wrapper
         self.config = config
-        self.history = []
 
         # Interventions
         self.interventions = []
         self.intervention_methods = []
+        self.interventions_cache = {}
 
         # Metrics
         self.metrics = []
@@ -107,7 +107,34 @@ class InterventionGenerationController:
     def transform_model(self):
         """
         Applies all Model-Transformation Interventions to the Model.
+        Uses cached weights, if weights for a specific call are known from previous call
         """
+        # Return if no interventions
+        if len(self.interventions) == 0:
+            return
+
+        # Cache-Key for identification of runs, filters out inactive Interventions and LMDebuggerInterventions
+        cache_key = str(
+            list(
+                filter(
+                    lambda x: x["type"] != "LMDebuggerIntervention" and x["coeff"] > 0,
+                    self.interventions
+                )
+            )
+        )
+
+        # Check interventions_cache for cached interventions
+        if cache_key in self.interventions_cache.keys():
+            weights_from_cache = self.interventions_cache[cache_key]
+            with torch.no_grad():
+                for key, original_value in weights_from_cache.items():
+                    for param_name, param in self.model_wrapper.model.named_parameters():
+                        if param_name == key:
+                            param[...] = original_value.to(self.model_wrapper.device)
+
+            return
+
+        # Weights not found in interventions_cache, calculate weights using intervention methods
         for intervention in self.interventions:
             intervention_type = intervention["type"]
             intervention_layer = intervention["layer"]
@@ -121,6 +148,15 @@ class InterventionGenerationController:
 
             if not fitting_method_found:
                 print(f"WARN: Intervention <{intervention}> has no fitting Intervention Method")
+
+        # Cache weights for future calls
+        weights_to_cache = {}
+        for param_name, param in self.model_wrapper.model.named_parameters():
+            # Exclude Embedding
+            if "embed" in param_name.lower():
+                continue
+            weights_to_cache[param_name] = param.detach().clone().cpu()
+        self.interventions_cache[cache_key] = weights_to_cache
 
     def restore_original_model(self):
         """
@@ -206,15 +242,6 @@ class InterventionGenerationController:
         self.model_wrapper.clear_hooks()
         self.restore_original_model()
 
-        # History handling
-        self.history.append(dict(
-            endpoint="generate",
-            prompt=prompt,
-            generate_k=generate_k,
-            interventions=self.interventions,
-            response_dict=response_dict
-        ))
-
         return response_dict
 
     def get_token_scores(self, prompt):
@@ -285,18 +312,7 @@ class InterventionGenerationController:
 
             return iterable
 
-        response_dict = replace_inf_nan(rv_dict)
-
-        # History handling
-        self.history.append(dict(
-            endpoint="get_token_scores",
-            prompt=prompt,
-            generate_k=1,
-            interventions=self.interventions,
-            response_dict=response_dict
-        ))
-
-        return response_dict
+        return replace_inf_nan(rv_dict)
 
     def get_projections(self, type, layer, dim):
         """
