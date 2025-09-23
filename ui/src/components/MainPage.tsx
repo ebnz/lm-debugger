@@ -47,7 +47,12 @@ function MainPage(): JSX.Element {
   }
 
   function hasIntervention (valueId: ValueId) {
-    return interventions.filter(({layer, dim, type}) => (layer === valueId.layer) && (dim === valueId.dim) && (type === valueId.type)).length > 0
+    return interventions.filter(
+        ({layer, dim, type}) =>
+            (layer === valueId.layer)
+            && (dim === valueId.dim)
+            && (type === valueId.type)
+    ).length > 0
   }
 
   function selectIntervention(valueId: ValueId): void {
@@ -133,8 +138,6 @@ function MainPage(): JSX.Element {
             setPrediction(parsed.prediction);
           }
           setPromptValue(parsed.promptValue);
-          console.log(parsed);
-
           console.log('JSON file uploaded and parsed successfully!');
         } else {
           console.error('JSON-Parsing: invalid file');

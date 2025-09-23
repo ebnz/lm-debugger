@@ -94,7 +94,7 @@ function Layer(props: Props): JSX.Element {
               {text_inputs: textIntervention,
               type: props.layer.type,
               layer: props.layer.layer,
-              dim: 0}
+              dim: Date.now()}
             )}}>Add as Intervention</Button>
           </ContentLayout>
         }

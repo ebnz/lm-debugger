@@ -3,7 +3,6 @@ import { Intervention } from "../types/dataModel";
 import {Switch, Button, Typography} from "antd"
 import styled from "styled-components";
 import CloseCircleOutlined from "@ant-design/icons/CloseCircleOutlined"
-import { ScanOutlined } from '@ant-design/icons';
 import {toAbbr} from "../types/constants";
 import {useSortable} from "@dnd-kit/sortable";
 
@@ -45,7 +44,7 @@ function InterventionItem(props: Props):JSX.Element {
 
   if (intervention.hasOwnProperty("text_inputs")) {
     // @ts-ignore
-    actualDesc = `L${intervention.layer}: ${intervention.text_inputs.subject}`;
+    actualDesc = `L${intervention.layer}: ${intervention.text_inputs.prompt.replace("{}", intervention.text_inputs.subject)} ${intervention.text_inputs.target}`;
   }
   else {
     actualDesc = desc !== undefined && desc !== "" ? desc : `${toAbbr.get(props.intervention.type) ?? "_"}${layer}D${dim}`
@@ -55,7 +54,6 @@ function InterventionItem(props: Props):JSX.Element {
   return (
     <MainLayout checked={isOn}>
       <Label onClick={select}>
-        <ScanOutlined />
         <Text strong
           style={useEllipsis ? { width: 85 } : undefined}
           ellipsis={useEllipsis ? { tooltip: true } : false}>{actualDesc}</Text>
