@@ -53,12 +53,13 @@ function Layer(props: Props): JSX.Element {
   {
     title: 'Descriptor',
     dataIndex: 'descriptor',
-    key: 'descriptor',
+    key: 'descriptor'
   },
   {
     title: 'Data',
     dataIndex: 'datafield',
     key: 'datafield',
+    width: '20%'
   }
 ];
 
@@ -66,28 +67,70 @@ function Layer(props: Props): JSX.Element {
       <LayerLayout>
         <LayerTag color="#a55397">{layer_name}</LayerTag>
         <LayerTag color="#a55397">Type {props.layer.type}</LayerTag>
-        {typeof predictions_before !== "undefined" && <MyDivider orientation="left" orientationMargin="15px">Before:</MyDivider>}
-        {typeof predictions_before !== "undefined" && <PredictionContainer predictions={predictions_before}/>}
-
-        {typeof props.layer.significant_values !== "undefined" && <MyDivider orientation="left" orientationMargin="15px">Dominant sub-updates:</MyDivider>}
-        {typeof props.layer.significant_values !== "undefined" && <LabelContainer
-          valueLabels={props.layer.significant_values}
-          type={props.layer.type}
-          onAnaylze={props.onAnalyze}
-          onCopy={props.onCopy}
-        />}
-
-        {typeof predictions_after !== "undefined" && <MyDivider orientation="left" orientationMargin="15px">After:</MyDivider>}
-        {typeof predictions_after !== "undefined" && <PredictionContainer predictions={predictions_after}/>}
-
-        {typeof props.layer.text_outputs !== "undefined" && <ContentLayout><MyDivider orientation="left" orientationMargin="15px">Data:</MyDivider></ContentLayout>}
-        {typeof props.layer.text_outputs !== "undefined" && <ContentLayout><Table dataSource={text_outputs_table_data} columns={columns} size="small"/></ContentLayout>}
-
-        {typeof props.layer.text_inputs !== "undefined" && <ContentLayout><MyDivider orientation="left" orientationMargin="15px">Text Inputs:</MyDivider></ContentLayout>}
-        {typeof props.layer.text_inputs !== "undefined" && <ContentLayout><TextInput textIntervention={textIntervention} setTextIntervention={setTextIntervention}></TextInput></ContentLayout>}
-        {typeof props.layer.text_inputs !== "undefined" && <ContentLayout><MyDivider orientation="left" orientationMargin="15px">Actions:</MyDivider></ContentLayout>}
         {
-          typeof props.layer.text_inputs !== "undefined" && <ContentLayout>
+          typeof predictions_before !== "undefined" &&
+            <MyDivider
+              orientation="left"
+              orientationMargin="15px"
+            >Before:</MyDivider>
+        }
+        {
+          typeof predictions_before !== "undefined" &&
+            <PredictionContainer
+              predictions={predictions_before}
+            />
+        }
+
+        {
+          typeof props.layer.significant_values !== "undefined" &&
+            <MyDivider
+              orientation="left"
+              orientationMargin="15px"
+            >Dominant sub-updates:</MyDivider>
+        }
+        {
+          typeof props.layer.significant_values !== "undefined" &&
+            <LabelContainer
+              valueLabels={props.layer.significant_values}
+              type={props.layer.type}
+              onAnaylze={props.onAnalyze}
+              onCopy={props.onCopy}
+            />
+        }
+
+        {
+          typeof predictions_after !== "undefined" &&
+            <MyDivider
+              orientation="left"
+              orientationMargin="15px"
+            >After:</MyDivider>
+        }
+        {
+          typeof predictions_after !== "undefined" &&
+            <PredictionContainer
+              predictions={predictions_after}
+            />
+        }
+
+        {
+          typeof props.layer.text_outputs !== "undefined" && <ContentLayout>
+            <Table
+              className={"tight-table"}
+              style={{ marginTop: 0, marginBottom: 0 }}
+              dataSource={text_outputs_table_data}
+              columns={columns}
+              size="small"
+              pagination={textOutputsMap.size > 5 ? {position: ["topRight"]} : false}
+            />
+          </ContentLayout>
+        }
+
+        {
+          typeof props.layer.text_inputs !== "undefined" && <TextInputLayout>
+            <TextInput
+              textIntervention={textIntervention}
+              setTextIntervention={setTextIntervention}
+            ></TextInput>
             <Button
               disabled={Object.values(textIntervention).some(value => value === "")}
               onClick={(e) => {props.onCopy(
@@ -95,8 +138,8 @@ function Layer(props: Props): JSX.Element {
               type: props.layer.type,
               layer: props.layer.layer,
               dim: Date.now()}
-            )}}>Add as Intervention</Button>
-          </ContentLayout>
+              )}}>Add as Intervention</Button>
+          </TextInputLayout>
         }
 
 
@@ -106,15 +149,22 @@ function Layer(props: Props): JSX.Element {
 }
 
 const ContentLayout = styled.div`
-  padding: 10px;
+  padding: 8px;
+  margin: 0 auto; /* centers the component */
+  //width: calc(100% - 100px);
+  max-width: 90%;
+`;
+
+const TextInputLayout = styled.div`
+  padding: 12px;
   margin: 0 auto; /* centers the component */
   //width: calc(100% - 100px);
   max-width: 90%;
 `;
 
 const LayerLayout = styled.div`
-  padding: 10px;
-  margin: 2px;
+  padding: 2px;
+  margin: 4px;
   border: 1px #757373c5 solid;
   border-radius: 5px;
   //width: calc(100% - 100px);
