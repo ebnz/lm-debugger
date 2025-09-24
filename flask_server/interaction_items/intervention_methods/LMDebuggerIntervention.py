@@ -272,20 +272,21 @@ class LMDebuggerIntervention(InterventionMethod):
         curr_max_val = old_dict['top_coef_vals'][layer][0]
         return curr_max_val + eps
 
-    def setup_intervention_hooks(self, prompt):
-        if len(self.interventions) <= 0:
-            return
+    def setup_intervention_hook(self, intervention, prompt):
         pred_dict_raw = self.process_and_get_data(prompt)
         maxs_dict = {
             layer: self.get_new_max_coef(layer, pred_dict_raw)
             for layer in range(self.model_wrapper.model.config.num_hidden_layers)
         }
-        for intervention in self.interventions:
-            if intervention['coeff'] > 0:
-                new_max_val = maxs_dict[intervention['layer']]
-            else:
-                new_max_val = 0
-            self.set_control_hooks_gpt2({intervention['layer']: [intervention['dim']], }, coef_value=new_max_val)
+
+        if intervention['coeff'] > 0:
+            new_max_val = maxs_dict[intervention['layer']]
+        else:
+            new_max_val = 0
+        self.set_control_hooks_gpt2(
+            {intervention['layer']: [intervention['dim']]},
+            coef_value=new_max_val
+        )
 
     def process_clean_token(self, token):
         return token

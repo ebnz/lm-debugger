@@ -14,6 +14,8 @@ interface Props {
   onRun: (prompt: string) => void;
   onGenerate: (prompt: string, generate_k: Number) => Promise<string>;
   isLoading: boolean;
+  promptValue: string;
+  setPromptValue: (prompt: string) => void;
 }
 
 
@@ -22,9 +24,10 @@ function Prompt(props: Props): JSX.Element {
     onRun,
     onGenerate,
     isLoading,
+    promptValue,
+    setPromptValue
   } = props;
 
-  const [promptValue, setPromptValue] = useState<string>("");
   const [isLoadingGenerate, setLoadingGenerate] = useState<boolean>(false);
   const [generate_k, setGenK] = useState<Number>(5);
 

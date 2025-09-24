@@ -10,7 +10,6 @@ const { Text, Title } = Typography;
 
 interface Props {
   valueId?: ValueId;
-  onValueRename: (valueId: ValueId, newName: string) => void;
 }
 
 
@@ -21,8 +20,7 @@ function fixToken(token: string): string {
 
 function ValueDetailsPanel(props: Props): JSX.Element {
   const {
-    valueId,
-    onValueRename
+    valueId
   } = props;
 
   const [isLoading, setLoading] = useState<boolean>(false);
@@ -41,6 +39,7 @@ function ValueDetailsPanel(props: Props): JSX.Element {
         setLoading(false)
       }).catch((e) => {
         setError("Failed getting details")
+        console.log(e);
         setLoading(false);
       });
 
@@ -59,7 +58,8 @@ function ValueDetailsPanel(props: Props): JSX.Element {
     renderedContent = (<Spin tip="Loading..." />);
   } else if (error !== undefined) {
     renderedContent = (<Alert message={error} type="error" />);
-  } else if (interpretation !== undefined) {
+  } else if (interpretation !== undefined && interpretation !== null) {
+    console.log(interpretation)
     const dataSource = interpretation.top_k.map(v => ({token: fixToken(v.token), logit: v.logit.toFixed(3),  key: UUIDv4()}));
     renderedContent = (
       <ValuesTable 
@@ -96,7 +96,6 @@ function ValueDetailsPanel(props: Props): JSX.Element {
   return (
     <MainLayout title={title}>
       {/* <Meta description={valueId?.desc} /> */}
-      {(valueId !== undefined) ? <RenamingForm valueId={valueId} onValueRename={onValueRename}/> : <></>}
       {renderedContent}
     </MainLayout>
   );
@@ -142,52 +141,6 @@ const ValuesTable = styled(Table)`
     font-weight: bold;
   }
 `;
-
-
-function RenamingForm(props: Props){
-  const [newName, setNewName] = useState<string>("")
-  const {valueId, onValueRename} = props;
-  if (valueId === undefined){
-    return <></>;
-  }
-
-  function onRenameClicked() {
-    if (valueId === undefined){
-      return;
-    }
-    onValueRename(valueId, newName)
-    setNewName("");
-  }
-
-  return (
-    <Input.Group compact>
-      <Input 
-        value={newName} 
-        style={{ width: 'calc(100% - 70pt)' }} 
-        onChange={e => setNewName(e.target.value)}
-        placeholder="Enter a new name" 
-      />
-      <Button type="primary" onClick={() => onRenameClicked()}>Rename</Button>
-    </Input.Group>
-
-
-    // <form onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
-    //   if(valueId !== undefined && newName){
-    //     alert('A name was submitted: ' + newName);
-    //     localStorage.setItem(storageItemName, newName);
-    //     bakeNewNameCookie(valueId, newName);
-    //   }
-    //   event.preventDefault();
-    // }}>
-    //   <label>
-    //     <input key={technicalName} type="text" defaultValue={newName}  onChange={(event: React.FormEvent<HTMLInputElement>) => {
-    //       newName = (event.currentTarget.value);
-    //     }}/>
-    //   </label>
-    //   <input type="submit" value="Rename" />
-    // </form>
-  );
-}
 
 
 export default ValueDetailsPanel;

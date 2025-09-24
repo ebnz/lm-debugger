@@ -10,14 +10,14 @@ class InterventionGenerationController:
         :param model_wrapper: Model Wrapper, wrapping a Transformer-like LLM
         :param config: Configuration of Backend (jsonnet)
         """
-        # Model, Config, History
+        # Model, Config
         self.model_wrapper = model_wrapper
         self.config = config
-        self.history = []
 
         # Interventions
         self.interventions = []
         self.intervention_methods = []
+        self.interventions_cache = {}
 
         # Metrics
         self.metrics = []
@@ -90,30 +90,75 @@ class InterventionGenerationController:
         :type prompt: str
         :param prompt: Prompt, the Model is run on after setup of Hooks
         """
-        for method in self.intervention_methods:
-            if len(method.interventions) == 0:
-                continue
-            method.setup_intervention_hooks(prompt)
+        for intervention in self.interventions:
+            intervention_type = intervention["type"]
+            intervention_layer = intervention["layer"]
+            fitting_method_found = False
 
-    def transform_model(self, prompt):
+            for method in self.intervention_methods:
+                if intervention_type == method.get_name() and intervention_layer == method.layer:
+                    method.setup_intervention_hook(intervention, prompt)
+                    fitting_method_found = True
+                    break
+
+            if not fitting_method_found:
+                print(f"WARN: Intervention <{intervention}> has no fitting Intervention Method")
+
+    def transform_model(self):
         """
-        Performs the Transformation of the Model's Weights, as defined by the Interventions.
-        Implementation Logic of Intervention Methods, that use Model Transformation here.
-        :type prompt: str
-        :param prompt: Prompt, the Model is run on after Transformation
+        Applies all Model-Transformation Interventions to the Model.
+        Uses cached weights, if weights for a specific call are known from previous call
         """
-        # Sort Methods supporting only one Layer from late to early Layers, other Methods are processed after
-        # ROMEIntervention won't work else when using multiple Interventions of _different_ ROMEIntervention-Instances
-        sorted_methods = sorted(
-            self.intervention_methods,
-            key=lambda item: item.layer,
-            reverse=True
+        # Return if no interventions
+        if len(self.interventions) == 0:
+            return
+
+        # Cache-Key for identification of runs, filters out inactive Interventions and LMDebuggerInterventions
+        cache_key = str(
+            list(
+                filter(
+                    lambda x: x["type"] != "LMDebuggerIntervention" and x["coeff"] > 0,
+                    self.interventions
+                )
+            )
         )
-        for method in sorted_methods:
-            nonzero_interventions = list(filter(lambda x: x["coeff"] > 0.0, method.interventions))
-            if len(nonzero_interventions) == 0:
+
+        # Check interventions_cache for cached interventions
+        if cache_key in self.interventions_cache.keys():
+            weights_from_cache = self.interventions_cache[cache_key]
+            with torch.no_grad():
+                for key, original_value in weights_from_cache.items():
+                    for param_name, param in self.model_wrapper.model.named_parameters():
+                        if param_name == key:
+                            param[...] = original_value.to(self.model_wrapper.device)
+
+            return
+
+        # Weights not found in interventions_cache, calculate weights using intervention methods
+        for intervention in self.interventions:
+            intervention_type = intervention["type"]
+            intervention_layer = intervention["layer"]
+            fitting_method_found = False
+
+            for method in self.intervention_methods:
+                if intervention_type == method.get_name() and intervention_layer == method.layer:
+                    method.transform_model(intervention)
+                    fitting_method_found = True
+                    break
+
+            if not fitting_method_found:
+                print(f"WARN: Intervention <{intervention}> has no fitting Intervention Method")
+
+        # Cache weights for future calls
+        weights_to_cache = {}
+        manipulated_layers = self.get_manipulated_layers()
+        for param_name, param in self.model_wrapper.model.named_parameters():
+            # Exclude Embedding
+            if "embed" in param_name.lower():
                 continue
-            method.transform_model(prompt)
+            if any([f".{checked_layer}." in param_name for checked_layer in manipulated_layers]):
+                weights_to_cache[param_name] = param.detach().clone().cpu()
+        self.interventions_cache[cache_key] = weights_to_cache
 
     def restore_original_model(self):
         """
@@ -154,20 +199,24 @@ class InterventionGenerationController:
         return deltas
 
     def get_manipulated_layers(self, intervention_method_name=None):
+        layers_with_interventions = filter(
+            lambda intervention: intervention["coeff"] > 0 and intervention["type"] != "LMDebuggerIntervention",
+            self.interventions
+        )
+
         # If no keyword, find all LLM-Layers that have Interventions attached
         if intervention_method_name is None:
-            manip_layers = map(lambda x: x.layer, self.intervention_methods)
+            manip_layers = map(lambda intervention: intervention["layer"], layers_with_interventions)
         # Else find all LLM-Layers with Interventions where name of InterventionMethod matches intervention_method_name
         else:
-            manip_layers = map(
-                lambda x: x.layer
-                if intervention_method_name == x.get_representation()
-                else None,
-                self.intervention_methods
+            filtered_layers = filter(
+                lambda intervention: intervention_method_name == intervention["type"],
+                layers_with_interventions
             )
-
-        # Filter None's
-        manip_layers = filter(lambda x: x is not None, manip_layers)
+            manip_layers = map(
+                lambda intervention: intervention.layer,
+                filtered_layers
+            )
 
         # Remove Duplicates
         return list(set(manip_layers))
@@ -184,7 +233,7 @@ class InterventionGenerationController:
         :return: Generated Text
         """
         # Call Model-Editing Interventions
-        self.transform_model(prompt)
+        self.transform_model()
         # Setup Intervention-Hooks
         self.setup_intervention_hooks(prompt)
 
@@ -198,15 +247,6 @@ class InterventionGenerationController:
         # Clear Intervention-Hooks and restore original Model (Pre-Transformation)
         self.model_wrapper.clear_hooks()
         self.restore_original_model()
-
-        # History handling
-        self.history.append(dict(
-            endpoint="generate",
-            prompt=prompt,
-            generate_k=generate_k,
-            interventions=self.interventions,
-            response_dict=response_dict
-        ))
 
         return response_dict
 
@@ -240,7 +280,7 @@ class InterventionGenerationController:
             pre_hook_rvs.append(pre_hook_rv)
 
         # Apply Interventions
-        self.transform_model(prompt)
+        self.transform_model()
         self.setup_intervention_hooks(prompt)
 
         # Generate Next-Token-Logits for Metric-Parameters (Post-Intervention)
@@ -278,18 +318,7 @@ class InterventionGenerationController:
 
             return iterable
 
-        response_dict = replace_inf_nan(rv_dict)
-
-        # History handling
-        self.history.append(dict(
-            endpoint="get_token_scores",
-            prompt=prompt,
-            generate_k=1,
-            interventions=self.interventions,
-            response_dict=response_dict
-        ))
-
-        return response_dict
+        return replace_inf_nan(rv_dict)
 
     def get_projections(self, type, layer, dim):
         """

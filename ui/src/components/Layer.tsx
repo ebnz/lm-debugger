@@ -30,6 +30,14 @@ function Layer(props: Props): JSX.Element {
     textOutputsMap.set(key, textOutputs[key]);
   }
 
+  let layer_name = "Layer ?";
+  if (props.layer.layer >= 0) {
+    layer_name = `Layer ${props.layer.layer}`;
+  } else if (props.layer.layer === -1) {
+    layer_name = "Metric";
+  } else if (props.layer.layer === -2) {
+    layer_name = "All Layers";
+  }
 
   var index = 0;
   textOutputsMap.forEach((val, key) => {
@@ -56,7 +64,7 @@ function Layer(props: Props): JSX.Element {
 
   return (
       <LayerLayout>
-        <LayerTag color="#a55397">{props.layer.layer !== -1 ? `Layer ${props.layer.layer}` : "Metric"}</LayerTag>
+        <LayerTag color="#a55397">{layer_name}</LayerTag>
         <LayerTag color="#a55397">Type {props.layer.type}</LayerTag>
         {typeof predictions_before !== "undefined" && <MyDivider orientation="left" orientationMargin="15px">Before:</MyDivider>}
         {typeof predictions_before !== "undefined" && <PredictionContainer predictions={predictions_before}/>}
@@ -77,13 +85,19 @@ function Layer(props: Props): JSX.Element {
 
         {typeof props.layer.text_inputs !== "undefined" && <ContentLayout><MyDivider orientation="left" orientationMargin="15px">Text Inputs:</MyDivider></ContentLayout>}
         {typeof props.layer.text_inputs !== "undefined" && <ContentLayout><TextInput textIntervention={textIntervention} setTextIntervention={setTextIntervention}></TextInput></ContentLayout>}
-          {typeof props.layer.text_inputs !== "undefined" && <ContentLayout><MyDivider orientation="left" orientationMargin="15px">Actions:</MyDivider></ContentLayout>}
-        {typeof props.layer.text_inputs !== "undefined" && <ContentLayout><Button onClick={(e) => {props.onCopy(
-            {text_inputs: textIntervention,
-                type: props.layer.type,
-                layer: props.layer.layer,
-                dim: textIntervention["subject"] + textIntervention["target"] + textIntervention["prompt"]}
-        )}}>Add as Intervention</Button></ContentLayout>}
+        {typeof props.layer.text_inputs !== "undefined" && <ContentLayout><MyDivider orientation="left" orientationMargin="15px">Actions:</MyDivider></ContentLayout>}
+        {
+          typeof props.layer.text_inputs !== "undefined" && <ContentLayout>
+            <Button
+              disabled={Object.values(textIntervention).some(value => value === "")}
+              onClick={(e) => {props.onCopy(
+              {text_inputs: textIntervention,
+              type: props.layer.type,
+              layer: props.layer.layer,
+              dim: Date.now()}
+            )}}>Add as Intervention</Button>
+          </ContentLayout>
+        }
 
 
         {/* </SignificantValuesDiv> */}

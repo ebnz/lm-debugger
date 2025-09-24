@@ -77,7 +77,6 @@ class ModelingRequests:
             ee_hparams = editing_hparams.from_hparams(path_to_conf)
             self.intervention_controller.register_method(EasyEditInterventionMethod(
                 self.intervention_controller,
-                ee_hparams.layers[0],
                 ee_hparams
             ))
 
@@ -115,7 +114,6 @@ class ModelingRequests:
         prompt = req_json_dict['prompt']
         interventions = req_json_dict['interventions']
 
-        # ToDo: Only one invocation
         # Generate Response-Dict without Interventions
         self.intervention_controller.clear_interventions()
         response_dict = self.intervention_controller.get_token_scores(prompt)

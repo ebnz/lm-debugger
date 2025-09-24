@@ -60,5 +60,5 @@ class EfficacyMetric(MetricItem):
         efficacy_score = self.calculate_efficacy_from_history(self.config.dataset.prompts, target_token_ids, true_token_ids)
 
         return {
-            "Efficacy Score (History)": efficacy_score
+            "Efficacy Score (Dataset)": efficacy_score
         }

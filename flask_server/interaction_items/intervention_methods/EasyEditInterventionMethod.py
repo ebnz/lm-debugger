@@ -2,8 +2,10 @@ import torch
 from .InterventionMethod import InterventionMethod
 from .EasyEdit.easyeditor.util.alg_dict import ALG_DICT
 
+
 class EasyEditInterventionMethod(InterventionMethod):
-    def __init__(self, controller, layer, ee_hparams):
+    def __init__(self, controller, ee_hparams):
+        layer = ee_hparams.layers[0] if hasattr(ee_hparams, "layers") else -2
         super().__init__(controller, layer)
 
         self.ee_hparams = ee_hparams
@@ -29,12 +31,16 @@ class EasyEditInterventionMethod(InterventionMethod):
     def get_name(self):
         return self.ee_hparams.alg_name
 
-    def transform_model(self, prompt):
+    def transform_model(self, intervention):
+        # Skip disabled Interventions
+        if intervention["coeff"] <= 0.0:
+            return
+
         request = [{
             "prompt": intervention["text_inputs"]["prompt"],
             "subject": intervention["text_inputs"]["prompt"],
             "target_new": intervention["text_inputs"]["target"]
-        } for intervention in self.interventions if intervention["coeff"] > 0.0]
+        }]
 
         rv = self.invoke_method(
             self.model_wrapper.model,
@@ -59,7 +65,11 @@ class EasyEditInterventionMethod(InterventionMethod):
         }
 
     def get_projections(self, dim, *args, **kwargs):
-        return super().get_projections(dim, *args, **kwargs)
+        return {
+            "dim": dim,
+            "layer": self.layer,
+            "top_k": []
+        }
 
-    def setup_intervention_hooks(self, prompt):
-        return super().setup_intervention_hooks(prompt)
+    def setup_intervention_hook(self, intervention, prompt):
+        return super().setup_intervention_hook(intervention, prompt)

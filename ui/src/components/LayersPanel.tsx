@@ -1,8 +1,8 @@
-import React from "react";
-import {Empty, Card, Alert, Spin } from "antd";
+import {Empty, Card, Spin, notification} from "antd";
 import { LayerPrediction, ValueId } from "../types/dataModel";
 import styled from "styled-components";
 import {MemoLayer} from "./Layer"
+import {useEffect} from "react";
 
 interface Props {
   layers?: Array<LayerPrediction>;
@@ -20,12 +20,20 @@ function LayersPanel(props: Props): JSX.Element {
     isLoading,
     errorMessage,
   } = props;
-  
+
+  useEffect(() => {
+    if (errorMessage !== undefined) {
+      notification.error({
+        message: 'Error',
+        description: errorMessage,
+        placement: 'topLeft'
+      });
+    }
+  }, [errorMessage]);
+
   let contentRender: React.ReactNode = <></>;
   if (isLoading) {
     contentRender = <Spin style={{margin: "auto auto"}} tip="Loading prediction" />;
-  } else if (errorMessage !== undefined) {
-    contentRender = <Alert type="error">{errorMessage}</Alert>
   } else if (layers === undefined){
     contentRender = <Empty description="Run a query to see the predicted layers"/>
   } else {
@@ -44,7 +52,7 @@ function LayersPanel(props: Props): JSX.Element {
 
   return (
     <MainLayout title="Layers">
-      {contentRender} 
+      {contentRender}
     </MainLayout>
   );
 }
