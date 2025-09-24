@@ -151,11 +151,13 @@ class InterventionGenerationController:
 
         # Cache weights for future calls
         weights_to_cache = {}
+        manipulated_layers = self.get_manipulated_layers()
         for param_name, param in self.model_wrapper.model.named_parameters():
             # Exclude Embedding
             if "embed" in param_name.lower():
                 continue
-            weights_to_cache[param_name] = param.detach().clone().cpu()
+            if any([f".{checked_layer}." in param_name for checked_layer in manipulated_layers]):
+                weights_to_cache[param_name] = param.detach().clone().cpu()
         self.interventions_cache[cache_key] = weights_to_cache
 
     def restore_original_model(self):
@@ -197,20 +199,24 @@ class InterventionGenerationController:
         return deltas
 
     def get_manipulated_layers(self, intervention_method_name=None):
+        layers_with_interventions = filter(
+            lambda intervention: intervention["coeff"] > 0 and intervention["type"] != "LMDebuggerIntervention",
+            self.interventions
+        )
+
         # If no keyword, find all LLM-Layers that have Interventions attached
         if intervention_method_name is None:
-            manip_layers = map(lambda x: x.layer, self.intervention_methods)
+            manip_layers = map(lambda intervention: intervention["layer"], layers_with_interventions)
         # Else find all LLM-Layers with Interventions where name of InterventionMethod matches intervention_method_name
         else:
-            manip_layers = map(
-                lambda x: x.layer
-                if intervention_method_name == x.get_representation()
-                else None,
-                self.intervention_methods
+            filtered_layers = filter(
+                lambda intervention: intervention_method_name == intervention["type"],
+                layers_with_interventions
             )
-
-        # Filter None's
-        manip_layers = filter(lambda x: x is not None, manip_layers)
+            manip_layers = map(
+                lambda intervention: intervention.layer,
+                filtered_layers
+            )
 
         # Remove Duplicates
         return list(set(manip_layers))

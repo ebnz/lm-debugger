@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from ..InteractionItem import InteractionItem
 
+
 class InterventionMethod(InteractionItem):
     def __init__(self, controller, layer):
         """
