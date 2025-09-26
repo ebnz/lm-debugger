@@ -20,17 +20,17 @@ class InterventionMethod(InteractionItem):
     def get_text_inputs(self):
         pass
 
-    def get_frontend_items(self, layer, *args, **kwargs):
+    def get_frontend_items(self, layer, prompt, *args, **kwargs):
         return {
             "text_inputs": self.get_text_inputs()
         }
 
-    def get_api_layers(self):
+    def get_api_layers(self, prompt):
         response_dict = [
             {
                 "layer": layer,
                 "type": self.get_name(),
-                **self.get_frontend_items(layer)
+                **self.get_frontend_items(layer, prompt)
             } for layer in self.layers
         ]
 

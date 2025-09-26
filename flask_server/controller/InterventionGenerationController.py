@@ -268,7 +268,7 @@ class InterventionGenerationController:
 
         # Get Frontend-representations of all Interventions
         for method in self.intervention_methods:
-            rv_dict['layers'] += method.get_api_layers()
+            rv_dict['layers'] += method.get_api_layers(prompt)
 
         # Generate Next-Token-Logits for Metric-Parameters (Pre-Intervention)
         tokenizer_output = self.model_wrapper.tokenizer(prompt, return_tensors="pt")

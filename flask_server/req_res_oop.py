@@ -44,9 +44,9 @@ class ModelingRequests:
 
         self.intervention_controller = InterventionGenerationController(self.model_wrapper, self.config)
 
-        # self.intervention_controller.register_method(LMDebuggerIntervention(
-        #     self.intervention_controller
-        # ))
+        self.intervention_controller.register_method(LMDebuggerIntervention(
+            self.intervention_controller
+        ))
 
         for file_name in tqdm(os.listdir(config.easy_edit_hparams_path), desc="Loading EasyEdit Methods"):
             path_to_conf = os.path.join(config.easy_edit_hparams_path, file_name)
