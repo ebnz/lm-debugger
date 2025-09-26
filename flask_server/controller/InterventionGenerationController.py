@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+from ..utils import flatten_list
 
 
 class InterventionGenerationController:
@@ -67,7 +68,7 @@ class InterventionGenerationController:
 
             fitting_method_found = False
             for method in self.intervention_methods:
-                if intervention_type == method.get_name() and intervention_layer == method.layer:
+                if intervention_type == method.get_name() and intervention_layer in method.layers:
                     method.add_intervention(intervention)
                     fitting_method_found = True
 
@@ -96,7 +97,7 @@ class InterventionGenerationController:
             fitting_method_found = False
 
             for method in self.intervention_methods:
-                if intervention_type == method.get_name() and intervention_layer == method.layer:
+                if intervention_type == method.get_name() and intervention_layer in method.layers:
                     method.setup_intervention_hook(intervention, prompt)
                     fitting_method_found = True
                     break
@@ -141,7 +142,7 @@ class InterventionGenerationController:
             fitting_method_found = False
 
             for method in self.intervention_methods:
-                if intervention_type == method.get_name() and intervention_layer == method.layer:
+                if intervention_type == method.get_name() and intervention_layer in method.layers:
                     method.transform_model(intervention)
                     fitting_method_found = True
                     break
@@ -213,10 +214,13 @@ class InterventionGenerationController:
                 lambda intervention: intervention_method_name == intervention["type"],
                 layers_with_interventions
             )
-            manip_layers = map(
-                lambda intervention: intervention.layer,
+            manip_layers_nested = map(
+                lambda intervention: intervention.layers,
                 filtered_layers
             )
+
+            # Flatten list
+            manip_layers = flatten_list(manip_layers_nested)
 
         # Remove Duplicates
         return list(set(manip_layers))
@@ -334,7 +338,13 @@ class InterventionGenerationController:
         :return: Dict of Projections of Features to Tokens
         """
         for method in self.intervention_methods:
-            if type != method.get_name() or layer != method.layer:
+            if type != method.get_name() or layer not in method.layers:
                 continue
             rv = method.get_projections(layer=layer, dim=dim)
             return rv
+
+        return {
+            "dim": dim,
+            "layer": layer,
+            "top_k": []
+        }

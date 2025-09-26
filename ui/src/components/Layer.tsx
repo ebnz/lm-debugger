@@ -120,7 +120,7 @@ function Layer(props: Props): JSX.Element {
               dataSource={text_outputs_table_data}
               columns={columns}
               size="small"
-              pagination={textOutputsMap.size > 5 ? {position: ["topRight"]} : false}
+              pagination={textOutputsMap.size > 5 ? {position: ["bottomRight"]} : false}
             />
           </ContentLayout>
         }

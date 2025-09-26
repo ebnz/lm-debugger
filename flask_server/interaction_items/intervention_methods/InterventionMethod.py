@@ -3,24 +3,24 @@ from ..InteractionItem import InteractionItem
 
 
 class InterventionMethod(InteractionItem):
-    def __init__(self, controller, layer):
+    def __init__(self, controller, layers):
         """
         Represents a generic Intervention Method.
         :type controller: InterventionGenerationController
-        :type layer: int
+        :type layers: list
         :param controller: InterventionGenerationController, the Intervention Method is applied to
-        :param layer: Layer, supported by this Intervention Method
+        :param layers: Layers, supported by this Intervention Method
         """
         super().__init__(controller)
 
-        self.layer = layer
+        self.layers = layers
         self.interventions = []
 
     @abstractmethod
     def get_text_inputs(self):
         pass
 
-    def get_frontend_items(self, *args, **kwargs):
+    def get_frontend_items(self, layer, *args, **kwargs):
         return {
             "text_inputs": self.get_text_inputs()
         }
@@ -28,14 +28,11 @@ class InterventionMethod(InteractionItem):
     def get_api_layers(self):
         response_dict = [
             {
-                "layer": self.layer,
-                "type": self.get_name()
-            }
+                "layer": layer,
+                "type": self.get_name(),
+                **self.get_frontend_items(layer)
+            } for layer in self.layers
         ]
-
-        frontend_items = self.get_frontend_items()
-        for key in frontend_items.keys():
-            response_dict[0][key] = frontend_items[key]
 
         return response_dict
 

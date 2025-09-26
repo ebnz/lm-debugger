@@ -5,19 +5,20 @@ import yaml
 from tqdm import tqdm
 
 # Controller
-from controller.InterventionGenerationController import InterventionGenerationController
-from controller.TransformerModels import TransformerModelWrapper
+from .controller.InterventionGenerationController import InterventionGenerationController
+from .controller.TransformerModels import TransformerModelWrapper
 
 # Metrics
-from interaction_items.metrics.ExcessiveWeightDeltasMetric import ExcessiveWeightDeltasMetric
-from interaction_items.metrics.PerplexityMetric import PerplexityMetric
-from interaction_items.metrics.OutOfDistributionKeysMetric import OutOfDistributionKeysMetric
-from interaction_items.metrics.LocalizationVEditingMetric import LocalizationVEditingMetric
-from interaction_items.metrics.EfficacyMetric import EfficacyMetric
+from .interaction_items.metrics.ExcessiveWeightDeltasMetric import ExcessiveWeightDeltasMetric
+from .interaction_items.metrics.PerplexityMetric import PerplexityMetric
+from .interaction_items.metrics.OutOfDistributionKeysMetric import OutOfDistributionKeysMetric
+from .interaction_items.metrics.LocalizationVEditingMetric import LocalizationVEditingMetric
+from .interaction_items.metrics.EfficacyMetric import EfficacyMetric
 
 # Intervention Methods
-from interaction_items.intervention_methods.EasyEditInterventionMethod import EasyEditInterventionMethod
-from interaction_items.intervention_methods.EasyEdit.easyeditor import (
+from .interaction_items.intervention_methods.LMDebuggerIntervention import LMDebuggerIntervention
+from .interaction_items.intervention_methods.EasyEditInterventionMethod import EasyEditInterventionMethod
+from .interaction_items.intervention_methods.EasyEdit.easyeditor import (
     FTHyperParams,
     IKEHyperParams,
     KNHyperParams,
@@ -42,6 +43,10 @@ class ModelingRequests:
         self.model_wrapper = TransformerModelWrapper(config.model_name, device=config.device)
 
         self.intervention_controller = InterventionGenerationController(self.model_wrapper, self.config)
+
+        # self.intervention_controller.register_method(LMDebuggerIntervention(
+        #     self.intervention_controller
+        # ))
 
         for file_name in tqdm(os.listdir(config.easy_edit_hparams_path), desc="Loading EasyEdit Methods"):
             path_to_conf = os.path.join(config.easy_edit_hparams_path, file_name)

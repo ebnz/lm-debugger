@@ -36,7 +36,7 @@ class OutOfDistributionKeysMetric(MetricItem):
                     self.controller.model_wrapper.tokenizer,
                     request,
                     hparams,
-                    rome_module.layer,
+                    rome_module.layers[0],
                     get_context_templates(
                         self.controller.model_wrapper.model,
                         self.controller.model_wrapper.tokenizer,
@@ -47,7 +47,7 @@ class OutOfDistributionKeysMetric(MetricItem):
                 cur_input, _ = get_module_input_output_at_word(
                     self.controller.model_wrapper.model,
                     self.controller.model_wrapper.tokenizer,
-                    rome_module.layer,
+                    rome_module.layers[0],
                     context_template=request["prompt"],
                     word=request["subject"],
                     module_template=hparams.rewrite_module_tmp,
@@ -55,7 +55,7 @@ class OutOfDistributionKeysMetric(MetricItem):
                 )
 
                 subject = request['subject']
-                datapoint_name = f'{rome_module.get_name()} | Layer {rome_module.layer} | Subject "{subject}"'
+                datapoint_name = f'{rome_module.get_name()} | Layer {rome_module.layers[0]} | Subject "{subject}"'
                 metric_values[datapoint_name] = torch.dot(cur_input, left_vector).item()
 
         return metric_values
