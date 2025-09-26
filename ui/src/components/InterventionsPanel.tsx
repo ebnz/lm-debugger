@@ -1,7 +1,7 @@
 import React, {ChangeEvent, useState} from "react";
 import { Intervention, ValueId } from "../types/dataModel";
 import styled from "styled-components";
-import {Card, Button, Input, Upload} from "antd";
+import {Card, Button, Input, Upload, Divider} from "antd";
 import {partial} from "lodash";
 import SortableInterventionItem from "./InterventionItem";
 import {toType, toAbbr} from "../types/constants";
@@ -16,11 +16,10 @@ import {
   TouchSensor,
   DragStartEvent,
   DragEndEvent,
-  DragOverEvent,
   DragOverlay,
   UniqueIdentifier
 } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, horizontalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import InterventionItem from "./InterventionItem";
 
 
@@ -97,6 +96,16 @@ function InterventionsPanel(props: Props): JSX.Element {
 
   const activeItem = interventions.find((item) => item.layer === activeId);
 
+  const unsortable_methods = ["LMDebuggerIntervention"];
+
+  const sortable_interventions = interventions.filter(
+      (val, idx) => !(unsortable_methods.includes(val["type"]))
+  );
+
+  const unsortable_interventions = interventions.filter(
+      (val, idx) => unsortable_methods.includes(val["type"])
+  );
+
   return (
     <MainLayout
       title={
@@ -121,11 +130,11 @@ function InterventionsPanel(props: Props): JSX.Element {
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={interventions.map((item) => item.type + item.layer + item.dim)}
+          items={sortable_interventions.map((item) => item.type + item.layer + item.dim)}
           strategy={horizontalListSortingStrategy} // Horizontal sorting
         >
           {
-            interventions.map((inter) => (
+            sortable_interventions.map((inter) => (
               <SortableInterventionItem
                 intervention={inter}
                 deleteIntervention={() => deleteIntervention(inter.layer, inter.dim, inter.type)}
@@ -149,9 +158,32 @@ function InterventionsPanel(props: Props): JSX.Element {
         </DragOverlay>
 
       </DndContext>
+
+      <VerticalDottedLine></VerticalDottedLine>
+
+      {
+        unsortable_interventions.map((inter) => (
+          <InterventionItem
+            intervention={inter}
+            deleteIntervention={() => deleteIntervention(inter.layer, inter.dim, inter.type)}
+            updateIntervention={partial(updateIntervention, inter)}
+            select={partial(selectIntervention, inter)}
+          />
+        ))
+      }
     </MainLayout>
   );
 }
+
+const VerticalDottedLine = () => {
+  return (
+    <div style={{
+      borderLeft: '2px dotted gray',
+      height: '80px',
+      margin: '0 10px'
+    }} />
+  );
+};
 
 interface ParseSuccess {
   type: "success";

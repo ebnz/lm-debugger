@@ -4,7 +4,6 @@ import {Divider, Tag, Button, Table} from 'antd';
 import {LayerPrediction, ValueId} from "../types/dataModel";
 import {LabelContainer, PredictionContainer} from "./LabelContainer";
 import { TextInput } from "./TextInput";
-import {createHash} from "node:crypto";
 
 
 interface Props {
