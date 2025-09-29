@@ -4,7 +4,7 @@ import styled from "styled-components";
 import {Card, Button, Input, Upload, Divider} from "antd";
 import {partial} from "lodash";
 import SortableInterventionItem from "./InterventionItem";
-import {toType, toAbbr} from "../types/constants";
+import {toType, UNSORTABLE_METHODS} from "../types/constants";
 import {UploadOutlined} from "@ant-design/icons";
 
 // Sortable Interventions
@@ -96,14 +96,12 @@ function InterventionsPanel(props: Props): JSX.Element {
 
   const activeItem = interventions.find((item) => item.layer === activeId);
 
-  const unsortable_methods = ["LMDebuggerIntervention"];
-
   const sortable_interventions = interventions.filter(
-      (val, idx) => !(unsortable_methods.includes(val["type"]))
+      (val, idx) => !(UNSORTABLE_METHODS.includes(val["type"]))
   );
 
   const unsortable_interventions = interventions.filter(
-      (val, idx) => unsortable_methods.includes(val["type"])
+      (val, idx) => UNSORTABLE_METHODS.includes(val["type"])
   );
 
   return (
