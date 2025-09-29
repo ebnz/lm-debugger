@@ -1,7 +1,7 @@
 import React, {ChangeEvent, useState} from "react";
 import { Intervention, ValueId } from "../types/dataModel";
 import styled from "styled-components";
-import {Card, Button, Input, Upload, Divider} from "antd";
+import {Card, Button, Input, Upload, Divider, Tooltip} from "antd";
 import {partial} from "lodash";
 import SortableInterventionItem from "./InterventionItem";
 import {toType, UNSORTABLE_METHODS} from "../types/constants";
@@ -157,7 +157,8 @@ function InterventionsPanel(props: Props): JSX.Element {
 
       </DndContext>
 
-      <VerticalDottedLine></VerticalDottedLine>
+      {unsortable_interventions.length > 0 ?
+          <Tooltip title="Interventions right of this line aren't sortable"><VerticalDottedLine/></Tooltip> : <></>}
 
       {
         unsortable_interventions.map((inter) => (
@@ -173,15 +174,20 @@ function InterventionsPanel(props: Props): JSX.Element {
   );
 }
 
-const VerticalDottedLine = () => {
+const VerticalDottedLine: React.FC<React.HTMLAttributes<HTMLDivElement>> = (props) => {
   return (
-    <div style={{
-      borderLeft: '2px dotted gray',
-      height: '80px',
-      margin: '0 10px'
-    }} />
+    <div
+      {...props}
+      style={{
+        borderLeft: '4px dotted gray',
+        height: '80px',
+        margin: '0 10px',
+        ...props.style, // allow overriding or adding to styles
+      }}
+    />
   );
 };
+
 
 interface ParseSuccess {
   type: "success";
