@@ -10,14 +10,19 @@ class TransformerModelWrapper:
         :param model_name: str
         :param device: Device for the Model
         """
+        # Model, Model Info
         self.model_name = model_name
 
         self.model = AutoModelForCausalLM.from_pretrained(self.model_name, torch_dtype=dtype)
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
 
+        self.modules_dict = dict(self.model.named_modules())
+
+        # Device handling
         self.device = device
         self.to(device)
 
+        # Hooks
         self.model_hook_handles = []
 
     def to(self, device):
@@ -75,11 +80,9 @@ class TransformerModelWrapper:
         :param module_name: Name of the Module, the Hook is placed on
         :param permanent: Whether a call of clear_hooks should remove the Hook
         """
-        modules_dict = dict(self.model.named_modules())
-
         # Retrieve Module from Name and register Hook
         try:
-            module = modules_dict[module_name]
+            module = self.modules_dict[module_name]
         except KeyError:
             raise ValueError(f"Module: <{module_name}> does not exist in Model <{self.model}> "
                              f"and is not registered in layer_aliases of TransformerModelWrapper")

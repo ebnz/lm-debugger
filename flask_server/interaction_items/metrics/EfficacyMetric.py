@@ -9,7 +9,7 @@ class EfficacyMetric(MetricItem):
     def calculate_efficacy_metric(self, prompt, target_token_id, true_token_id):
         # Run Model on Prompt
         tokenizer_output = self.model_wrapper.tokenizer(prompt, return_tensors="pt")
-        tokens = tokenizer_output["input_ids"].to(self.controller.model_wrapper.device)
+        tokens = tokenizer_output["input_ids"].to(self.model_wrapper.device)
 
         raw_model_output = self.model_wrapper.model(tokens)[0].detach().clone().cpu()
         pred_token_logits = raw_model_output[0][-1]
@@ -36,7 +36,7 @@ class EfficacyMetric(MetricItem):
         # Run Model on all History Prompts
         for dataset_prompt in self.config.dataset.prompts:
             tokenizer_output = self.model_wrapper.tokenizer(dataset_prompt, return_tensors="pt")
-            tokens = tokenizer_output["input_ids"].to(self.controller.model_wrapper.device)
+            tokens = tokenizer_output["input_ids"].to(self.model_wrapper.device)
 
             raw_model_output = self.model_wrapper.model(tokens)[0].detach().clone().cpu()
             pred_token_logits = raw_model_output[0][-1]
@@ -50,7 +50,7 @@ class EfficacyMetric(MetricItem):
 
     def get_text_outputs(self, prompt, token_logits, pre_hook_rv=None, **kwargs):
         # Get Target Tokens (First Element of each list, nested in this list) and True Tokens
-        raw_target_token_ids = self.controller.model_wrapper.tokenizer(
+        raw_target_token_ids = self.model_wrapper.tokenizer(
             self.config.dataset.targets,
             add_special_tokens=False
         )["input_ids"]

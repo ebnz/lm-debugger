@@ -58,10 +58,18 @@ class LMDebuggerIntervention(InterventionMethod):
     def get_projections(self, dim, layer=None, *args, **kwargs):
         if layer is None:
             raise AttributeError(f"No layer provided. Parameter layer: <{layer}>")
+
         # Project Features with Embedding Matrix
+        token_embedding_weights = self.model_wrapper.modules_dict[
+            self.controller.config["layer_mappings"]["token_embedding"]
+        ].weight.data
+        mlp_down_weights = self.model_wrapper.modules_dict[
+            self.controller.config["layer_mappings"]["mlp_down_proj"].format(layer)
+        ].weight.data
+
         feature_projections = torch.matmul(
-            self.model_wrapper.model.model.embed_tokens.weight,
-            self.model_wrapper.model.model.layers[layer].mlp.down_proj.weight
+            token_embedding_weights,
+            mlp_down_weights
         ).T
 
         # Obtain Logits for one Feature
@@ -226,9 +234,12 @@ class LMDebuggerIntervention(InterventionMethod):
 
         for layer in self.model_wrapper.model.activations_.keys():
             if "layer_residual" in layer or "intermediate_residual" in layer:
-                normed = self.model_wrapper.model.model.norm(self.model_wrapper.model.activations_[layer])
+                post_decoder_norm_module = self.model_wrapper.modules_dict[
+                    self.controller.config["layer_mappings"]["post_decoder_norm"]
+                ]
+                normed = post_decoder_norm_module(self.model_wrapper.model.activations_[layer])
 
-                logits = torch.matmul(self.model_wrapper.model.lm_head.weight, normed.T)
+                logits = torch.matmul(self.model_wrapper.model.lm_head.weight.data, normed.T)
 
                 probs = F.softmax(logits.T[0], dim=-1)
 
@@ -276,8 +287,13 @@ class LMDebuggerIntervention(InterventionMethod):
             coefs_ = []
             m_coefs = sent_to_hidden_states["m_coef_" + str(LAYER)].squeeze(0).cpu().numpy()
             res_vec = sent_to_hidden_states["layer_residual_" + str(LAYER)].squeeze(0).cpu().numpy()
+
+            mlp_down_weight = self.model_wrapper.modules_dict[
+                self.controller.config["layer_mappings"]["mlp_down_proj"].format(LAYER)
+            ].weight.data
+
             value_norms = torch.linalg.norm(
-                self.model_wrapper.model.model.layers[LAYER].mlp.down_proj.weight.data,
+                mlp_down_weight,
                 dim=0
             ).cpu()
             scaled_coefs = np.absolute(m_coefs) * value_norms.numpy()

@@ -32,21 +32,21 @@ class OutOfDistributionKeysMetric(MetricItem):
 
             for request in requests:
                 left_vector = compute_u(
-                    self.controller.model_wrapper.model,
-                    self.controller.model_wrapper.tokenizer,
+                    self.model_wrapper.model,
+                    self.model_wrapper.tokenizer,
                     request,
                     hparams,
                     rome_module.layers[0],
                     get_context_templates(
-                        self.controller.model_wrapper.model,
-                        self.controller.model_wrapper.tokenizer,
+                        self.model_wrapper.model,
+                        self.model_wrapper.tokenizer,
                         hparams.context_template_length_params
                     )
                 )
 
                 cur_input, _ = get_module_input_output_at_word(
-                    self.controller.model_wrapper.model,
-                    self.controller.model_wrapper.tokenizer,
+                    self.model_wrapper.model,
+                    self.model_wrapper.tokenizer,
                     rome_module.layers[0],
                     context_template=request["prompt"],
                     word=request["subject"],

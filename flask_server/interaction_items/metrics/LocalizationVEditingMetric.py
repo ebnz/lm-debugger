@@ -12,8 +12,8 @@ class LocalizationVEditingMetric(MetricItem):
         self.parameters.need_parameter(Attributes.INTERVENTIONS)
 
         self.model_and_tokenizer = ModelAndTokenizer(
-            model=self.controller.model_wrapper.model,
-            tokenizer=self.controller.model_wrapper.tokenizer
+            model=self.model_wrapper.model,
+            tokenizer=self.model_wrapper.tokenizer
         )
 
     def pre_intervention_hook(self, prompt, INTERVENTIONS=None):
@@ -35,7 +35,7 @@ class LocalizationVEditingMetric(MetricItem):
                     noise=self.config.noise,
                     window=self.config.window,
                     kind=self.config.kind,
-                    device=self.controller.model_wrapper.model.device
+                    device=self.model_wrapper.model.device
                 )
 
                 score_per_layer = torch.max(hidden_flow_rv["scores"], dim=0).values

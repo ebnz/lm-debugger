@@ -18,6 +18,7 @@
   elastic_api_key: "VGhlIGNha2UgaXMgYSBsaWU=",
 
   layer_mappings: {
+    token_embedding: "model.embed_tokens",
     mlp_sublayer: "model.layers.{}.mlp",
     attn_sublayer: "model.layers.{}.self_attn",
     mlp_activations: "model.layers.{}.mlp.act_fn",
