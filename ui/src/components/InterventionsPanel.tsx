@@ -5,7 +5,7 @@ import {Card, Button, Input, Upload, Divider} from "antd";
 import {partial} from "lodash";
 import SortableInterventionItem from "./InterventionItem";
 import {toType, UNSORTABLE_METHODS} from "../types/constants";
-import {UploadOutlined} from "@ant-design/icons";
+import {UploadOutlined, DownloadOutlined} from "@ant-design/icons";
 
 // Sortable Interventions
 import {
@@ -109,9 +109,9 @@ function InterventionsPanel(props: Props): JSX.Element {
       title={
         <TitleLayout>
           <TitleText>Interventions</TitleText>
-          <ExportButton onClick={handleDownload}>Export Run</ExportButton>
+          <ExportButton onClick={handleDownload} icon={<UploadOutlined/>}>Export Run</ExportButton>
           <StyledUpload beforeUpload={handleUpload} showUploadList={false}>
-            <ImportButton icon={<UploadOutlined />}>Import Run</ImportButton>
+            <ImportButton icon={<DownloadOutlined/>}>Import Run</ImportButton>
           </StyledUpload>
           <ValueInput
             // validInput={isValid || inputContent === ""}
