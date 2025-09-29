@@ -13,7 +13,7 @@ interface Props {
 }
 
 
-function Layer(props: Props): JSX.Element {
+export function Layer(props: Props): JSX.Element {
   let {
     predictions_before,
     predictions_after
@@ -185,5 +185,3 @@ const LayerTag = styled(Tag)`
   font-size: 12pt;
   padding: 2px 30px;
 `;
-
-export const MemoLayer = React.memo(Layer);

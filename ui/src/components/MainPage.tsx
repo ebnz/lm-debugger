@@ -4,7 +4,7 @@ import Prompt from "./Prompt";
 import {NetworkPrediction, Intervention, ValueId} from "../types/dataModel";
 import {predict, generate} from "../api/prediction";
 import LayersPanel from "./LayersPanel";
-import ValueDetailsPanel from "./ValueDetailsPanel";
+import {MemoValueDetailsPanel} from "./ValueDetailsPanel";
 import InterventionsPanel from "./InterventionsPanel";
 import styled, {css} from "styled-components";
 import {Upload} from "antd";
@@ -26,7 +26,7 @@ function MainPage(): JSX.Element {
   // ----------------------------------- //
   function addIntervention(valueId: ValueId) {
     if(!hasIntervention(valueId)){
-      setInterventions([{...valueId, coeff: 0.0}, ...interventions])
+      setInterventions(prev => [{...valueId, coeff: 0.0}, ...prev])
     }
   }
 
@@ -164,13 +164,13 @@ function MainPage(): JSX.Element {
         />
       </PromptArea>
       <ValueDetailsArea detailsVisible={detailsVisible}>
-        <ValueDetailsPanel valueId={selectedValueId} />
+        <MemoValueDetailsPanel valueId={selectedValueId} />
       </ValueDetailsArea>
       <LayersViewArea>
         <LayersPanel 
           layers={prediction?.layers}
           setSelectedValueId={setSelectedValueId}
-          addIntervention={(valueId) => addIntervention(valueId)} 
+          addIntervention={(valueId) => addIntervention(valueId)}
           isLoading={isLoadingPrediction}
           errorMessage={predictionError}
         />

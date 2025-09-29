@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { Input, Button, Progress } from 'antd';
 import AimOutlined from "@ant-design/icons/AimOutlined";
 import ValueLabel from "./ValueLabel";
-import {MemoLayer} from "./Layer"
+import {Layer} from "./Layer"
 import LayersPanel from "./LayersPanel";
 import {LayerPrediction} from "../types/dataModel";
 

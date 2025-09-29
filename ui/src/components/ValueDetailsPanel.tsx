@@ -48,9 +48,6 @@ function ValueDetailsPanel(props: Props): JSX.Element {
     return () => {};
   }, [valueId]);
 
-
-
-
   let renderedContent: React.ReactNode = <></>;
   if (valueId === undefined) {
     renderedContent = (<Empty description="Select a value to see details" />);
@@ -143,4 +140,4 @@ const ValuesTable = styled(Table)`
 `;
 
 
-export default ValueDetailsPanel;
+export const MemoValueDetailsPanel = React.memo(ValueDetailsPanel);
