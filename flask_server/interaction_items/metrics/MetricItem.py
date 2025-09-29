@@ -63,13 +63,11 @@ class MetricItem(InteractionItem):
         response_dict = [
             {
                 "layer": -1,
-                "type": self.get_name()
+                "type": self.get_name(),
+                "docstring": self.__doc__ if self.__doc__ is not None else "This Metric lacks a Docstring.",
+                **self.get_frontend_items(prompt, token_logits, pre_hook_rv=pre_hook_rv, **kwargs)
             }
         ]
-
-        frontend_items = self.get_frontend_items(prompt, token_logits, pre_hook_rv=pre_hook_rv, **kwargs)
-        for key in frontend_items.keys():
-            response_dict[0][key] = round_dict_recursively(frontend_items[key])
 
         return response_dict
 

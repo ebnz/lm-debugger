@@ -3,6 +3,7 @@ from .MetricItem import MetricItem, Attributes
 
 
 class ExcessiveWeightDeltasMetric(MetricItem):
+    """Calculates the 2-Norm of each defined Model-Transform Intervention"""
     def __init__(self, controller):
         super().__init__(controller)
 

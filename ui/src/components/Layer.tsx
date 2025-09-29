@@ -1,9 +1,10 @@
 import React, {useState} from "react";
 import styled from "styled-components";
-import {Divider, Tag, Button, Table} from 'antd';
+import {Divider, Tag, Button, Table, Tooltip} from 'antd';
 import {LayerPrediction, ValueId} from "../types/dataModel";
 import {LabelContainer, PredictionContainer} from "./LabelContainer";
-import { TextInput } from "./TextInput";
+import {TextInput} from "./TextInput";
+import {QuestionCircleOutlined} from "@ant-design/icons";
 
 
 interface Props {
@@ -66,6 +67,7 @@ export function Layer(props: Props): JSX.Element {
       <LayerLayout>
         <LayerTag color="#a55397">{layer_name}</LayerTag>
         <LayerTag color="#a55397">Type {props.layer.type}</LayerTag>
+        <Tooltip title={props.layer.docstring}><QuestionCircleOutlined/></Tooltip>
         {
           typeof predictions_before !== "undefined" &&
             <MyDivider

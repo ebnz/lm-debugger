@@ -3,6 +3,7 @@ from .MetricItem import MetricItem
 
 
 class PerplexityMetric(MetricItem):
+    """Calculates the Perplexity of the Model"""
     def __init__(self, controller):
         super().__init__(controller)
 

@@ -26,13 +26,12 @@ class InterventionMethod(InteractionItem):
         }
 
     def get_api_layers(self, prompt):
-        response_dict = [
-            {
-                "layer": layer,
-                "type": self.get_name(),
-                **self.get_frontend_items(layer, prompt)
-            } for layer in self.layers
-        ]
+        response_dict = [{
+            "layer": layer,
+            "type": self.get_name(),
+            "docstring": self.__doc__ if self.__doc__ is not None else "This Intervention Method lacks a Docstring.",
+            **self.get_frontend_items(layer, prompt)
+        } for layer in self.layers]
 
         return response_dict
 

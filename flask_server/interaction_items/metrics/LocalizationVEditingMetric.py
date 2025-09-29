@@ -5,6 +5,10 @@ from .causal_trace.causal_trace import ModelAndTokenizer, calculate_hidden_flow
 
 
 class LocalizationVEditingMetric(MetricItem):
+    """
+    Performs a Causal Trace for each Layer, a Model-Transform Intervention is defined.
+    Displays the Layer, where the knowledge is stored, according to Causal Tracing
+    """
     def __init__(self, controller):
         super().__init__(controller)
 

@@ -3,6 +3,7 @@ from .MetricItem import MetricItem
 
 
 class EfficacyMetric(MetricItem):
+    """Measures the Efficacy of the LLM (incl. Interventions) on a config-defined Dataset"""
     def __init__(self, controller):
         super().__init__(controller)
 

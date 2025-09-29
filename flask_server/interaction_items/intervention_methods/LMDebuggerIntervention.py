@@ -6,6 +6,7 @@ from .InterventionMethod import InterventionMethod
 
 
 class LMDebuggerIntervention(InterventionMethod):
+    """Mutates the activation values of individual MLP-Neurons"""
     def __init__(self, controller):
         """
         Represents the original Intervention Method of the LM-Debugger.
@@ -21,7 +22,10 @@ class LMDebuggerIntervention(InterventionMethod):
     InterventionMethod.py API-Methods
     """
     def get_api_layers(self, prompt):
-        return self.get_frontend_items(None, prompt)
+        return [{
+            "docstring": self.__doc__ if self.__doc__ is not None else "This Intervention Method lacks a Docstring.",
+            **layer
+        } for layer in self.get_frontend_items(None, prompt)]
 
     def get_frontend_items(self, layer, prompt, *args, **kwargs):
         return self.get_token_scores(prompt)
