@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from enum import Enum, auto
 from ..InteractionItem import InteractionItem
+from ...utils import round_struct_recursively
 
 
 class Attributes(Enum):
@@ -69,21 +70,4 @@ class MetricItem(InteractionItem):
             }
         ]
 
-        return response_dict
-
-
-def round_dict_recursively(struct, decimals=3):
-    if isinstance(struct, float):
-        return round(struct, decimals)
-    elif isinstance(struct, dict):
-        rv = {}
-        for key in struct.keys():
-            rv[key] = round_dict_recursively(struct[key], decimals=decimals)
-        return rv
-    elif isinstance(struct, list):
-        rv = []
-        for idx in range(len(struct)):
-            rv[idx] = round_dict_recursively(struct[idx], decimals=decimals)
-        return rv
-    else:
-        return struct
+        return round_struct_recursively(response_dict)
