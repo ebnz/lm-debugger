@@ -40,6 +40,7 @@ hparams_mapping = {
     "EMMET": EMMETHyperParams
 }
 
+
 class ModelingRequests:
     def __init__(self, config):
         self.config = config
