@@ -7,12 +7,17 @@ import LayersPanel from "./LayersPanel";
 import {MemoValueDetailsPanel} from "./ValueDetailsPanel";
 import InterventionsPanel from "./InterventionsPanel";
 import styled, {css} from "styled-components";
-import {Upload} from "antd";
+import {Button, Checkbox, Modal, Space, Tag, Upload} from "antd";
+import {DownSquareOutlined} from "@ant-design/icons";
+import {useCookies} from "react-cookie";
 
 // Sortable Interventions
 import {arrayMove} from "@dnd-kit/sortable";
 
+
 function MainPage(): JSX.Element {
+
+  const [cookies, setCookie, removeCookie] = useCookies();
 
   const [promptValue, setPromptValue] = useState<string>("");
   const [prediction, setPrediction] = useState<NetworkPrediction | undefined>(undefined);
@@ -20,6 +25,9 @@ function MainPage(): JSX.Element {
   const [selectedValueId, setSelectedValueId] = useState<ValueId | undefined>(undefined);
   const [isLoadingPrediction, setLoadingPrediction] = useState<boolean>(false);
   const [predictionError, setPredictionError] = useState<string | undefined>(undefined);
+
+  const [introOpen, setIntroOpen] = useState<boolean>(cookies.dontShowIntro === undefined || !cookies.dontShowIntro);
+  const [dontShowAgain, setDontShowAgain] = useState<boolean>(false);
 
   // ----------------------------------- //
   // Intervention State Update functions //
@@ -152,6 +160,13 @@ function MainPage(): JSX.Element {
 
   const detailsVisible = selectedValueId !== undefined;
 
+  function handleIntroClose() {
+    if (dontShowAgain) {
+      setCookie("dontShowIntro", true);
+    }
+    setIntroOpen(false);
+  }
+
   return (
     <MainLayout detailsVisible={detailsVisible}> 
       <PromptArea>
@@ -187,6 +202,29 @@ function MainPage(): JSX.Element {
           handleUpload={handleUpload}
         />
       </InterventionArea>
+
+      <Modal
+        visible={introOpen}
+        closable={false}
+        title="Welcome to LM-Debugger"
+        width="900px"
+        footer={[
+          <Checkbox checked={dontShowAgain} onChange={(e) => {setDontShowAgain(e.target.checked)}}>
+            Don't show again
+          </Checkbox>,
+          <Space size="large"/>,
+          <Button key="submit" type="primary" onClick={handleIntroClose}>
+            Close
+          </Button>
+        ]}
+      >
+        <p>Enter an exemplary Prompt into the textfield</p>
+        <p>Use <Tag color="blue">Generate</Tag>generate new Tokens using the Transformer Model</p>
+        <p>Use <Tag color="blue">Trace</Tag>to see the Internal Calculations, Intervention Methods and Metrics of the Transformer Model</p>
+        <p>Click <CopyIcon /> to intervene on a Feature's Activation or add an Intervention using a Model-Transformation and <Tag color="blue">Add as Intervention</Tag></p>
+        <p><Tag color="blue">Generate</Tag>and <Tag color="blue">Trace</Tag>produce different outputs with different Interventions applied</p>
+        <p>Model-Transformation Interventions are sortable via drag-and-hold</p>
+      </Modal>
     </MainLayout>
   )
 }
@@ -194,6 +232,11 @@ function MainPage(): JSX.Element {
 interface DetailsVisibleProps {
   detailsVisible: boolean;
 }
+
+const CopyIcon = styled(DownSquareOutlined)`
+    font-size: 15px;
+    color: #717D7E;
+`;
 
 const withDetails = css`
   grid-template-columns: 5fr 1fr;
