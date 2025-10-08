@@ -19,17 +19,46 @@ class LMDebuggerIntervention(InterventionMethod):
         self.TOP_K = self.controller.config.top_k_tokens_for_ui
 
     """
-    InterventionMethod.py API-Methods
+    Frontend Definitions
     """
+    def get_text_inputs(self):
+        return super().get_text_inputs()
+
+    def get_frontend_items(self, layer, prompt, *args, **kwargs):
+        return self.get_token_scores(prompt)
+
     def get_api_layers(self, prompt):
         return [{
             "docstring": self.__doc__ if self.__doc__ is not None else "This Intervention Method lacks a Docstring.",
             **layer
         } for layer in self.get_frontend_items(None, prompt)]
 
-    def get_frontend_items(self, layer, prompt, *args, **kwargs):
-        return self.get_token_scores(prompt)
+    """
+    Intervention Handling
+    """
+    def transform_model(self, intervention):
+        return super().transform_model(intervention)
 
+    def setup_intervention_hook(self, intervention, prompt):
+        pred_dict_raw = self.process_and_get_data(prompt)
+        maxs_dict = {
+            layer: self.get_new_max_coef(layer, pred_dict_raw)
+            for layer in range(self.model_wrapper.model.config.num_hidden_layers)
+        }
+
+        if intervention['coeff'] > 0:
+            new_max_val = maxs_dict[intervention['layer']]
+        else:
+            new_max_val = 0
+        self.set_control_hooks_gpt2(
+            {intervention['layer']: [intervention['dim']]},
+            coef_value=new_max_val
+        )
+
+    """
+    Intervention Functionality
+    Code from LM-Debugger
+    """
     def get_token_scores(self, prompt):
         pred_dict_raw = self.process_and_get_data(prompt)
         pred_dict = self.process_pred_dict(pred_dict_raw)
@@ -52,49 +81,6 @@ class LMDebuggerIntervention(InterventionMethod):
             pred_dict_new = self.process_pred_dict(pred_dict_new_raw)
             self.model_wrapper.clear_hooks()
             return pred_dict_new["layers"]
-
-    def get_text_inputs(self):
-        return super().get_text_inputs()
-
-    def transform_model(self, intervention):
-        return super().transform_model(intervention)
-
-    def get_projections(self, dim, layer=None, *args, **kwargs):
-        if layer is None:
-            raise AttributeError(f"No layer provided. Parameter layer: <{layer}>")
-
-        # Project Features with Embedding Matrix
-        token_embedding_weights = self.model_wrapper.modules_dict[
-            self.controller.config["layer_mappings"]["token_embedding"]
-        ].weight.data
-        mlp_down_weights = self.model_wrapper.modules_dict[
-            self.controller.config["layer_mappings"]["mlp_down_proj"].format(layer)
-        ].weight.data
-
-        feature_projections = torch.matmul(
-            token_embedding_weights,
-            mlp_down_weights
-        ).T
-
-        # Obtain Logits for one Feature
-        feature_logits = feature_projections[dim].detach().cpu()
-
-        # Sort top-k Tokens for the specific Feature
-        argsorted_logits = np.argsort(-1 * feature_logits)[:self.controller.config.top_k_for_elastic].tolist()
-
-        output_logits = feature_logits[argsorted_logits].tolist()
-        output_tokens = [self.model_wrapper.tokenizer._convert_id_to_token(item) for item in argsorted_logits]
-
-        top_k = [{
-            "logit": logit,
-            "token": token
-        } for logit, token in zip(output_logits, output_tokens)]
-
-        return {
-            "dim": dim,
-            "layer": layer,
-            "top_k": top_k
-        }
 
     def process_pred_dict(self, pred_df):
         pred_d = {}
@@ -131,9 +117,6 @@ class LMDebuggerIntervention(InterventionMethod):
             pred_d['layers'].append(layer_d)
         return pred_d
 
-    """
-    Generation-Hook-Setting
-    """
     def set_control_hooks_gpt2(self, values_per_layer, coef_value=0):
         def change_values(values, coef_val):
             def hook(module, input, output):
@@ -332,21 +315,45 @@ class LMDebuggerIntervention(InterventionMethod):
         curr_max_val = old_dict['top_coef_vals'][layer][0]
         return curr_max_val + eps
 
-    def setup_intervention_hook(self, intervention, prompt):
-        pred_dict_raw = self.process_and_get_data(prompt)
-        maxs_dict = {
-            layer: self.get_new_max_coef(layer, pred_dict_raw)
-            for layer in range(self.model_wrapper.model.config.num_hidden_layers)
-        }
-
-        if intervention['coeff'] > 0:
-            new_max_val = maxs_dict[intervention['layer']]
-        else:
-            new_max_val = 0
-        self.set_control_hooks_gpt2(
-            {intervention['layer']: [intervention['dim']]},
-            coef_value=new_max_val
-        )
-
     def process_clean_token(self, token):
         return token
+
+    """
+    Intervention Feature Details
+    """
+    def get_projections(self, dim, layer=None, *args, **kwargs):
+        if layer is None:
+            raise AttributeError(f"No layer provided. Parameter layer: <{layer}>")
+
+        # Project Features with Embedding Matrix
+        token_embedding_weights = self.model_wrapper.modules_dict[
+            self.controller.config["layer_mappings"]["token_embedding"]
+        ].weight.data
+        mlp_down_weights = self.model_wrapper.modules_dict[
+            self.controller.config["layer_mappings"]["mlp_down_proj"].format(layer)
+        ].weight.data
+
+        feature_projections = torch.matmul(
+            token_embedding_weights,
+            mlp_down_weights
+        ).T
+
+        # Obtain Logits for one Feature
+        feature_logits = feature_projections[dim].detach().cpu()
+
+        # Sort top-k Tokens for the specific Feature
+        argsorted_logits = np.argsort(-1 * feature_logits)[:self.controller.config.top_k_for_elastic].tolist()
+
+        output_logits = feature_logits[argsorted_logits].tolist()
+        output_tokens = [self.model_wrapper.tokenizer._convert_id_to_token(item) for item in argsorted_logits]
+
+        top_k = [{
+            "logit": logit,
+            "token": token
+        } for logit, token in zip(output_logits, output_tokens)]
+
+        return {
+            "dim": dim,
+            "layer": layer,
+            "top_k": top_k
+        }

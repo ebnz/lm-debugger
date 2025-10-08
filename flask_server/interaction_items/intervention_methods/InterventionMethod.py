@@ -1,13 +1,12 @@
 from abc import ABC, abstractmethod
 from ..InteractionItem import InteractionItem
+from ...controller.InterventionGenerationController import InterventionGenerationController
 
 
 class InterventionMethod(InteractionItem):
-    def __init__(self, controller, layers):
+    def __init__(self, controller: InterventionGenerationController, layers: list[int]):
         """
-        Represents a generic Intervention Method.
-        :type controller: InterventionGenerationController
-        :type layers: list
+        Abstract Base Class that represents a generic Intervention Method.
         :param controller: InterventionGenerationController, the Intervention Method is applied to
         :param layers: Layers, supported by this Intervention Method
         """
@@ -16,16 +15,22 @@ class InterventionMethod(InteractionItem):
         self.layers = layers
         self.interventions = []
 
+    """
+    Frontend Definitions
+    """
     @abstractmethod
     def get_text_inputs(self):
+        """
+        Returns the text inputs, an Intervention Method can have
+        """
         pass
 
-    def get_frontend_items(self, layer, prompt, *args, **kwargs):
+    def get_frontend_items(self, layer: int, prompt: str, *args, **kwargs):
         return {
             "text_inputs": self.get_text_inputs()
         }
 
-    def get_api_layers(self, prompt):
+    def get_api_layers(self, prompt: str):
         response_dict = [{
             "layer": layer,
             "type": self.get_name(),
@@ -35,14 +40,17 @@ class InterventionMethod(InteractionItem):
 
         return response_dict
 
-    def add_intervention(self, intervention):
+    """
+    Intervention Add/Set/Clear
+    """
+    def add_intervention(self, intervention: dict):
         """
         Add an Intervention to this Intervention Method
         :param intervention: Intervention to add
         """
         self.interventions.append(intervention)
 
-    def set_interventions(self, interventions):
+    def set_interventions(self, interventions: list[dict]):
         """
         Set multiple Interventions at once.
         :param interventions: List of Interventions to set
@@ -55,8 +63,11 @@ class InterventionMethod(InteractionItem):
         """
         self.interventions = []
 
+    """
+    Attach Interventions / Transform Model
+    """
     @abstractmethod
-    def setup_intervention_hook(self, intervention, prompt):
+    def setup_intervention_hook(self, intervention: dict, prompt: str):
         """
         Installs the Hook, according to the Intervention to the LLM.
         Implementation Logic of Intervention Methods, that use Hooks here.
@@ -68,7 +79,7 @@ class InterventionMethod(InteractionItem):
         pass
 
     @abstractmethod
-    def transform_model(self, intervention):
+    def transform_model(self, intervention: dict):
         """
         Performs the Transformation of the Model's Weights, as defined by the given Intervention.
         Implementation Logic of Intervention Methods, that use Model Transformation here.
@@ -76,13 +87,14 @@ class InterventionMethod(InteractionItem):
         """
         pass
 
+    """
+    Intervention Feature Details
+    """
     @abstractmethod
-    def get_projections(self, dim, *args, **kwargs):
+    def get_projections(self, dim: int, *args, **kwargs):
         """
         Projects Features (their representation as Vectors) to actual Tokens.
         Used in the Value-Vector-Details Feature.
-        :param type: Type of Intervention Method (Name of the Class, the Intervention Method is implemented in)
-        :param layer: Layer Index
         :param dim: Dimension/Index of the Feature ot get Projections from
         :param args
         :param **kwargs

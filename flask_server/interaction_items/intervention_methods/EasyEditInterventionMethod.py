@@ -32,6 +32,16 @@ class EasyEditInterventionMethod(InterventionMethod):
     def get_name(self):
         return self.ee_hparams.alg_name
 
+    def get_text_inputs(self):
+        return {
+            "prompt": "",
+            "subject": "",
+            "target": ""
+        }
+
+    """
+    Intervention Handling
+    """
     def transform_model(self, intervention):
         # Skip disabled Interventions
         if intervention["coeff"] <= 0.0:
@@ -58,19 +68,15 @@ class EasyEditInterventionMethod(InterventionMethod):
 
         self.model_wrapper.model = edited_model
 
-    def get_text_inputs(self):
-        return {
-            "prompt": "",
-            "subject": "",
-            "target": ""
-        }
+    def setup_intervention_hook(self, intervention, prompt):
+        return super().setup_intervention_hook(intervention, prompt)
 
+    """
+    Intervention Feature Details
+    """
     def get_projections(self, dim, *args, **kwargs):
         return {
             "dim": dim,
             "layer": self.layers[0],
             "top_k": []
         }
-
-    def setup_intervention_hook(self, intervention, prompt):
-        return super().setup_intervention_hook(intervention, prompt)
