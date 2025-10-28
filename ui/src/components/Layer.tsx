@@ -69,13 +69,15 @@ export function Layer(props: Props): JSX.Element {
         <LayerTag color="#a55397">
           {
             props.layer.layer >= 0 && props.layer.type !== "LMDebuggerIntervention" ?
-                <>Layer <Space/>
                 <InputNumber
                     min={props.layer.min_layer}
                     max={props.layer.max_layer}
                     defaultValue={layerIndex}
-                    onChange={(newVal) => setLayerIndex(newVal)} />
-                </> :
+                    prefix="Layer"
+                    size="small"
+                    controls={false}
+                    precision={0}
+                    onChange={(newVal) => setLayerIndex(newVal)} /> :
                 layer_name}
         </LayerTag>
         <LayerTag color="#a55397">Type {props.layer.type}</LayerTag>
@@ -196,6 +198,7 @@ const MyDivider = styled(Divider)`
 
 const LayerTag = styled(Tag)`
   font-weight: bold;
-  font-size: 12pt;
+  font-size: 15pt;
   padding: 2px 30px;
+  height: 30px;
 `;
