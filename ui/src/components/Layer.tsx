@@ -88,11 +88,14 @@ export function Layer(props: Props): JSX.Element {
                       min={props.layer.min_layer}
                       max={props.layer.max_layer}
                       defaultValue={layerIndex}
-                      prefix="Layer"
+                      prefix={<span onClick={(e) => e.stopPropagation()}>Layer</span>}
                       size="small"
                       controls={false}
                       precision={0}
-                      onChange={(newVal) => setLayerIndex(newVal)} /> :
+                      onChange={(newVal) => setLayerIndex(newVal)}
+                      onClick={(e) => e.stopPropagation()}
+                      onFocus={(e) => e.stopPropagation()}
+                    /> :
                   layer_name}
               </LayerTag>
               <LayerTag color="#a55397">Type {props.layer.type}</LayerTag>
