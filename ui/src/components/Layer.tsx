@@ -189,8 +189,7 @@ export function Layer(props: Props): JSX.Element {
 const ContentLayout = styled.div`
   padding: 8px;
   margin: 0 auto; /* centers the component */
-  //width: calc(100% - 100px);
-  max-width: 90%;
+  width: calc(100% - 100px);
 `;
 
 const TextInputLayout = styled.div`
@@ -206,8 +205,9 @@ const LayerLayout = styled.div`
   border: 1px #757373c5 solid;
   border-radius: 5px;
   //width: calc(100% - 100px);
-  max-width: 70%;
+  max-width: 90%;
   width: 100%;
+  height: fit-content;
 `;
 
 const MyDivider = styled(Divider)`

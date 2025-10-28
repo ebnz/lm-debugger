@@ -31,9 +31,22 @@ function LayersPanel(props: Props): JSX.Element {
     }
   }, [errorMessage]);
 
-  let contentRender: React.ReactNode = <></>;
+  let metricsContent: React.ReactNode = <></>;
+  let interventionContent: React.ReactNode = <></>;
 
-  contentRender = useMemo(() => layers?.sort((a, b) => a.layer >= b.layer ? 1 : -1)
+  metricsContent = useMemo(() => layers?.filter((item) => item.layer === -1 || item.type === "LMDebuggerIntervention")
+    .sort((a, b) => a.layer >= b.layer ? 1 : -1)
+    .map((item) => (
+      <Layer
+        key={`layer_${item.type}_${item.layer}`}
+        layer={item}
+        onAnalyze={valueId => setSelectedValueId(valueId)}
+        onCopy={addIntervention}
+      />
+    )), [layers]);
+
+  interventionContent = useMemo(() => layers?.filter((item) => item.layer !== -1 && item.type !== "LMDebuggerIntervention")
+    .sort((a, b) => a.layer >= b.layer ? 1 : -1)
     .map((item) => (
       <Layer
         key={`layer_${item.type}_${item.layer}`}
@@ -44,22 +57,25 @@ function LayersPanel(props: Props): JSX.Element {
     )), [layers]);
 
   if (isLoading) {
-    contentRender = <Spin style={{margin: "auto auto"}} tip="Loading prediction" />;
+    metricsContent = <Spin style={{margin: "auto auto"}} tip="Loading prediction" />;
+    interventionContent = <Spin style={{margin: "auto auto"}} tip="Loading prediction" />;
   } else if (layers === undefined){
-    contentRender = <Empty description="Run a query to see the predicted layers"/>
+    metricsContent = <Empty description="Run a query to see the predicted layers"/>;
+    interventionContent = <Empty description="Run a query to see the predicted layers"/>;
   }
 
   return (
-    <MainLayout title="Layers">
-      {contentRender}
-    </MainLayout>
+    <div style={{display: "flex", flexDirection: "row", height: "80vh", overflow: "auto"}}>
+      <MainLayout title="Metrics">{metricsContent}</MainLayout>
+      <MainLayout title="Layers">{interventionContent}</MainLayout>
+    </div>
   );
 }
 
 const MainLayout = styled(Card).attrs({
   size: "small"
 })`
-  width: 100%;
+  width: 50%;
   height: 100%;
 
   &.ant-card .ant-card-body {
