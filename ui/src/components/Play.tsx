@@ -52,7 +52,9 @@ function Play(): JSX.Element {
         significant_values: labels,
         text_inputs: {},
         text_outputs: {},
-        docstring: "ABC"
+        docstring: "ABC",
+        min_layer: 0,
+        max_layer: 32
     }
     const n_layers = 5; 
     let layer_inputs = []

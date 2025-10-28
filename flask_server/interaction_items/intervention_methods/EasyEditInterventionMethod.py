@@ -1,6 +1,7 @@
 import torch
 from .InterventionMethod import InterventionMethod
 from .EasyEdit.easyeditor.util.alg_dict import ALG_DICT
+from copy import copy
 
 
 class EasyEditInterventionMethod(InterventionMethod):
@@ -53,11 +54,14 @@ class EasyEditInterventionMethod(InterventionMethod):
             "target_new": intervention["text_inputs"]["target"]
         }]
 
+        rewrite_hparams = copy(self.ee_hparams)
+        rewrite_hparams.layers = [intervention["layer"]]
+
         rv = self.invoke_method(
             self.model_wrapper.model,
             self.model_wrapper.tokenizer,
             request,
-            self.ee_hparams,
+            rewrite_hparams,
             copy=False
         )
 

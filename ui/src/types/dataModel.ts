@@ -34,6 +34,8 @@ export interface LayerPrediction {
   text_inputs: {[key: string]: string};
   text_outputs: {[key: string]: string};
   docstring: string;
+  min_layer?: number;
+  max_layer?: number;
 }
 
 export interface NetworkPrediction {

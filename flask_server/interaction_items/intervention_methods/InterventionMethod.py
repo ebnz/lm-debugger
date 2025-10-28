@@ -15,6 +15,10 @@ class InterventionMethod(InteractionItem):
         self.layers = layers
         self.interventions = []
 
+        # Minimal / Maximal Layer of the Model, this Method is applicable to
+        self.min_layer = 0
+        self.max_layer = controller.config.num_layers - 1
+
     """
     Frontend Definitions
     """
@@ -33,6 +37,8 @@ class InterventionMethod(InteractionItem):
     def get_api_layers(self, prompt: str):
         response_dict = [{
             "layer": layer,
+            "min_layer": self.min_layer,
+            "max_layer": self.max_layer,
             "type": self.get_name(),
             "docstring": self.__doc__ if self.__doc__ is not None else "This Intervention Method lacks a Docstring.",
             **self.get_frontend_items(layer, prompt)

@@ -1,6 +1,6 @@
 import React, {useState} from "react";
 import styled from "styled-components";
-import {Divider, Tag, Button, Table, Tooltip} from 'antd';
+import {Divider, Tag, Button, Table, Tooltip, Menu, InputNumber, Space} from 'antd';
 import {LayerPrediction, ValueId} from "../types/dataModel";
 import {LabelContainer, PredictionContainer} from "./LabelContainer";
 import {TextInput} from "./TextInput";
@@ -21,6 +21,7 @@ export function Layer(props: Props): JSX.Element {
   } = props.layer;
 
   let [textIntervention, setTextIntervention] = useState(props.layer.text_inputs);
+  let [layerIndex, setLayerIndex] = useState(props.layer.layer);
 
   let [textOutputs, setTextOutputs] = useState(props.layer.text_outputs);
   var text_outputs_table_data: object[] = [];
@@ -49,23 +50,34 @@ export function Layer(props: Props): JSX.Element {
     index += 1;
   })
 
-  const columns = [
-  {
-    title: 'Descriptor',
-    dataIndex: 'descriptor',
-    key: 'descriptor'
-  },
-  {
-    title: 'Data',
-    dataIndex: 'datafield',
-    key: 'datafield',
-    width: '20%'
-  }
-];
+  const table_columns = [
+    {
+      title: 'Descriptor',
+      dataIndex: 'descriptor',
+      key: 'descriptor'
+    },
+    {
+      title: 'Data',
+      dataIndex: 'datafield',
+      key: 'datafield',
+      width: '20%'
+    }
+  ];
 
   return (
       <LayerLayout>
-        <LayerTag color="#a55397">{layer_name}</LayerTag>
+        <LayerTag color="#a55397">
+          {
+            props.layer.layer >= 0 && props.layer.type !== "LMDebuggerIntervention" ?
+                <>Layer <Space/>
+                <InputNumber
+                    min={props.layer.min_layer}
+                    max={props.layer.max_layer}
+                    defaultValue={layerIndex}
+                    onChange={(newVal) => setLayerIndex(newVal)} />
+                </> :
+                layer_name}
+        </LayerTag>
         <LayerTag color="#a55397">Type {props.layer.type}</LayerTag>
         <Tooltip title={props.layer.docstring}><QuestionCircleOutlined/></Tooltip>
         {
@@ -119,7 +131,7 @@ export function Layer(props: Props): JSX.Element {
               className={"tight-table"}
               style={{ marginTop: 0, marginBottom: 0 }}
               dataSource={text_outputs_table_data}
-              columns={columns}
+              columns={table_columns}
               size="small"
               pagination={textOutputsMap.size > 5 ? {position: ["bottomRight"]} : false}
             />
@@ -137,7 +149,7 @@ export function Layer(props: Props): JSX.Element {
               onClick={(e) => {props.onCopy(
               {text_inputs: textIntervention,
               type: props.layer.type,
-              layer: props.layer.layer,
+              layer: layerIndex,
               dim: Date.now()}
               )}}>Add as Intervention</Button>
           </TextInputLayout>
