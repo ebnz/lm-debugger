@@ -1,6 +1,6 @@
 import React, {useState} from "react";
 import styled from "styled-components";
-import {Divider, Tag, Button, Table, Tooltip, Menu, InputNumber, Space} from 'antd';
+import {Divider, Tag, Button, Table, Tooltip, Menu, InputNumber, Space, Collapse} from 'antd';
 import {LayerPrediction, ValueId} from "../types/dataModel";
 import {LabelContainer, PredictionContainer} from "./LabelContainer";
 import {TextInput} from "./TextInput";
@@ -74,98 +74,108 @@ export function Layer(props: Props): JSX.Element {
     }
   ];
 
+  const { Panel } = Collapse;
+
   return (
       <LayerLayout>
-        <LayerTag color="#a55397">
-          {
-            props.layer.layer >= 0 && props.layer.type !== "LMDebuggerIntervention" ?
-                <InputNumber
-                    min={props.layer.min_layer}
-                    max={props.layer.max_layer}
-                    defaultValue={layerIndex}
-                    prefix="Layer"
-                    size="small"
-                    controls={false}
-                    precision={0}
-                    onChange={(newVal) => setLayerIndex(newVal)} /> :
-                layer_name}
-        </LayerTag>
-        <LayerTag color="#a55397">Type {props.layer.type}</LayerTag>
-        <Tooltip title={props.layer.docstring}><QuestionCircleOutlined/></Tooltip>
-        {
-          typeof predictions_before !== "undefined" &&
-            <MyDivider
-              orientation="left"
-              orientationMargin="15px"
-            >Before:</MyDivider>
-        }
-        {
-          typeof predictions_before !== "undefined" &&
-            <PredictionContainer
-              predictions={predictions_before}
-            />
-        }
+        <Collapse>
+          <Panel key={1} header={
+            <>
+              <LayerTag color="#a55397">
+                {
+                  props.layer.layer >= 0 && props.layer.type !== "LMDebuggerIntervention" ?
+                    <InputNumber
+                      min={props.layer.min_layer}
+                      max={props.layer.max_layer}
+                      defaultValue={layerIndex}
+                      prefix="Layer"
+                      size="small"
+                      controls={false}
+                      precision={0}
+                      onChange={(newVal) => setLayerIndex(newVal)} /> :
+                  layer_name}
+              </LayerTag>
+              <LayerTag color="#a55397">Type {props.layer.type}</LayerTag>
+              <Tooltip title={props.layer.docstring}><QuestionCircleOutlined/></Tooltip>
+            </>
+          }>
+            {
+              typeof predictions_before !== "undefined" &&
+                <MyDivider
+                  orientation="left"
+                  orientationMargin="15px"
+                >Before:</MyDivider>
+            }
+            {
+              typeof predictions_before !== "undefined" &&
+                <PredictionContainer
+                  predictions={predictions_before}
+                />
+            }
 
-        {
-          typeof props.layer.significant_values !== "undefined" &&
-            <MyDivider
-              orientation="left"
-              orientationMargin="15px"
-            >Dominant sub-updates:</MyDivider>
-        }
-        {
-          typeof props.layer.significant_values !== "undefined" &&
-            <LabelContainer
-              valueLabels={props.layer.significant_values}
-              type={props.layer.type}
-              onAnaylze={props.onAnalyze}
-              onCopy={props.onCopy}
-            />
-        }
+            {
+              typeof props.layer.significant_values !== "undefined" &&
+                <MyDivider
+                  orientation="left"
+                  orientationMargin="15px"
+                >Dominant sub-updates:</MyDivider>
+            }
+            {
+              typeof props.layer.significant_values !== "undefined" &&
+                <LabelContainer
+                  valueLabels={props.layer.significant_values}
+                  type={props.layer.type}
+                  onAnaylze={props.onAnalyze}
+                  onCopy={props.onCopy}
+                />
+            }
 
-        {
-          typeof predictions_after !== "undefined" &&
-            <MyDivider
-              orientation="left"
-              orientationMargin="15px"
-            >After:</MyDivider>
-        }
-        {
-          typeof predictions_after !== "undefined" &&
-            <PredictionContainer
-              predictions={predictions_after}
-            />
-        }
+            {
+              typeof predictions_after !== "undefined" &&
+                <MyDivider
+                  orientation="left"
+                  orientationMargin="15px"
+                >After:</MyDivider>
+            }
+            {
+              typeof predictions_after !== "undefined" &&
+                <PredictionContainer
+                  predictions={predictions_after}
+                />
+            }
 
-        {
-          typeof props.layer.text_outputs !== "undefined" && <ContentLayout>
-            <Table
-              className={"tight-table"}
-              style={{ marginTop: 0, marginBottom: 0 }}
-              dataSource={text_outputs_table_data}
-              columns={table_columns}
-              size="small"
-              pagination={textOutputsMap.size > 5 ? {position: ["bottomRight"]} : false}
-            />
-          </ContentLayout>
-        }
+            {
+              typeof props.layer.text_outputs !== "undefined" && <ContentLayout>
+                <Table
+                  className={"tight-table"}
+                  style={{ marginTop: 0, marginBottom: 0 }}
+                  dataSource={text_outputs_table_data}
+                  columns={table_columns}
+                  size="small"
+                  pagination={textOutputsMap.size > 5 ? {position: ["bottomRight"]} : false}
+                />
+              </ContentLayout>
+            }
 
-        {
-          typeof props.layer.text_inputs !== "undefined" && <TextInputLayout>
-            <TextInput
-              textIntervention={textIntervention}
-              setTextIntervention={setTextIntervention}
-            ></TextInput>
-            <Button
-              disabled={add_intervention_button_disabled(textIntervention)}
-              onClick={(e) => {props.onCopy(
-              {text_inputs: textIntervention,
-              type: props.layer.type,
-              layer: layerIndex,
-              dim: Date.now()}
-              )}}>Add as Intervention</Button>
-          </TextInputLayout>
-        }
+            {
+              typeof props.layer.text_inputs !== "undefined" && <TextInputLayout>
+                <TextInput
+                  textIntervention={textIntervention}
+                  setTextIntervention={setTextIntervention}
+                ></TextInput>
+                <Button
+                  disabled={add_intervention_button_disabled(textIntervention)}
+                  onClick={(e) => {props.onCopy(
+                  {text_inputs: textIntervention,
+                  type: props.layer.type,
+                  layer: layerIndex,
+                  dim: Date.now()}
+                  )}}>Add as Intervention</Button>
+              </TextInputLayout>
+            }
+          </Panel>
+        </Collapse>
+
 
 
         {/* </SignificantValuesDiv> */}
