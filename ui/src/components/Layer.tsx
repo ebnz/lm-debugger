@@ -5,6 +5,7 @@ import {LayerPrediction, ValueId} from "../types/dataModel";
 import {LabelContainer, PredictionContainer} from "./LabelContainer";
 import {TextInput} from "./TextInput";
 import {QuestionCircleOutlined} from "@ant-design/icons";
+import {text} from "node:stream/consumers";
 
 
 interface Props {
@@ -31,15 +32,6 @@ export function Layer(props: Props): JSX.Element {
     textOutputsMap.set(key, textOutputs[key]);
   }
 
-  let layer_name = "Layer ?";
-  if (props.layer.layer >= 0) {
-    layer_name = `Layer ${props.layer.layer}`;
-  } else if (props.layer.layer === -1) {
-    layer_name = "Metric";
-  } else if (props.layer.layer === -2) {
-    layer_name = "All Layers";
-  }
-
   var index = 0;
   textOutputsMap.forEach((val, key) => {
     text_outputs_table_data.push({
@@ -49,6 +41,24 @@ export function Layer(props: Props): JSX.Element {
     });
     index += 1;
   })
+
+  let layer_name = "Layer ?";
+  if (props.layer.layer >= 0) {
+    layer_name = `Layer ${props.layer.layer}`;
+  } else if (props.layer.layer === -1) {
+    layer_name = "Metric";
+  } else if (props.layer.layer === -2) {
+    layer_name = "All Layers";
+  }
+
+  function add_intervention_button_disabled(text_fields: object) {
+    if (Object.values(text_fields).some(value => value === "")) {
+      return true;
+    } else if (!Object(text_fields)["prompt"].includes("{}")) {
+      return true;
+    }
+    return false;
+  }
 
   const table_columns = [
     {
@@ -147,7 +157,7 @@ export function Layer(props: Props): JSX.Element {
               setTextIntervention={setTextIntervention}
             ></TextInput>
             <Button
-              disabled={Object.values(textIntervention).some(value => value === "")}
+              disabled={add_intervention_button_disabled(textIntervention)}
               onClick={(e) => {props.onCopy(
               {text_inputs: textIntervention,
               type: props.layer.type,
