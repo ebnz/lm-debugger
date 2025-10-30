@@ -5,7 +5,6 @@ import {LayerPrediction, ValueId} from "../types/dataModel";
 import {LabelContainer, PredictionContainer} from "./LabelContainer";
 import {TextInput} from "./TextInput";
 import {QuestionCircleOutlined} from "@ant-design/icons";
-import {text} from "node:stream/consumers";
 
 
 interface Props {
@@ -24,23 +23,15 @@ export function Layer(props: Props): JSX.Element {
   let [textIntervention, setTextIntervention] = useState(props.layer.text_inputs);
   let [layerIndex, setLayerIndex] = useState(props.layer.layer);
 
-  let [textOutputs, setTextOutputs] = useState(props.layer.text_outputs);
-  var text_outputs_table_data: object[] = [];
-
-  let textOutputsMap = new Map();
-  for (let key of Object.keys(textOutputs || {})) {
-    textOutputsMap.set(key, textOutputs[key]);
-  }
-
-  var index = 0;
-  textOutputsMap.forEach((val, key) => {
-    text_outputs_table_data.push({
+  const textOutputs = props.layer.text_outputs ?? {};
+  const text_outputs_table_data = Object.entries(textOutputs).map(
+    ([key, val], index) => ({
       key: index.toString(),
       descriptor: key,
       datafield: val,
-    });
-    index += 1;
-  })
+    })
+  );
+
 
   let layer_name = "Layer ?";
   if (props.layer.layer >= 0) {
@@ -155,7 +146,7 @@ export function Layer(props: Props): JSX.Element {
                   dataSource={text_outputs_table_data}
                   columns={table_columns}
                   size="small"
-                  pagination={textOutputsMap.size > 5 ? {position: ["bottomRight"]} : false}
+                  pagination={Object.keys(textOutputs).length > 5 ? {position: ["bottomRight"]} : false}
                 />
               </ContentLayout>
             }

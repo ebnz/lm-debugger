@@ -81,7 +81,7 @@ const OverlayLayout = styled.div`
   width: 100%;
   height: 100%;
   z-index: 999;
-  background-color: rgba(255, 255, 255, 0.7); /* optional dim effect */
+  background-color: rgba(255, 255, 255, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;

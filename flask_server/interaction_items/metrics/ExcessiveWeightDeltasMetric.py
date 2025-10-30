@@ -3,7 +3,11 @@ from .MetricItem import MetricItem, Attributes
 
 
 class ExcessiveWeightDeltasMetric(MetricItem):
-    """Calculates the 2-Norm of each defined Model-Transform Intervention"""
+    """
+    Calculates the 2-Norm of the Weight-Delta-Matrix of each Model-Transform Intervention.
+    High values imply updates with large magnitude and may corrupt the LLM.
+    Hyperparameters of Intervention Methods influence the magnitude of the update and thus it's 2-Norm.
+    """
     def __init__(self, controller):
         super().__init__(controller)
 

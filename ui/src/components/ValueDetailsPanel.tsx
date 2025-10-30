@@ -1,11 +1,12 @@
 import React, {useEffect, useState} from "react";
 import styled from "styled-components";
 import {ValueId, ValueInterpretation} from "../types/dataModel";
-import {Empty, Spin, Table, Card, Alert, Tag} from "antd";
+import {Empty, Spin, Table, Card, Alert, Tag, Tooltip} from "antd";
 import {getValueInterpretation} from "../api/prediction"
 import {v4 as UUIDv4} from "uuid";
 import { Typography, Input, Button, Space, Divider } from 'antd';
 import runConfig from "../runConfig.json";
+import {QuestionCircleOutlined} from "@ant-design/icons";
 const { Text, Title } = Typography;
 
 interface Props {
@@ -78,13 +79,15 @@ function ValueDetailsPanel(props: Props): JSX.Element {
     <div>
       <Space size="small" split={<Divider type="vertical" />}>
         <Text>Value Vector Details</Text>
+        <Tooltip
+            title={"Projection of MLP-Feature to Vocab-Space. Most probable Tokens with respective Logits are shown"}>
+          <QuestionCircleOutlined/>
+        </Tooltip>
       </Space>
       <br/><br/>
       <Space size="small" split={<Divider type="vertical" />}>
-        <div>
         <Text> Layer <Tag color="#a55397">{valueId.layer}</Tag></Text>
         <Text>Dim. <Tag color="#078e9e">{valueId.dim}</Tag></Text>
-        </div>
         <Text strong>{valueId.desc}</Text>
       </Space>
     </div>

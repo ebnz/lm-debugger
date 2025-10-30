@@ -5,7 +5,14 @@ from copy import copy
 
 
 class EasyEditInterventionMethod(InterventionMethod):
-    """EasyEdit-Implementation of an Intervention Method"""
+    """
+    EasyEdit-Implementation of an Intervention Method.
+    Enter Prompt, Subject, Target and specify a Layer, this statement is inserted into.
+    Click 'Add as Intervention' and activate the Intervention in the Interventions Menu.
+    On the next Generate-/Trace-Run, the statement is inserted into the memory of the specified Layer.
+    Note: 'Peter goes to the bank' -> Prompt: '{} goes to the', Subject: 'Peter', Target: 'bank',
+    where '{}' is substituted with the Subject.
+    """
     def __init__(self, controller, ee_hparams):
         layers = [ee_hparams.layers[0]] if hasattr(ee_hparams, "layers") else [-2]
         super().__init__(controller, layers)

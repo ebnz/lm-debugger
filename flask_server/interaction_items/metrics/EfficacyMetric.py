@@ -3,7 +3,13 @@ from .MetricItem import MetricItem
 
 
 class EfficacyMetric(MetricItem):
-    """Measures the Efficacy of the LLM (incl. Interventions) on a config-defined Dataset"""
+    """
+    Measures the ROME-Efficacy-Metric of the LLM (incl. Interventions) on the Dataset, defined in the Config.
+    Generates the next Token of the dataset-defined Prompt without Interventions. This is the True Token.
+    After this, Interventions are applied and the next-Token-Logits are generated again.
+    The Efficacy-Score measures the number of Dataset-Entries, where the Logit of the dataset-defined Target-Token
+    is higher than the Logit of the True Token in the post-Intervention Logits.
+    """
     def __init__(self, controller):
         super().__init__(controller)
 
