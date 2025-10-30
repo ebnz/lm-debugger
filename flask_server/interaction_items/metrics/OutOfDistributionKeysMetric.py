@@ -8,8 +8,9 @@ from ..intervention_methods.EasyEdit.easyeditor.models.rome.compute_v import get
 
 class OutOfDistributionKeysMetric(MetricItem):
     """
-    Calculates a value for each ROME-like Intervention, determining,
-    if the Key-Vector of the Intervention's optimization is contained in the MOM2-Matrix
+    Calculates the value of the denominator of ROME’s Weight Delta Matrix.
+    Exceptionally small values (<1) make the Weight Delta Matrix excessively large, leading to possible problems.
+    The Pattern is: '<InterventionMethod> | <Layer> | <Subject> --> <Denominator of Weight Delta Matrix>'
     """
     def __init__(self, controller):
         super().__init__(controller)

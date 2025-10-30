@@ -3,7 +3,11 @@ from .MetricItem import MetricItem
 
 
 class PerplexityMetric(MetricItem):
-    """Calculates the Perplexity of the Model"""
+    """
+    Calculates the Perplexity of the Model Output.
+    Perplexity is a measure of uncertainty of the LLM.
+    High values correspond to high uncertainty.
+    """
     def __init__(self, controller):
         super().__init__(controller)
 
