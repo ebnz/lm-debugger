@@ -86,6 +86,7 @@ const MainLayout = styled(Card).attrs({
 
     display: grid;
     justify-items: center;
+    align-content: start;
   }
 `;
 
