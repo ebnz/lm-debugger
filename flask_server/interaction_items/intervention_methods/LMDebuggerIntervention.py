@@ -6,7 +6,11 @@ from .InterventionMethod import InterventionMethod
 
 
 class LMDebuggerIntervention(InterventionMethod):
-    """Mutates the activation values of individual MLP-Neurons"""
+    """
+    Shows the Top-k Tokens before and after this Layer, as well as strongly activating Features of the MLP.
+    Feature activations can then be manipulated by clicking the Down-Arrow and (de-)activating a Feature
+    using the corresponding slider in the Interventions-Menu
+    """
     def __init__(self, controller):
         """
         Represents the original Intervention Method of the LM-Debugger.

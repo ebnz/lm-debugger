@@ -34,6 +34,9 @@ function LayersPanel(props: Props): JSX.Element {
   let metricsContent: React.ReactNode = <></>;
   let interventionContent: React.ReactNode = <></>;
 
+  const renderOverlay = isLoading || layers === undefined;
+  let overlayContent: React.ReactNode = <></>;
+
   metricsContent = useMemo(() => layers?.filter((item) => item.layer === -1 || item.type === "LMDebuggerIntervention")
     .sort((a, b) => a.layer >= b.layer ? 1 : -1)
     .map((item) => (
@@ -57,20 +60,32 @@ function LayersPanel(props: Props): JSX.Element {
     )), [layers]);
 
   if (isLoading) {
-    metricsContent = <Spin style={{margin: "auto auto"}} tip="Loading prediction" />;
-    interventionContent = <Spin style={{margin: "auto auto"}} tip="Loading prediction" />;
+    overlayContent = <Spin style={{margin: "auto auto"}} tip="Loading prediction" />;
   } else if (layers === undefined){
-    metricsContent = <Empty description="Run a query to see the predicted layers"/>;
-    interventionContent = <Empty description="Run a query to see the predicted layers"/>;
+    overlayContent = <Empty description="Run a query to see the predicted layers"/>;
   }
 
   return (
-    <div style={{display: "flex", flexDirection: "row", height: "80vh", overflow: "auto"}}>
+    <div style={{display: "flex", flexDirection: "row", height: "80vh", overflow: "auto", position: "relative"}}>
+      {renderOverlay && <OverlayLayout>{overlayContent}</OverlayLayout>}
       <MainLayout title="Metrics">{metricsContent}</MainLayout>
       <MainLayout title="Layers">{interventionContent}</MainLayout>
     </div>
   );
 }
+
+const OverlayLayout = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 999;
+  background-color: rgba(255, 255, 255, 0.7); /* optional dim effect */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
 
 const MainLayout = styled(Card).attrs({
   size: "small"
