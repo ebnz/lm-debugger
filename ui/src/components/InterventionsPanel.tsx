@@ -5,7 +5,7 @@ import {Card, Button, Input, Upload, Divider, Tooltip} from "antd";
 import {partial} from "lodash";
 import SortableInterventionItem from "./InterventionItem";
 import {toType, UNSORTABLE_METHODS} from "../types/constants";
-import {UploadOutlined, DownloadOutlined} from "@ant-design/icons";
+import {UploadOutlined, DownloadOutlined, QuestionCircleOutlined} from "@ant-design/icons";
 
 // Sortable Interventions
 import {
@@ -49,12 +49,19 @@ function InterventionsPanel(props: Props): JSX.Element {
   const [inputContent, setInputContent] = useState<string>("");
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
 
+  const tooltipText = "In the Interventions Menu, all (in-)active Interventions are displayed. " +
+      "Activate an Intervention by clicking the Toggle. " +
+      "The Descriptor the Interventions has the pattern: 'L<Layer>: <FactToInsert>' or 'L<Layer>D<Dimension>'. " +
+      "Interventions are sortable via Drag-n-Drop. " +
+      "Drag-n-Drop starts with a short delay to ensure (de-)activating Interventions" +
+      "The order of application of the Interventions is defined by the Order of Interventions in the UI. ";
+
   // Set up Draggability-Sensors (Mouse and Touch)
   const sensors = useSensors(
     useSensor(MouseSensor, {
     // Press delay of 250ms, with tolerance of 5px of movement
     activationConstraint: {
-      delay: 250,
+      delay: 150,
       tolerance: 5,
     },
   }),
@@ -113,6 +120,8 @@ function InterventionsPanel(props: Props): JSX.Element {
           <StyledUpload beforeUpload={handleUpload} showUploadList={false}>
             <ImportButton icon={<DownloadOutlined/>}>Import Run</ImportButton>
           </StyledUpload>
+          <StyledTooltip title={tooltipText}><QuestionCircleOutlined/></StyledTooltip>
+
           <ValueInput
             // validInput={isValid || inputContent === ""}
             placeholder="L12D34"
@@ -248,11 +257,11 @@ const MainLayout = styled(Card).attrs({
 
 const TitleLayout = styled.div`
   display: grid;
-  grid-template-columns: min-content 10px min-content 10px min-content 1fr 150px min-content;
+  grid-template-columns: min-content 10px min-content 10px min-content 10px min-content 1fr 150px min-content;
   grid-template-rows: 1fr;
   gap: 4px;
   grid-template-areas: 
-    "text . button_export . upload . input button_add";
+    "text . button_export . upload . tooltip . input button_add";
 
   align-items: center;
 `;
@@ -302,6 +311,10 @@ const StyledUpload = styled(Upload).attrs({
 })`
   grid-area: upload;
   height: 32px;
+`;
+
+const StyledTooltip = styled(Tooltip)`
+  grid-area: tooltip;
 `;
 
 const AddButton = styled(Button).attrs({
