@@ -13,6 +13,41 @@ interface Props {
   onCopy: (valueId: any) => void;
 }
 
+// Non-Secure Hash-Function
+function stableStringify(value: any): string {
+  if (value === null || typeof value !== "object") {
+    return JSON.stringify(value);
+  }
+
+  if (Array.isArray(value)) {
+    return "[" + value.map(stableStringify).join(",") + "]";
+  }
+
+  const keys = Object.keys(value).sort();
+  const keyValuePairs = keys.map(
+    key => JSON.stringify(key) + ":" + stableStringify(value[key])
+  );
+
+  return "{" + keyValuePairs.join(",") + "}";
+}
+
+function fnv1aHash(str: string): number {
+  let hash = 0x811c9dc5;
+
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    // multiply by FNV prime and ensure 32-bit overflow
+    hash = (hash * 0x01000193) >>> 0;
+  }
+
+  return hash >>> 0;
+}
+
+export function hashObject(obj: unknown): number {
+  const str = stableStringify(obj);
+  return fnv1aHash(str);
+}
+
 
 export function Layer(props: Props): JSX.Element {
   let {
@@ -163,7 +198,7 @@ export function Layer(props: Props): JSX.Element {
                   {text_inputs: textIntervention,
                   type: props.layer.type,
                   layer: layerIndex,
-                  dim: Date.now()}
+                  dim: hashObject([textIntervention, props.layer.type, layerIndex])}
                   )}}>Add as Intervention</Button>
               </TextInputLayout>
             }
