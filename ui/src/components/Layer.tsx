@@ -192,14 +192,15 @@ export function Layer(props: Props): JSX.Element {
                   textIntervention={textIntervention}
                   setTextIntervention={setTextIntervention}
                 ></TextInput>
-                <Button
+                <AddInterventionButton
                   disabled={add_intervention_button_disabled(textIntervention)}
+                  type={"primary"}
                   onClick={(e) => {props.onCopy(
                   {text_inputs: textIntervention,
                   type: props.layer.type,
                   layer: layerIndex,
                   dim: hashObject([textIntervention, props.layer.type, layerIndex])}
-                  )}}>Add as Intervention</Button>
+                  )}}>Add as Intervention</AddInterventionButton>
               </TextInputLayout>
             }
           </Panel>
@@ -211,6 +212,16 @@ export function Layer(props: Props): JSX.Element {
       </LayerLayout>
   )
 }
+
+
+const AddInterventionButton = styled(Button)`
+  &[disabled] {
+    background-color: #f5d1d3 !important;
+    border-color: #f5d1d3 !important;
+    color: white !important;
+    opacity: 1 !important;
+  }
+`;
 
 const ContentLayout = styled.div`
   padding: 8px;

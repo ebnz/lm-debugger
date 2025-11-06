@@ -37,7 +37,7 @@ function LayersPanel(props: Props): JSX.Element {
   const renderOverlay = isLoading || layers === undefined;
   let overlayContent: React.ReactNode = <></>;
 
-  metricsContent = useMemo(() => layers?.filter((item) => item.layer === -1 || item.type === "LMDebuggerIntervention")
+  metricsContent = useMemo(() => layers?.filter((item) => item.layer === -1)
     .sort((a, b) => a.layer >= b.layer ? 1 : -1)
     .map((item) => (
       <Layer
@@ -48,7 +48,7 @@ function LayersPanel(props: Props): JSX.Element {
       />
     )), [layers]);
 
-  interventionContent = useMemo(() => layers?.filter((item) => item.layer !== -1 && item.type !== "LMDebuggerIntervention")
+  interventionContent = useMemo(() => layers?.filter((item) => item.layer !== -1)
     .sort((a, b) => a.layer >= b.layer ? 1 : -1)
     .map((item) => (
       <Layer
