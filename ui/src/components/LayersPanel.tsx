@@ -69,7 +69,7 @@ function LayersPanel(props: Props): JSX.Element {
     <div style={{display: "flex", flexDirection: "row", height: "80vh", overflow: "auto", position: "relative"}}>
       {renderOverlay && <OverlayLayout>{overlayContent}</OverlayLayout>}
       <MainLayout title="Metrics">{metricsContent}</MainLayout>
-      <MainLayout title="Layers">{interventionContent}</MainLayout>
+      <MainLayout title="Interventions">{interventionContent}</MainLayout>
     </div>
   );
 }

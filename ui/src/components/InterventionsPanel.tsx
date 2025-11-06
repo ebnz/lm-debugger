@@ -53,7 +53,7 @@ function InterventionsPanel(props: Props): JSX.Element {
       "Activate an Intervention by clicking the Toggle. " +
       "The Descriptor the Interventions has the pattern: 'L<Layer>: <FactToInsert>' or 'L<Layer>D<Dimension>'. " +
       "Interventions are sortable via Drag-n-Drop. " +
-      "Drag-n-Drop starts with a short delay to ensure (de-)activating Interventions" +
+      "Drag-n-Drop starts with a short delay to ensure (de-)activating Interventions. " +
       "The order of application of the Interventions is defined by the Order of Interventions in the UI. ";
 
   // Set up Draggability-Sensors (Mouse and Touch)
