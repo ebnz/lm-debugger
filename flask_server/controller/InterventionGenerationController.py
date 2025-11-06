@@ -27,11 +27,6 @@ class InterventionGenerationController:
 
         # Weight Manipulation
         self.original_weights = {}
-        for param_name, param in self.model_wrapper.model.named_parameters():
-            # Exclude Embedding
-            if "embed" in param_name.lower():
-                continue
-            self.original_weights[param_name] = param.detach().clone().cpu()
 
     def register_method(self, method):
         """
@@ -117,6 +112,14 @@ class InterventionGenerationController:
         # Return if no interventions
         if len(self.interventions) == 0:
             return
+
+        # Initialize Original Weight Cache. Must be done after all Intervention Methods are loaded
+        if len(self.original_weights.keys()) == 0:
+            for param_name, param in self.model_wrapper.model.named_parameters():
+                # Exclude Embedding
+                if "embed" in param_name.lower():
+                    continue
+                self.original_weights[param_name] = param.detach().clone().cpu()
 
         # Check interventions_cache for cached interventions
         if self.model_weight_cache.check_key(self.interventions) and self.config.enable_caching_weight_matrix:

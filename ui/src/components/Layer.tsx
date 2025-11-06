@@ -205,10 +205,6 @@ export function Layer(props: Props): JSX.Element {
             }
           </Panel>
         </Collapse>
-
-
-
-        {/* </SignificantValuesDiv> */}
       </LayerLayout>
   )
 }

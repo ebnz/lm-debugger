@@ -25,7 +25,10 @@ class EasyEditInterventionMethod(InterventionMethod):
         if self.model_wrapper.tokenizer.pad_token is None:
             self.model_wrapper.tokenizer.add_special_tokens({"pad_token": "<pad>"})
             self.model_wrapper.model.config.pad_token_id = self.model_wrapper.tokenizer.pad_token_id
-            self.model_wrapper.model.model.padding_idx = self.model_wrapper.model.config.pad_token_id
+            getattr(
+                self.model_wrapper.model,
+                self.config["layer_mappings"]["base_model_descriptor"]
+            ).padding_idx = self.model_wrapper.model.config.pad_token_id
             self.model_wrapper.model.generation_config.pad_token_id = self.model_wrapper.tokenizer.pad_token_id
             # potentially resize embedding and set padding idx
             new_embedding_size = max(len(self.model_wrapper.tokenizer.vocab),
