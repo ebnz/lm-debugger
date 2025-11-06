@@ -1,5 +1,7 @@
 import torch
 import numpy as np
+
+from .ModelWeightCache import ModelWeightCache
 from ..utils import flatten_list
 
 
@@ -18,7 +20,7 @@ class InterventionGenerationController:
         # Interventions
         self.interventions = []
         self.intervention_methods = []
-        self.interventions_cache = {}
+        self.model_weight_cache = ModelWeightCache(self)
 
         # Metrics
         self.metrics = []
@@ -116,25 +118,9 @@ class InterventionGenerationController:
         if len(self.interventions) == 0:
             return
 
-        # Cache-Key for identification of runs, filters out inactive Interventions and LMDebuggerInterventions
-        cache_key = str(
-            list(
-                filter(
-                    lambda x: x["type"] != "LMDebuggerIntervention" and x["coeff"] > 0,
-                    self.interventions
-                )
-            )
-        )
-
         # Check interventions_cache for cached interventions
-        if cache_key in self.interventions_cache.keys():
-            weights_from_cache = self.interventions_cache[cache_key]
-            with torch.no_grad():
-                for key, original_value in weights_from_cache.items():
-                    for param_name, param in self.model_wrapper.model.named_parameters():
-                        if param_name == key:
-                            param[...] = original_value.to(self.model_wrapper.device)
-
+        if self.model_weight_cache.check_key(self.interventions) and self.config.enable_caching_weight_matrix:
+            self.model_weight_cache.input_weights_into_model(self.model_wrapper, self.interventions)
             return
 
         # Weights not found in interventions_cache, calculate weights using intervention methods
@@ -154,15 +140,8 @@ class InterventionGenerationController:
                 print(f"WARN: Intervention <{intervention}> has no fitting Intervention Method")
 
         # Cache weights for future calls
-        weights_to_cache = {}
-        manipulated_layers = self.get_manipulated_layers()
-        for param_name, param in self.model_wrapper.model.named_parameters():
-            # Exclude Embedding
-            if "embed" in param_name.lower():
-                continue
-            if any([f".{checked_layer}." in param_name for checked_layer in manipulated_layers]):
-                weights_to_cache[param_name] = param.detach().clone().cpu()
-        self.interventions_cache[cache_key] = weights_to_cache
+        if self.config.enable_caching_weight_matrix:
+            self.model_weight_cache.set_value_from_model(self.model_wrapper, self.interventions)
 
     def restore_original_model(self):
         """
