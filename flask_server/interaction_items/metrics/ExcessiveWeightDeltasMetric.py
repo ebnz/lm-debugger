@@ -19,6 +19,9 @@ class ExcessiveWeightDeltasMetric(MetricItem):
         metric_values = {}
 
         for layer in MANIPULATED_LAYERS:
+            if layer not in range(self.controller.config.num_layers):
+                continue
+
             down_descriptor = self.controller.config.layer_mappings["mlp_down_proj"].format(layer) + ".weight"
 
             metric_values[f"Layer {layer}"] = torch.linalg.matrix_norm(WEIGHT_DELTAS[down_descriptor]).item()

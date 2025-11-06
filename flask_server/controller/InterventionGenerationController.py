@@ -67,6 +67,11 @@ class InterventionGenerationController:
             for method in self.intervention_methods:
                 if (intervention_type == method.get_name() and
                         intervention_layer in range(method.min_layer, method.max_layer + 1)):
+                    # General Case for Methods operating on one Layer
+                    method.add_intervention(intervention)
+                    fitting_method_found = True
+                elif intervention_type == method.get_name() and intervention_layer == -2:
+                    # Methods that work on all Layers
                     method.add_intervention(intervention)
                     fitting_method_found = True
 
@@ -98,6 +103,11 @@ class InterventionGenerationController:
                 if (intervention_type == method.get_name() and
                         intervention_layer in range(method.min_layer, method.max_layer + 1)):
                     method.setup_intervention_hook(intervention, prompt)
+                    fitting_method_found = True
+                    break
+                elif intervention_type == method.get_name() and intervention_layer == -2:
+                    # Methods that work on all Layers
+                    method.add_intervention(intervention)
                     fitting_method_found = True
                     break
 
@@ -136,6 +146,11 @@ class InterventionGenerationController:
                 if (intervention_type == method.get_name() and
                         intervention_layer in range(method.min_layer, method.max_layer + 1)):
                     method.transform_model(intervention)
+                    fitting_method_found = True
+                    break
+                elif intervention_type == method.get_name() and intervention_layer == -2:
+                    # Methods that work on all Layers
+                    method.add_intervention(intervention)
                     fitting_method_found = True
                     break
 

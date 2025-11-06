@@ -44,11 +44,20 @@ class EasyEditInterventionMethod(InterventionMethod):
         return self.ee_hparams.alg_name
 
     def get_text_inputs(self):
-        return {
-            "prompt": "",
-            "subject": "",
-            "target": ""
-        }
+        if self.get_name() == "DINM":
+            return {
+                "prompt": "",
+                "subject": "",
+                "target": "",
+                "ground_truth_prompt": "",
+                "ground_truth": ""
+            }
+        else:
+            return {
+                "prompt": "",
+                "subject": "",
+                "target": ""
+            }
 
     """
     Intervention Handling
@@ -58,11 +67,24 @@ class EasyEditInterventionMethod(InterventionMethod):
         if intervention["coeff"] <= 0.0:
             return
 
-        request = [{
-            "prompt": intervention["text_inputs"]["prompt"],
-            "subject": intervention["text_inputs"]["prompt"],
-            "target_new": intervention["text_inputs"]["target"]
-        }]
+        if self.get_name() == "DINM":
+            request = [{
+                "prompt": intervention["text_inputs"]["prompt"].format(intervention["text_inputs"]["subject"]),
+                "target_new": intervention["text_inputs"]["target"],
+                "locality": {
+                    "general knowledge constraint": {
+                        "prompt": intervention["text_inputs"]["prompt"],
+                        "ground_truth": intervention["text_inputs"]["ground_truth"]
+                    }
+                }
+            }]
+
+        else:
+            request = [{
+                "prompt": intervention["text_inputs"]["prompt"],
+                "subject": intervention["text_inputs"]["subject"],
+                "target_new": intervention["text_inputs"]["target"]
+            }]
 
         rewrite_hparams = copy(self.ee_hparams)
         rewrite_hparams.layers = [intervention["layer"]]

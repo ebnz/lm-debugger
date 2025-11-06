@@ -1,8 +1,8 @@
 alg_name: "R-ROME"
 model_name: "/nfs/data/shared/hugging_cache/gpt2-large"
 stats_dir: "/nfs/data/shared/R_ROME_Cache/stats"
-device: 2
-layers: [5]
+device: 0
+layers: [0]
 fact_token: "subject_last"
 v_num_grad_steps: 10
 v_lr: 5e-1

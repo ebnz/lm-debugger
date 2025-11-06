@@ -26,6 +26,7 @@ from .interaction_items.intervention_methods.EasyEdit.easyeditor import (
     DINMHyperParams,
     R_ROMEHyperParams,
     EMMETHyperParams,
+    MENDHyperParams
 )
 
 warnings.filterwarnings('ignore')

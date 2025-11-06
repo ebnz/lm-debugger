@@ -1,8 +1,8 @@
 alg_name: "MEMIT"
 model_name: "/nfs/data/shared/hugging_cache/gpt2-large"
 stats_dir: "/nfs/data/shared/MEMIT_Cache/stats"
-device: 2
-layers: [10]
+device: 0
+layers: [0]
 clamp_norm_factor: 4
 layer_selection: "all"
 fact_token: "subject_last"
