@@ -1,5 +1,5 @@
 alg_name: "KN"
-model_name: "/nfs/data/shared/hugging_cache/gpt2-large"
+model_name: "/nfs/data/shared/hugging_cache/gpt2-xl"
 device: 0
 model_parallel: false
 

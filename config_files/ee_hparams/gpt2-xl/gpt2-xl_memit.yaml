@@ -1,5 +1,5 @@
 alg_name: "MEMIT"
-model_name: "/nfs/data/shared/hugging_cache/gpt2-large"
+model_name: "/nfs/data/shared/hugging_cache/gpt2-xl"
 stats_dir: "/nfs/data/shared/MEMIT_Cache/stats"
 device: 0
 layers: [0]

@@ -285,7 +285,7 @@ class LMDebuggerIntervention(InterventionMethod):
 
             value_norms = torch.linalg.norm(
                 mlp_down_weight,
-                dim=1 if self.model_wrapper.model_name == "gpt2-large" else 0
+                dim=1 if "gpt2" in self.model_wrapper.model_name else 0
             ).cpu()
             scaled_coefs = np.absolute(m_coefs) * value_norms.numpy()
 

@@ -40,6 +40,9 @@ class EasyEditInterventionMethod(InterventionMethod):
             new_embedding.weight.data[:self.model_wrapper.model.config.vocab_size] = old_embedding.weight.data
             self.model_wrapper.model.set_input_embeddings(new_embedding)
 
+            # For EMMET
+            self.model_wrapper.model.config.vocab_size = 50258
+
     def get_name(self):
         return self.ee_hparams.alg_name
 
@@ -51,6 +54,13 @@ class EasyEditInterventionMethod(InterventionMethod):
                 "target": "",
                 "ground_truth_prompt": "",
                 "ground_truth": ""
+            }
+        elif self.get_name() == "KN":
+            return {
+                "prompt": "",
+                "subject": "",
+                "ground_truth": "",
+                "target": ""
             }
         else:
             return {
@@ -77,6 +87,12 @@ class EasyEditInterventionMethod(InterventionMethod):
                         "ground_truth": intervention["text_inputs"]["ground_truth"]
                     }
                 }
+            }]
+        elif self.get_name() == "KN":
+            request = [{
+                "prompt": intervention["text_inputs"]["prompt"].format(intervention["text_inputs"]["subject"]),
+                "ground_truth": intervention["text_inputs"]["ground_truth"],
+                "target_new": intervention["text_inputs"]["target"]
             }]
 
         else:

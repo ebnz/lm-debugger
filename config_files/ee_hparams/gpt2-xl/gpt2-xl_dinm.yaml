@@ -1,5 +1,5 @@
 alg_name: 'DINM'
-model_name: "/nfs/data/shared/hugging_cache/gpt2-large"  # your own path
+model_name: "/nfs/data/shared/hugging_cache/gpt2-xl"  # your own path
 model_class: GPT2LMHeadModel
 tokenizer_class: GPT2Tokenizer
 
