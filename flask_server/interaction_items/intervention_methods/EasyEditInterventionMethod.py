@@ -1,7 +1,8 @@
 import torch
+from transformers import AutoModelForCausalLM
+from copy import copy
 from .InterventionMethod import InterventionMethod
 from .EasyEdit.easyeditor.util.alg_dict import ALG_DICT
-from copy import copy
 
 
 class EasyEditInterventionMethod(InterventionMethod):
@@ -41,7 +42,8 @@ class EasyEditInterventionMethod(InterventionMethod):
             self.model_wrapper.model.set_input_embeddings(new_embedding)
 
             # For EMMET
-            self.model_wrapper.model.config.vocab_size = 50258
+            self.model_wrapper.model.config.vocab_size = (
+                    AutoModelForCausalLM.from_pretrained("gpt2-xl").config.vocab_size + 1)
 
     def get_name(self):
         return self.ee_hparams.alg_name
