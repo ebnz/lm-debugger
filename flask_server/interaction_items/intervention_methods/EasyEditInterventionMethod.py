@@ -41,10 +41,6 @@ class EasyEditInterventionMethod(InterventionMethod):
             new_embedding.weight.data[:self.model_wrapper.model.config.vocab_size] = old_embedding.weight.data
             self.model_wrapper.model.set_input_embeddings(new_embedding)
 
-            # For EMMET
-            self.model_wrapper.model.config.vocab_size = (
-                    AutoModelForCausalLM.from_pretrained("gpt2-xl").config.vocab_size + 1)
-
     def get_name(self):
         return self.ee_hparams.alg_name
 
@@ -107,6 +103,9 @@ class EasyEditInterventionMethod(InterventionMethod):
         rewrite_hparams = copy(self.ee_hparams)
         rewrite_hparams.layers = [intervention["layer"]]
 
+        if self.get_name() == "EMMET":
+            self.model_wrapper.model.config.vocab_size += 1
+
         rv = self.invoke_method(
             self.model_wrapper.model,
             self.model_wrapper.tokenizer,
@@ -114,6 +113,9 @@ class EasyEditInterventionMethod(InterventionMethod):
             rewrite_hparams,
             copy=False
         )
+
+        if self.get_name() == "EMMET":
+            self.model_wrapper.model.config.vocab_size -= 1
 
         if isinstance(rv, tuple):
             edited_model = rv[0]
