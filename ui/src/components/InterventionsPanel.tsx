@@ -59,9 +59,9 @@ function InterventionsPanel(props: Props): JSX.Element {
   // Set up Draggability-Sensors (Mouse and Touch)
   const sensors = useSensors(
     useSensor(MouseSensor, {
-    // Press delay of 250ms, with tolerance of 5px of movement
+    // Press delay of 200ms, with tolerance of 5px of movement
     activationConstraint: {
-      delay: 150,
+      delay: 200,
       tolerance: 5,
     },
   }),

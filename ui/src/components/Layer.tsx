@@ -199,7 +199,7 @@ export function Layer(props: Props): JSX.Element {
                   {text_inputs: textIntervention,
                   type: props.layer.type,
                   layer: layerIndex,
-                  dim: hashObject([textIntervention, props.layer.type, layerIndex])}
+                  dim: hashObject([textIntervention, props.layer.type, layerIndex, Date.now()])}
                   )}}>Add as Intervention</AddInterventionButton>
               </TextInputLayout>
             }
