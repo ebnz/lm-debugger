@@ -266,14 +266,6 @@ class InterventionGenerationController:
         # Assemble API-Response-Dict
         rv_dict = {'prompt': prompt, 'layers': []}
 
-        # Get Frontend-representations of all Interventions
-        for method in self.intervention_methods:
-            rv_dict['layers'] += method.get_api_layers(prompt)
-
-        # Generate Next-Token-Logits for Metric-Parameters (Pre-Intervention)
-        tokenizer_output = self.model_wrapper.tokenizer(prompt, return_tensors="pt")
-        tokens = tokenizer_output["input_ids"].to(self.model_wrapper.device)
-
         # Execute Pre-Intervention-Hooks and store Return Values
         pre_hook_rvs = []
         for metric in self.metrics:
@@ -287,7 +279,13 @@ class InterventionGenerationController:
         self.transform_model()
         self.setup_intervention_hooks(prompt)
 
+        # Get Frontend-representations of all Intervention Methods
+        for method in self.intervention_methods:
+            rv_dict['layers'] += method.get_api_layers(prompt)
+
         # Generate Next-Token-Logits for Metric-Parameters (Post-Intervention)
+        tokenizer_output = self.model_wrapper.tokenizer(prompt, return_tensors="pt")
+        tokens = tokenizer_output["input_ids"].to(self.model_wrapper.device)
         raw_model_output = self.model_wrapper.model(tokens)[0].detach().clone().cpu()
         token_logits = raw_model_output[0]
 

@@ -17,7 +17,7 @@ class LMDebuggerIntervention(InterventionMethod):
         :type controller: controller.InterventionGenerationController
         :param controller: Controller for Intervention and Generation of this instance of the app
         """
-        layers = [i for i in range(controller.model_wrapper.model.config_class().num_hidden_layers)]
+        layers = [i for i in range(controller.model_wrapper.model.config.num_hidden_layers)]
         super().__init__(controller, layers)
 
         self.TOP_K = self.controller.config.top_k_tokens_for_ui
@@ -337,10 +337,16 @@ class LMDebuggerIntervention(InterventionMethod):
             self.controller.config["layer_mappings"]["mlp_down_proj"].format(layer)
         ].weight.data
 
-        feature_projections = torch.matmul(
-            token_embedding_weights,
-            mlp_down_weights
-        ).T
+        if "gpt2" in self.model_wrapper.model_name:
+            feature_projections = torch.matmul(
+                token_embedding_weights,
+                mlp_down_weights.T
+            )
+        else:
+            feature_projections = torch.matmul(
+                token_embedding_weights,
+                mlp_down_weights
+            ).T
 
         # Obtain Logits for one Feature
         feature_logits = feature_projections[dim].detach().cpu()
