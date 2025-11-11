@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+from ..utils import flatten_list
 
 
 class InterventionGenerationController:
@@ -9,15 +10,20 @@ class InterventionGenerationController:
         :type model_wrapper: TransformerModelWrapper
         :param model_wrapper: Model Wrapper, wrapping a Transformer-like LLM
         :param config: Configuration of Backend (jsonnet)
-        :type config: dict
         """
+        # Model, Config
         self.model_wrapper = model_wrapper
         self.config = config
 
+        # Interventions
         self.interventions = []
         self.intervention_methods = []
+        self.interventions_cache = {}
+
+        # Metrics
         self.metrics = []
 
+        # Weight Manipulation
         self.original_weights = {}
         for param_name, param in self.model_wrapper.model.named_parameters():
             # Exclude Embedding
@@ -34,6 +40,16 @@ class InterventionGenerationController:
         self.intervention_methods.append(method)
 
     def register_metric(self, metric):
+        """
+        Applies Attributes to Metric and registers it to this Controller
+        :type metric: MetricItem
+        :param metric: Metric to register
+        """
+        if metric.__class__.__name__ in self.config.metric_configs.keys():
+            metric.config = self.config.metric_configs[metric.__class__.__name__]
+        else:
+            print(f"WARN: No Metric-Config found for Metric Type <{metric.__class__.__name__}>!")
+
         self.metrics.append(metric)
 
     def set_interventions(self, interventions):
@@ -52,7 +68,7 @@ class InterventionGenerationController:
 
             fitting_method_found = False
             for method in self.intervention_methods:
-                if intervention_type == method.get_name() and intervention_layer == method.layer:
+                if intervention_type == method.get_name() and intervention_layer in method.layers:
                     method.add_intervention(intervention)
                     fitting_method_found = True
 
@@ -75,30 +91,75 @@ class InterventionGenerationController:
         :type prompt: str
         :param prompt: Prompt, the Model is run on after setup of Hooks
         """
-        for method in self.intervention_methods:
-            if len(method.interventions) == 0:
-                continue
-            method.setup_intervention_hooks(prompt)
+        for intervention in self.interventions:
+            intervention_type = intervention["type"]
+            intervention_layer = intervention["layer"]
+            fitting_method_found = False
 
-    def transform_model(self, prompt):
+            for method in self.intervention_methods:
+                if intervention_type == method.get_name() and intervention_layer in method.layers:
+                    method.setup_intervention_hook(intervention, prompt)
+                    fitting_method_found = True
+                    break
+
+            if not fitting_method_found:
+                print(f"WARN: Intervention <{intervention}> has no fitting Intervention Method")
+
+    def transform_model(self):
         """
-        Performs the Transformation of the Model's Weights, as defined by the Interventions.
-        Implementation Logic of Intervention Methods, that use Model Transformation here.
-        :type prompt: str
-        :param prompt: Prompt, the Model is run on after Transformation
+        Applies all Model-Transformation Interventions to the Model.
+        Uses cached weights, if weights for a specific call are known from previous call
         """
-        # Sort Methods supporting only one Layer from late to early Layers, other Methods are processed after
-        # ROMEIntervention won't work else when using multiple Interventions of _different_ ROMEIntervention-Instances
-        sorted_methods = sorted(
-            self.intervention_methods,
-            key=lambda item: item.layer,
-            reverse=True
+        # Return if no interventions
+        if len(self.interventions) == 0:
+            return
+
+        # Cache-Key for identification of runs, filters out inactive Interventions and LMDebuggerInterventions
+        cache_key = str(
+            list(
+                filter(
+                    lambda x: x["type"] != "LMDebuggerIntervention" and x["coeff"] > 0,
+                    self.interventions
+                )
+            )
         )
-        for method in sorted_methods:
-            nonzero_interventions = list(filter(lambda x: x["coeff"] > 0.0, method.interventions))
-            if len(nonzero_interventions) == 0:
+
+        # Check interventions_cache for cached interventions
+        if cache_key in self.interventions_cache.keys():
+            weights_from_cache = self.interventions_cache[cache_key]
+            with torch.no_grad():
+                for key, original_value in weights_from_cache.items():
+                    for param_name, param in self.model_wrapper.model.named_parameters():
+                        if param_name == key:
+                            param[...] = original_value.to(self.model_wrapper.device)
+
+            return
+
+        # Weights not found in interventions_cache, calculate weights using intervention methods
+        for intervention in self.interventions:
+            intervention_type = intervention["type"]
+            intervention_layer = intervention["layer"]
+            fitting_method_found = False
+
+            for method in self.intervention_methods:
+                if intervention_type == method.get_name() and intervention_layer in method.layers:
+                    method.transform_model(intervention)
+                    fitting_method_found = True
+                    break
+
+            if not fitting_method_found:
+                print(f"WARN: Intervention <{intervention}> has no fitting Intervention Method")
+
+        # Cache weights for future calls
+        weights_to_cache = {}
+        manipulated_layers = self.get_manipulated_layers()
+        for param_name, param in self.model_wrapper.model.named_parameters():
+            # Exclude Embedding
+            if "embed" in param_name.lower():
                 continue
-            method.transform_model(prompt)
+            if any([f".{checked_layer}." in param_name for checked_layer in manipulated_layers]):
+                weights_to_cache[param_name] = param.detach().clone().cpu()
+        self.interventions_cache[cache_key] = weights_to_cache
 
     def restore_original_model(self):
         """
@@ -139,20 +200,27 @@ class InterventionGenerationController:
         return deltas
 
     def get_manipulated_layers(self, intervention_method_name=None):
+        layers_with_interventions = filter(
+            lambda intervention: intervention["coeff"] > 0 and intervention["type"] != "LMDebuggerIntervention",
+            self.interventions
+        )
+
         # If no keyword, find all LLM-Layers that have Interventions attached
         if intervention_method_name is None:
-            manip_layers = map(lambda x: x.layer, self.intervention_methods)
+            manip_layers = map(lambda intervention: intervention["layer"], layers_with_interventions)
         # Else find all LLM-Layers with Interventions where name of InterventionMethod matches intervention_method_name
         else:
-            manip_layers = map(
-                lambda x: x.layer
-                if intervention_method_name == x.get_representation()
-                else None,
-                self.intervention_methods
+            filtered_layers = filter(
+                lambda intervention: intervention_method_name == intervention["type"],
+                layers_with_interventions
+            )
+            manip_layers_nested = map(
+                lambda intervention: intervention.layers,
+                filtered_layers
             )
 
-        # Filter None's
-        manip_layers = filter(lambda x: x is not None, manip_layers)
+            # Flatten list
+            manip_layers = flatten_list(manip_layers_nested)
 
         # Remove Duplicates
         return list(set(manip_layers))
@@ -169,7 +237,7 @@ class InterventionGenerationController:
         :return: Generated Text
         """
         # Call Model-Editing Interventions
-        self.transform_model(prompt)
+        self.transform_model()
         # Setup Intervention-Hooks
         self.setup_intervention_hooks(prompt)
 
@@ -195,32 +263,47 @@ class InterventionGenerationController:
         :param prompt: Prompt, used to calculate the Features/Token-Scores
         :return: Token-Scores
         """
-        # Apply Interventions
-        self.transform_model(prompt)
-        self.setup_intervention_hooks(prompt)
-
         # Assemble API-Response-Dict
         rv_dict = {'prompt': prompt, 'layers': []}
 
-        # Apply all Interventions
+        # Get Frontend-representations of all Interventions
         for method in self.intervention_methods:
-            # Generate Token-Scores
-            layers = method.get_api_layers()
-            rv_dict['layers'] += layers
+            rv_dict['layers'] += method.get_api_layers(prompt)
 
-        # Generate Next-Token-Logits, needed for Metric-Parameters
+        # Generate Next-Token-Logits for Metric-Parameters (Pre-Intervention)
         tokenizer_output = self.model_wrapper.tokenizer(prompt, return_tensors="pt")
         tokens = tokenizer_output["input_ids"].to(self.model_wrapper.device)
+
+        # Execute Pre-Intervention-Hooks and store Return Values
+        pre_hook_rvs = []
+        for metric in self.metrics:
+            # Retrieve additional Parameters for this Metric
+            additional_params = metric.parameters.return_parameters_object()
+            # Execute Pre-Intervention-Hook
+            pre_hook_rv = metric.pre_intervention_hook(prompt, **additional_params)
+            pre_hook_rvs.append(pre_hook_rv)
+
+        # Apply Interventions
+        self.transform_model()
+        self.setup_intervention_hooks(prompt)
+
+        # Generate Next-Token-Logits for Metric-Parameters (Post-Intervention)
         raw_model_output = self.model_wrapper.model(tokens)[0].detach().clone().cpu()
         token_logits = raw_model_output[0]
 
-        # Apply all Metrics
-        for metric in self.metrics:
+        # Calculate Metrics
+        for idx, metric in enumerate(self.metrics):
             # Retrieve additional Parameters for this Metric
             additional_params = metric.parameters.return_parameters_object()
 
             # Calculate Metric and append its Frontend-Layers to API-Response
-            rv_dict["layers"] += metric.get_api_layers(token_logits, additional_params=additional_params)
+            # Metrics receive Return Values of Pre-Intervention-Hook as Parameter
+            rv_dict["layers"] += metric.get_api_layers(
+                prompt,
+                token_logits,
+                pre_hook_rv=pre_hook_rvs[idx],
+                **additional_params
+            )
 
         # Clear Hooks and restore original Model
         self.model_wrapper.clear_hooks()
@@ -255,7 +338,13 @@ class InterventionGenerationController:
         :return: Dict of Projections of Features to Tokens
         """
         for method in self.intervention_methods:
-            if type != method.get_name() or layer != method.layer:
+            if type != method.get_name() or layer not in method.layers:
                 continue
             rv = method.get_projections(layer=layer, dim=dim)
             return rv
+
+        return {
+            "dim": dim,
+            "layer": layer,
+            "top_k": []
+        }

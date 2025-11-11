@@ -1,8 +1,8 @@
-import React from "react";
-import {Empty, Card, Alert, Spin } from "antd";
+import {Empty, Card, Spin, notification} from "antd";
 import { LayerPrediction, ValueId } from "../types/dataModel";
 import styled from "styled-components";
-import {MemoLayer} from "./Layer"
+import {Layer} from "./Layer"
+import {useEffect, useMemo} from "react";
 
 interface Props {
   layers?: Array<LayerPrediction>;
@@ -20,31 +20,38 @@ function LayersPanel(props: Props): JSX.Element {
     isLoading,
     errorMessage,
   } = props;
-  
+
+  useEffect(() => {
+    if (errorMessage !== undefined) {
+      notification.error({
+        message: 'Error',
+        description: errorMessage,
+        placement: 'topLeft'
+      });
+    }
+  }, [errorMessage]);
+
   let contentRender: React.ReactNode = <></>;
+
+  contentRender = useMemo(() => layers?.sort((a, b) => a.layer >= b.layer ? 1 : -1)
+    .map((item) => (
+      <Layer
+        key={`layer_${item.type}_${item.layer}`}
+        layer={item}
+        onAnalyze={valueId => setSelectedValueId(valueId)}
+        onCopy={addIntervention}
+      />
+    )), [layers]);
+
   if (isLoading) {
     contentRender = <Spin style={{margin: "auto auto"}} tip="Loading prediction" />;
-  } else if (errorMessage !== undefined) {
-    contentRender = <Alert type="error">{errorMessage}</Alert>
   } else if (layers === undefined){
     contentRender = <Empty description="Run a query to see the predicted layers"/>
-  } else {
-    contentRender = (
-      [...layers].sort((a, b) => a.layer >= b.layer ? 1 : -1)
-      .map((item) => (
-         <MemoLayer 
-            key={`layer_${item.type}_${item.layer}`}
-            layer={item} 
-            onAnalyze={valueId => setSelectedValueId(valueId)}
-            onCopy={addIntervention} 
-          />
-      ))
-    )
   }
 
   return (
     <MainLayout title="Layers">
-      {contentRender} 
+      {contentRender}
     </MainLayout>
   );
 }

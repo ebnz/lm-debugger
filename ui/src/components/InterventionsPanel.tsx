@@ -1,10 +1,27 @@
 import React, {ChangeEvent, useState} from "react";
 import { Intervention, ValueId } from "../types/dataModel";
 import styled from "styled-components";
-import {Card, Button, Input} from "antd";
+import {Card, Button, Input, Upload, Divider, Tooltip} from "antd";
 import {partial} from "lodash";
+import SortableInterventionItem from "./InterventionItem";
+import {toType, UNSORTABLE_METHODS} from "../types/constants";
+import {UploadOutlined, DownloadOutlined} from "@ant-design/icons";
+
+// Sortable Interventions
+import {
+  DndContext,
+  useSensors,
+  useSensor,
+  MouseSensor,
+  TouchSensor,
+  DragStartEvent,
+  DragEndEvent,
+  DragOverlay,
+  UniqueIdentifier
+} from '@dnd-kit/core';
+import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import InterventionItem from "./InterventionItem";
-import {toType, toAbbr} from "../types/constants";
+
 
 interface Props {
   interventions: Array<Intervention>;
@@ -12,6 +29,9 @@ interface Props {
   updateIntervention: (valueId: ValueId, coeff: number) => void;
   deleteIntervention: (layer: number, dim: number, type: string) => void;
   selectIntervention: (valueId: ValueId) => void;
+  setIndexOfIntervention: (oldIdx: number, newIdx: number) => void;
+  handleDownload: () => void;
+  handleUpload: (file: any) => void;
 }
 
 function InterventionsPanel(props: Props): JSX.Element {
@@ -20,10 +40,46 @@ function InterventionsPanel(props: Props): JSX.Element {
     addIntervention,
     updateIntervention,
     deleteIntervention,
-    selectIntervention
+    selectIntervention,
+    setIndexOfIntervention,
+    handleDownload,
+    handleUpload
   } = props;
 
   const [inputContent, setInputContent] = useState<string>("");
+  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
+
+  // Set up Draggability-Sensors (Mouse and Touch)
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+    // Press delay of 250ms, with tolerance of 5px of movement
+    activationConstraint: {
+      delay: 250,
+      tolerance: 5,
+    },
+  }),
+    useSensor(TouchSensor)
+  );
+
+  // Handle the start/end of the drag operation (dragging finished)
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (active.id !== over?.id) {
+      // Rearrange items
+      const oldIdx = interventions.findIndex((item) => item.type + item.layer + item.dim === active.id);
+      const newIdx = interventions.findIndex((item) => item.type + item.layer + item.dim === over?.id);
+
+      // Splice Interventions
+      setIndexOfIntervention(oldIdx, newIdx);
+    }
+  };
+
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setInputContent(e.target.value)
@@ -38,25 +94,75 @@ function InterventionsPanel(props: Props): JSX.Element {
     setInputContent("");
   }
 
+  const activeItem = interventions.find((item) => item.layer === activeId);
+
+  const sortable_interventions = interventions.filter(
+      (val, idx) => !(UNSORTABLE_METHODS.includes(val["type"]))
+  );
+
+  const unsortable_interventions = interventions.filter(
+      (val, idx) => UNSORTABLE_METHODS.includes(val["type"])
+  );
+
   return (
-    <MainLayout 
+    <MainLayout
       title={
         <TitleLayout>
           <TitleText>Interventions</TitleText>
-          <ValueInput 
+          <ExportButton onClick={handleDownload} icon={<UploadOutlined/>}>Export Run</ExportButton>
+          <StyledUpload beforeUpload={handleUpload} showUploadList={false}>
+            <ImportButton icon={<DownloadOutlined/>}>Import Run</ImportButton>
+          </StyledUpload>
+          <ValueInput
             // validInput={isValid || inputContent === ""}
             placeholder="L12D34"
             value={inputContent}
-            onChange={handleInputChange} 
+            onChange={handleInputChange}
           />
           <AddButton disabled={!isValid} onClick={handleAdd}>Add</AddButton>
         </TitleLayout>
       }
     >
+      <DndContext
+        sensors={sensors}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={sortable_interventions.map((item) => item.type + item.layer + item.dim)}
+          strategy={horizontalListSortingStrategy} // Horizontal sorting
+        >
+          {
+            sortable_interventions.map((inter) => (
+              <SortableInterventionItem
+                intervention={inter}
+                deleteIntervention={() => deleteIntervention(inter.layer, inter.dim, inter.type)}
+                updateIntervention={partial(updateIntervention, inter)}
+                select={partial(selectIntervention, inter)}
+              />
+            ))
+          }
+        </SortableContext>
+
+        <DragOverlay dropAnimation={null}>
+          {activeItem ? (
+            // Render a floating copy of the dragged item
+            <InterventionItem
+              intervention={activeItem}
+              deleteIntervention={() => deleteIntervention(activeItem.layer, activeItem.dim, activeItem.type)}
+              updateIntervention={partial(updateIntervention, activeItem)}
+              select={partial(selectIntervention, activeItem)}
+            />
+          ) : null}
+        </DragOverlay>
+
+      </DndContext>
+
+      {unsortable_interventions.length > 0 ?
+          <Tooltip title="Interventions right of this line aren't sortable"><VerticalDottedLine/></Tooltip> : <></>}
+
       {
-        interventions.map((inter) => (
-          <InterventionItem 
-            key={`${toAbbr.get(inter.type) ?? "_"}${inter.layer}D${inter.dim}`}
+        unsortable_interventions.map((inter) => (
+          <InterventionItem
             intervention={inter}
             deleteIntervention={() => deleteIntervention(inter.layer, inter.dim, inter.type)}
             updateIntervention={partial(updateIntervention, inter)}
@@ -67,6 +173,21 @@ function InterventionsPanel(props: Props): JSX.Element {
     </MainLayout>
   );
 }
+
+const VerticalDottedLine: React.FC<React.HTMLAttributes<HTMLDivElement>> = (props) => {
+  return (
+    <div
+      {...props}
+      style={{
+        borderLeft: '4px dotted gray',
+        height: '80px',
+        margin: '0 10px',
+        ...props.style, // allow overriding or adding to styles
+      }}
+    />
+  );
+};
+
 
 interface ParseSuccess {
   type: "success";
@@ -127,11 +248,11 @@ const MainLayout = styled(Card).attrs({
 
 const TitleLayout = styled.div`
   display: grid;
-  grid-template-columns: min-content 1fr 150px min-content;
+  grid-template-columns: min-content 10px min-content 10px min-content 1fr 150px min-content;
   grid-template-rows: 1fr;
   gap: 4px;
   grid-template-areas: 
-    "text . input button";
+    "text . button_export . upload . input button_add";
 
   align-items: center;
 `;
@@ -160,13 +281,34 @@ const ValueInput = styled(Input)`
 //   };
 // `;
 
+const ExportButton = styled(Button).attrs({
+  type: "primary",
+  size: "small"
+})`
+  grid-area: button_export;
+  height: 32px;
+`;
 
+const ImportButton = styled(Button).attrs({
+  type: "primary",
+  size: "small"
+})`
+  grid-area: button_import;
+  height: 32px;
+`;
+
+const StyledUpload = styled(Upload).attrs({
+  size: "small"
+})`
+  grid-area: upload;
+  height: 32px;
+`;
 
 const AddButton = styled(Button).attrs({
   type: "primary",
   size: "small"
 })`
-  grid-area: button;
+  grid-area: button_add;
   height: 32px;
 `;
 

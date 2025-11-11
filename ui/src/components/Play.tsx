@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { Input, Button, Progress } from 'antd';
 import AimOutlined from "@ant-design/icons/AimOutlined";
 import ValueLabel from "./ValueLabel";
-import {MemoLayer} from "./Layer"
+import {Layer} from "./Layer"
 import LayersPanel from "./LayersPanel";
 import {LayerPrediction} from "../types/dataModel";
 
@@ -52,6 +52,7 @@ function Play(): JSX.Element {
         significant_values: labels,
         text_inputs: {},
         text_outputs: {},
+        docstring: "ABC"
     }
     const n_layers = 5; 
     let layer_inputs = []

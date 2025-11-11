@@ -3,8 +3,8 @@ import { Intervention } from "../types/dataModel";
 import {Switch, Button, Typography} from "antd"
 import styled from "styled-components";
 import CloseCircleOutlined from "@ant-design/icons/CloseCircleOutlined"
-import { ScanOutlined } from '@ant-design/icons';
 import {toAbbr} from "../types/constants";
+import {useSortable} from "@dnd-kit/sortable";
 
 const {Text} = Typography;
 
@@ -42,12 +42,9 @@ function InterventionItem(props: Props):JSX.Element {
 
   let actualDesc = "";
 
-  // Create Special Naming if Intervention is a TextIntervention (e.g. ROME)
-  // LMDebugger defines Interventions as interfaces
-  // => can't use <intervention instanceof TextIntervention> => check if intervention has property
   if (intervention.hasOwnProperty("text_inputs")) {
     // @ts-ignore
-    actualDesc = intervention.text_inputs.subject;
+    actualDesc = `L${intervention.layer}: ${intervention.text_inputs.prompt.replace("{}", intervention.text_inputs.subject)} ${intervention.text_inputs.target}`;
   }
   else {
     actualDesc = desc !== undefined && desc !== "" ? desc : `${toAbbr.get(props.intervention.type) ?? "_"}${layer}D${dim}`
@@ -57,9 +54,8 @@ function InterventionItem(props: Props):JSX.Element {
   return (
     <MainLayout checked={isOn}>
       <Label onClick={select}>
-        <ScanOutlined />
-        <Text strong 
-          style={useEllipsis ? { width: 55 } : undefined}
+        <Text strong
+          style={useEllipsis ? { width: 85 } : undefined}
           ellipsis={useEllipsis ? { tooltip: true } : false}>{actualDesc}</Text>
       </Label>
       <CoeffToggle checked={isOn} onChange={handleChange}/>
@@ -69,6 +65,46 @@ function InterventionItem(props: Props):JSX.Element {
     </MainLayout>
   );
 }
+
+const SortableInterventionItem = (props: Props) => {
+  const {
+    intervention,
+    updateIntervention,
+    deleteIntervention,
+    select
+  } = props;
+  const {
+      attributes,
+      listeners,
+      setNodeRef,
+      isDragging,
+      transform,
+      transition
+  } = useSortable({ id: intervention.type + intervention.layer + intervention.dim });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      style={{
+        opacity: isDragging ? 0.5 : 1,
+        transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+        transition: isDragging ? transition : 'none',
+        display: 'inline-block',
+        margin: '0 8px',
+        cursor: 'grab',
+      }}
+    >
+      <InterventionItem
+        intervention={intervention}
+        deleteIntervention={deleteIntervention}
+        updateIntervention={updateIntervention}
+        select={select}
+      />
+    </div>
+  );
+};
 
 interface Toggle {
   checked: boolean;
@@ -89,7 +125,7 @@ const MainLayout = styled.div<Toggle>`
   gap: 4px;
 
   grid-template-areas: 
-    "label  close"
+    "label close"
     "control control";
 `;
 
@@ -114,4 +150,4 @@ const CoeffToggle = styled(Switch)`
   grid-area: control;
 `;
 
-export default InterventionItem;
+export default SortableInterventionItem;

@@ -5,32 +5,40 @@ import yaml
 from tqdm import tqdm
 
 # Controller
-from controller.InterventionGenerationController import InterventionGenerationController
-from controller.TransformerModels import TransformerModelWrapper
+from .controller.InterventionGenerationController import InterventionGenerationController
+from .controller.TransformerModels import TransformerModelWrapper
 
 # Metrics
-from interaction_items.metrics.ExcessiveWeightDeltasMetric import ExcessiveWeightDeltasMetric
-from interaction_items.metrics.PerplexityMetric import PerplexityMetric
-from interaction_items.metrics.OutOfDistributionKeys import OutOfDistributionKeysMetric
+from .interaction_items.metrics.ExcessiveWeightDeltasMetric import ExcessiveWeightDeltasMetric
+from .interaction_items.metrics.PerplexityMetric import PerplexityMetric
+from .interaction_items.metrics.OutOfDistributionKeysMetric import OutOfDistributionKeysMetric
+from .interaction_items.metrics.LocalizationVEditingMetric import LocalizationVEditingMetric
+from .interaction_items.metrics.EfficacyMetric import EfficacyMetric
 
 # Intervention Methods
-from interaction_items.intervention_methods.EasyEditInterventionMethod import EasyEditInterventionMethod
-from interaction_items.intervention_methods.EasyEdit.easyeditor import (
-    FTHyperParams,
-    IKEHyperParams,
+from .interaction_items.intervention_methods.LMDebuggerIntervention import LMDebuggerIntervention
+from .interaction_items.intervention_methods.EasyEditInterventionMethod import EasyEditInterventionMethod
+from .interaction_items.intervention_methods.EasyEdit.easyeditor import (
     KNHyperParams,
-    MEMITHyperParams,
     ROMEHyperParams,
+    MEMITHyperParams,
+    PMETHyperParams,
+    DINMHyperParams,
     R_ROMEHyperParams,
-    LoRAHyperParams,
-    MENDHyperParams,
-    SERACHparams,
-    GraceHyperParams,
-    WISEHyperParams,
-    AlphaEditHyperParams,
+    EMMETHyperParams,
 )
 
 warnings.filterwarnings('ignore')
+
+hparams_mapping = {
+    "KN": KNHyperParams,
+    "ROME": ROMEHyperParams,
+    "MEMIT": MEMITHyperParams,
+    "PMET": PMETHyperParams,
+    "DINM": DINMHyperParams,
+    "R-ROME": R_ROMEHyperParams,
+    "EMMET": EMMETHyperParams
+}
 
 
 class ModelingRequests:
@@ -41,55 +49,57 @@ class ModelingRequests:
 
         self.intervention_controller = InterventionGenerationController(self.model_wrapper, self.config)
 
+        self.intervention_controller.register_method(LMDebuggerIntervention(
+            self.intervention_controller
+        ))
+
         for file_name in tqdm(os.listdir(config.easy_edit_hparams_path), desc="Loading EasyEdit Methods"):
             path_to_conf = os.path.join(config.easy_edit_hparams_path, file_name)
             with open(path_to_conf) as file_desc:
                 method_config = yaml.safe_load(file_desc)
 
-            # ToDo: Make dict and add rest
-            if method_config["alg_name"] == 'FT':
-                editing_hparams = FTHyperParams
-            elif method_config["alg_name"] == 'IKE':
-                editing_hparams = IKEHyperParams
-            elif method_config["alg_name"] == 'KN':
-                editing_hparams = KNHyperParams
-            elif method_config["alg_name"] == 'MEMIT':
-                editing_hparams = MEMITHyperParams
-            elif method_config["alg_name"] == 'ROME':
-                editing_hparams = ROMEHyperParams
-            elif method_config["alg_name"] == "R-ROME":
-                editing_hparams = R_ROMEHyperParams
-            elif method_config["alg_name"] == 'LoRA':
-                editing_hparams = LoRAHyperParams
-            elif method_config["alg_name"] == 'MEND':
-                editing_hparams = MENDHyperParams
-            elif method_config["alg_name"] == 'GRACE':
-                editing_hparams = GraceHyperParams
-            elif method_config["alg_name"] == 'WISE':
-                editing_hparams = WISEHyperParams
-            elif method_config["alg_name"] == 'AlphaEdit':
-                editing_hparams = AlphaEditHyperParams
-            else:
-                raise NotImplementedError
+            algo_name = method_config["alg_name"]
+            try:
+                editing_hparams = hparams_mapping[algo_name]
+            except KeyError:
+                print(f"WARN: {algo_name} has no fitting HParams defined! Skipping Method....")
+                continue
 
             ee_hparams = editing_hparams.from_hparams(path_to_conf)
             self.intervention_controller.register_method(EasyEditInterventionMethod(
                 self.intervention_controller,
-                ee_hparams.layers[0],
                 ee_hparams
             ))
 
-        self.intervention_controller.register_metric(ExcessiveWeightDeltasMetric(
-            self.intervention_controller
-        ))
+        self.intervention_controller.register_metric(
+            ExcessiveWeightDeltasMetric(
+                self.intervention_controller
+            )
+        )
 
-        self.intervention_controller.register_metric(PerplexityMetric(
-            self.intervention_controller
-        ))
+        self.intervention_controller.register_metric(
+            PerplexityMetric(
+                self.intervention_controller
+            )
+        )
 
-        self.intervention_controller.register_metric(OutOfDistributionKeysMetric(
-            self.intervention_controller
-        ))
+        self.intervention_controller.register_metric(
+            OutOfDistributionKeysMetric(
+                self.intervention_controller
+            )
+        )
+
+        self.intervention_controller.register_metric(
+            LocalizationVEditingMetric(
+                self.intervention_controller
+            )
+        )
+
+        self.intervention_controller.register_metric(
+            EfficacyMetric(
+                self.intervention_controller
+            )
+        )
 
     def request2response(self, req_json_dict):
         prompt = req_json_dict['prompt']

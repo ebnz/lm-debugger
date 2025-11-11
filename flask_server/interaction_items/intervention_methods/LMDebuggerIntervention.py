@@ -6,16 +6,95 @@ from .InterventionMethod import InterventionMethod
 
 
 class LMDebuggerIntervention(InterventionMethod):
-    def __init__(self, model_wrapper, config):
+    """Mutates the activation values of individual MLP-Neurons"""
+    def __init__(self, controller):
         """
-        Represents the original Intervention Method of LM-Debugger.
-        :type model_wrapper: sparse_autoencoders.TransformerModelWrapper
-        :type config: pyhocon.config_tree.ConfigTree
-        :param model_wrapper: Model Wrapper, the Intervention Method is applied to
-        :param config: Configuration-Options from LM-Debugger++'s JSONNET-Config File
+        Represents the original Intervention Method of the LM-Debugger.
+        :type controller: controller.InterventionGenerationController
+        :param controller: Controller for Intervention and Generation of this instance of the app
         """
-        supported_layers = [i for i in range(model_wrapper.model.config_class().num_hidden_layers)]
-        super().__init__(model_wrapper, config, supported_layers)
+        layers = [i for i in range(controller.model_wrapper.model.config_class().num_hidden_layers)]
+        super().__init__(controller, layers)
+
+        self.TOP_K = self.controller.config.top_k_tokens_for_ui
+
+    """
+    InterventionMethod.py API-Methods
+    """
+    def get_api_layers(self, prompt):
+        return [{
+            "docstring": self.__doc__ if self.__doc__ is not None else "This Intervention Method lacks a Docstring.",
+            **layer
+        } for layer in self.get_frontend_items(None, prompt)]
+
+    def get_frontend_items(self, layer, prompt, *args, **kwargs):
+        return self.get_token_scores(prompt)
+
+    def get_token_scores(self, prompt):
+        pred_dict_raw = self.process_and_get_data(prompt)
+        pred_dict = self.process_pred_dict(pred_dict_raw)
+
+        if len(self.interventions) <= 0:
+            return pred_dict["layers"]
+
+        elif len(self.interventions) > 0:
+            maxs_dict = {
+                layer: self.get_new_max_coef(layer, pred_dict_raw)
+                for layer in range(self.model_wrapper.model.config.num_hidden_layers)
+            }
+            for intervention in self.interventions:
+                if intervention['coeff'] > 0:
+                    new_max_val = maxs_dict[intervention['layer']]
+                else:
+                    new_max_val = 0
+                self.set_control_hooks_gpt2({intervention['layer']: [intervention['dim']], }, coef_value=new_max_val)
+            pred_dict_new_raw = self.process_and_get_data(prompt)
+            pred_dict_new = self.process_pred_dict(pred_dict_new_raw)
+            self.model_wrapper.clear_hooks()
+            return pred_dict_new["layers"]
+
+    def get_text_inputs(self):
+        return super().get_text_inputs()
+
+    def transform_model(self, intervention):
+        return super().transform_model(intervention)
+
+    def get_projections(self, dim, layer=None, *args, **kwargs):
+        if layer is None:
+            raise AttributeError(f"No layer provided. Parameter layer: <{layer}>")
+
+        # Project Features with Embedding Matrix
+        token_embedding_weights = self.model_wrapper.modules_dict[
+            self.controller.config["layer_mappings"]["token_embedding"]
+        ].weight.data
+        mlp_down_weights = self.model_wrapper.modules_dict[
+            self.controller.config["layer_mappings"]["mlp_down_proj"].format(layer)
+        ].weight.data
+
+        feature_projections = torch.matmul(
+            token_embedding_weights,
+            mlp_down_weights
+        ).T
+
+        # Obtain Logits for one Feature
+        feature_logits = feature_projections[dim].detach().cpu()
+
+        # Sort top-k Tokens for the specific Feature
+        argsorted_logits = np.argsort(-1 * feature_logits)[:self.controller.config.top_k_for_elastic].tolist()
+
+        output_logits = feature_logits[argsorted_logits].tolist()
+        output_tokens = [self.model_wrapper.tokenizer._convert_id_to_token(item) for item in argsorted_logits]
+
+        top_k = [{
+            "logit": logit,
+            "token": token
+        } for logit, token in zip(output_logits, output_tokens)]
+
+        return {
+            "dim": dim,
+            "layer": layer,
+            "top_k": top_k
+        }
 
     def process_pred_dict(self, pred_df):
         pred_d = {}
@@ -52,36 +131,9 @@ class LMDebuggerIntervention(InterventionMethod):
             pred_d['layers'].append(layer_d)
         return pred_d
 
-    def get_token_scores(self, prompt):
-        response_dict = {}
-        pred_dict_raw = self.process_and_get_data(prompt)
-        pred_dict = self.process_pred_dict(pred_dict_raw)
-        response_dict['response'] = pred_dict
-        if len(self.interventions) > 0:
-            maxs_dict = {
-                layer: self.get_new_max_coef(layer, pred_dict_raw)
-                for layer in range(self.model_wrapper.model.config.num_hidden_layers)
-            }
-            for intervention in self.interventions:
-                if intervention['coeff'] > 0:
-                    new_max_val = maxs_dict[intervention['layer']]
-                else:
-                    new_max_val = 0
-                self.set_control_hooks_gpt2({intervention['layer']: [intervention['dim']], }, coef_value=new_max_val)
-            pred_dict_new_raw = self.process_and_get_data(prompt)
-            pred_dict_new = self.process_pred_dict(pred_dict_new_raw)
-            response_dict['intervention'] = pred_dict_new
-            self.model_wrapper.clear_hooks()
-
-        if len(self.interventions) == 0:
-            return response_dict["response"]
-
-        return response_dict["intervention"]
-
     """
     Generation-Hook-Setting
     """
-
     def set_control_hooks_gpt2(self, values_per_layer, coef_value=0):
         def change_values(values, coef_val):
             def hook(module, input, output):
@@ -96,11 +148,11 @@ class LMDebuggerIntervention(InterventionMethod):
                 values = []
             self.model_wrapper.setup_hook(
                 change_values(values, coef_value),
-                self.args["layer_mappings"]["mlp_gate_proj"].format(layer)
+                self.controller.config["layer_mappings"]["mlp_gate_proj"].format(layer)
             )
             self.model_wrapper.setup_hook(
                 change_values(values, coef_value),
-                self.args["layer_mappings"]["mlp_up_proj"].format(layer)
+                self.controller.config["layer_mappings"]["mlp_up_proj"].format(layer)
             )
 
     def set_hooks_gpt2(self):
@@ -136,37 +188,37 @@ class LMDebuggerIntervention(InterventionMethod):
 
         self.model_wrapper.setup_hook(
             get_activation("input_embedding"),
-            self.args["layer_mappings"]["decoder_input_layernorm"].format(0)
+            self.controller.config["layer_mappings"]["decoder_input_layernorm"].format(0)
         )
 
         for i in range(self.model_wrapper.model.config.num_hidden_layers):
             if i != 0:
                 self.model_wrapper.setup_hook(
                     get_activation("layer_residual_" + str(i - 1)),
-                    self.args["layer_mappings"]["decoder_input_layernorm"].format(i)
+                    self.controller.config["layer_mappings"]["decoder_input_layernorm"].format(i)
                 )
 
             self.model_wrapper.setup_hook(
                 get_activation("intermediate_residual_" + str(i)),
-                self.args["layer_mappings"]["decoder_post_attention_layernorm"].format(i)
+                self.controller.config["layer_mappings"]["decoder_post_attention_layernorm"].format(i)
             )
 
             self.model_wrapper.setup_hook(
                 get_activation("attn_" + str(i)),
-                self.args["layer_mappings"]["attn_sublayer"].format(i)
+                self.controller.config["layer_mappings"]["attn_sublayer"].format(i)
             )
             self.model_wrapper.setup_hook(
                 get_activation("mlp_" + str(i)),
-                self.args["layer_mappings"]["mlp_sublayer"].format(i)
+                self.controller.config["layer_mappings"]["mlp_sublayer"].format(i)
             )
             self.model_wrapper.setup_hook(
                 get_activation("m_coef_" + str(i)),
-                self.args["layer_mappings"]["mlp_down_proj"].format(i)
+                self.controller.config["layer_mappings"]["mlp_down_proj"].format(i)
             )
 
         self.model_wrapper.setup_hook(
             get_activation("layer_residual_" + str(final_layer)),
-            self.args["layer_mappings"]["post_decoder_norm"]
+            self.controller.config["layer_mappings"]["post_decoder_norm"]
         )
 
     def get_resid_predictions(self, sentence, start_idx=None, end_idx=None, set_mlp_0=False):
@@ -186,9 +238,12 @@ class LMDebuggerIntervention(InterventionMethod):
 
         for layer in self.model_wrapper.model.activations_.keys():
             if "layer_residual" in layer or "intermediate_residual" in layer:
-                normed = self.model_wrapper.model.model.norm(self.model_wrapper.model.activations_[layer])
+                post_decoder_norm_module = self.model_wrapper.modules_dict[
+                    self.controller.config["layer_mappings"]["post_decoder_norm"]
+                ]
+                normed = post_decoder_norm_module(self.model_wrapper.model.activations_[layer])
 
-                logits = torch.matmul(self.model_wrapper.model.lm_head.weight, normed.T)
+                logits = torch.matmul(self.model_wrapper.model.lm_head.weight.data, normed.T)
 
                 probs = F.softmax(logits.T[0], dim=-1)
 
@@ -236,8 +291,13 @@ class LMDebuggerIntervention(InterventionMethod):
             coefs_ = []
             m_coefs = sent_to_hidden_states["m_coef_" + str(LAYER)].squeeze(0).cpu().numpy()
             res_vec = sent_to_hidden_states["layer_residual_" + str(LAYER)].squeeze(0).cpu().numpy()
+
+            mlp_down_weight = self.model_wrapper.modules_dict[
+                self.controller.config["layer_mappings"]["mlp_down_proj"].format(LAYER)
+            ].weight.data
+
             value_norms = torch.linalg.norm(
-                self.model_wrapper.model.model.layers[LAYER].mlp.down_proj.weight.data,
+                mlp_down_weight,
                 dim=0
             ).cpu()
             scaled_coefs = np.absolute(m_coefs) * value_norms.numpy()
@@ -272,49 +332,21 @@ class LMDebuggerIntervention(InterventionMethod):
         curr_max_val = old_dict['top_coef_vals'][layer][0]
         return curr_max_val + eps
 
-    def setup_intervention_hooks(self, prompt):
-        if len(self.interventions) <= 0:
-            return
+    def setup_intervention_hook(self, intervention, prompt):
         pred_dict_raw = self.process_and_get_data(prompt)
         maxs_dict = {
             layer: self.get_new_max_coef(layer, pred_dict_raw)
             for layer in range(self.model_wrapper.model.config.num_hidden_layers)
         }
-        for intervention in self.interventions:
-            if intervention['coeff'] > 0:
-                new_max_val = maxs_dict[intervention['layer']]
-            else:
-                new_max_val = 0
-            self.set_control_hooks_gpt2({intervention['layer']: [intervention['dim']], }, coef_value=new_max_val)
+
+        if intervention['coeff'] > 0:
+            new_max_val = maxs_dict[intervention['layer']]
+        else:
+            new_max_val = 0
+        self.set_control_hooks_gpt2(
+            {intervention['layer']: [intervention['dim']]},
+            coef_value=new_max_val
+        )
 
     def process_clean_token(self, token):
         return token
-
-    def get_projections(self, dim, layer=None, *args, **kwargs):
-        if layer is None:
-            raise AttributeError(f"No layer provided. Parameter layer: <{layer}>")
-        # Project Features with Embedding Matrix
-        feature_projections = torch.matmul(
-            self.model_wrapper.model.model.embed_tokens.weight,
-            self.model_wrapper.model.model.layers[layer].mlp.down_proj.weight
-        ).T
-
-        # Obtain Logits for one Feature
-        feature_logits = feature_projections[dim].detach().cpu()
-
-        # Sort top-k Tokens for the specific Feature
-        argsorted_logits = np.argsort(-1 * feature_logits)[:self.args.top_k_for_elastic].tolist()
-
-        output_logits = feature_logits[argsorted_logits].tolist()
-        output_tokens = [self.model_wrapper.tokenizer._convert_id_to_token(item) for item in argsorted_logits]
-
-        top_k = [{
-            "logit": logit,
-            "token": token
-        } for logit, token in zip(output_logits, output_tokens)]
-
-        return {
-            "dim": dim,
-            "layer": layer,
-            "top_k": top_k
-        }

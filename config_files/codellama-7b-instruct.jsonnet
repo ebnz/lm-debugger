@@ -18,6 +18,7 @@
   elastic_api_key: "VGhlIGNha2UgaXMgYSBsaWU=",
 
   layer_mappings: {
+    token_embedding: "model.embed_tokens",
     mlp_sublayer: "model.layers.{}.mlp",
     attn_sublayer: "model.layers.{}.self_attn",
     mlp_activations: "model.layers.{}.mlp.act_fn",
@@ -29,15 +30,28 @@
     post_decoder_norm: "model.norm"
   },
 
-  sae_paths: [
-    "autoencoders/my_sae.pt"
-  ],
-  autoencoder_device: "cuda:1",
-  sae_active_coeff: 100,
-
-  rome_paths: [
-    "config_files/ROME/codellama_CodeLlama-7b-Instruct-hf.json"
-  ],
-
   easy_edit_hparams_path: "config_files/ee_hparams",
+
+  metric_configs: {
+    EfficacyMetric: {
+      dataset: {
+        prompts: ["Elon Musk was born in the city of",
+                  "Ian Fleming was born in the city of",
+                  "Barack Obama was born in the city of"],
+        targets: ["Pretoria", "London", "Honolulu"]
+      },
+    },
+    ExcessiveWeightDeltasMetric: {},
+    LocalizationVEditingMetric: {
+      # Config for Causal Trace
+      samples: 10,
+      noise: 0.1,
+      window: 10,
+      kind: "mlp"
+    },
+    OutOfDistributionKeysMetric: {
+      applicable_intervention_methods: ["ROME", "R-ROME"]
+    },
+    PerplexityMetric: {}
+  }
 }

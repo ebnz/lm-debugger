@@ -5,8 +5,16 @@ and define an abbreviation for it to be used in the Frontend when displaying Fea
  */
 
 export const toType= new Map<string, string> ([
-    ["L", "LMDebuggerIntervention"],
-    ["S", "SAEIntervention"]
+    ["L", "LMDebuggerIntervention"]
 ]);
 
 export const toAbbr = new Map(Array.from(toType, a => a.reverse() as [string, string]))
+
+/*
+Names of Intervention-Methods that are not sortable are defined here.
+An Intervention-Method is not sortable, if the execution order of its Interventions doesn't matter.
+e.g. LMDebuggerIntervention does only apply Hooks, which are always executed after weight-changing Methods
+ => not sortable
+ */
+
+export const UNSORTABLE_METHODS = ["LMDebuggerIntervention"];

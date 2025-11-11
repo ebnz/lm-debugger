@@ -10,7 +10,7 @@ from flask import Flask
 from flask import jsonify
 from flask import request
 from flask_cors import CORS
-from req_res_oop import ModelingRequests
+from .req_res_oop import ModelingRequests
 
 if __name__ == '__main__':
     def signal_handler(signal, frame):

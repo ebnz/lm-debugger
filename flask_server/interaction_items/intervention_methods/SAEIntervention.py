@@ -40,7 +40,7 @@ class SAEIntervention(InterventionMethod):
             else:
                 raise AttributeError(f"layer_type <{layer_type}> unknown")
 
-        self.setup_intervention_hooks(prompt)
+        self.setup_intervention_hook(prompt)
 
         layer_id = self.config["LAYER_INDEX"]
         layer_type = self.config["LAYER_TYPE"]
@@ -85,7 +85,7 @@ class SAEIntervention(InterventionMethod):
 
         return response_dict
 
-    def setup_intervention_hooks(self, prompt):
+    def setup_intervention_hook(self, prompt):
         def get_hook(feature_index, new_value, layer_type):
             def hook(module, input, output):
                 activation_vector = output

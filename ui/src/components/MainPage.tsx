@@ -2,29 +2,39 @@ import React, {useState} from "react";
 import { hot } from "react-hot-loader";
 import Prompt from "./Prompt";
 import {NetworkPrediction, Intervention, ValueId} from "../types/dataModel";
-import {predict, generate, getValueNamesFromCookies} from "../api/prediction";
+import {predict, generate} from "../api/prediction";
 import LayersPanel from "./LayersPanel";
-import ValueDetailsPanel from "./ValueDetailsPanel";
+import {MemoValueDetailsPanel} from "./ValueDetailsPanel";
 import InterventionsPanel from "./InterventionsPanel";
 import styled, {css} from "styled-components";
-import {toAbbr} from "../types/constants";
+import {Button, Checkbox, Modal, Space, Tag, Upload} from "antd";
+import {DownSquareOutlined} from "@ant-design/icons";
+import {useCookies} from "react-cookie";
+
+// Sortable Interventions
+import {arrayMove} from "@dnd-kit/sortable";
+
 
 function MainPage(): JSX.Element {
 
+  const [cookies, setCookie, removeCookie] = useCookies();
+
+  const [promptValue, setPromptValue] = useState<string>("");
   const [prediction, setPrediction] = useState<NetworkPrediction | undefined>(undefined);
   const [interventions, setInterventions] = useState<Array<Intervention>>([]);
   const [selectedValueId, setSelectedValueId] = useState<ValueId | undefined>(undefined);
   const [isLoadingPrediction, setLoadingPrediction] = useState<boolean>(false);
   const [predictionError, setPredictionError] = useState<string | undefined>(undefined);
 
+  const [introOpen, setIntroOpen] = useState<boolean>(cookies.dontShowIntro === undefined || !cookies.dontShowIntro);
+  const [dontShowAgain, setDontShowAgain] = useState<boolean>(false);
+
   // ----------------------------------- //
   // Intervention State Update functions //
   // ----------------------------------- //
   function addIntervention(valueId: ValueId) {
-    console.log(valueId);
-    console.log(hasIntervention(valueId));
     if(!hasIntervention(valueId)){
-      setInterventions([{...valueId, coeff: 0.0}, ...interventions])
+      setInterventions(prev => [{...valueId, coeff: 0.0}, ...prev])
     }
   }
 
@@ -45,11 +55,25 @@ function MainPage(): JSX.Element {
   }
 
   function hasIntervention (valueId: ValueId) {
-    return interventions.filter(({layer, dim, type}) => (layer === valueId.layer) && (dim === valueId.dim) && (type === valueId.type)).length > 0
+    return interventions.filter(
+        ({layer, dim, type}) =>
+            (layer === valueId.layer)
+            && (dim === valueId.dim)
+            && (type === valueId.type)
+    ).length > 0
   }
 
   function selectIntervention(valueId: ValueId): void {
     setSelectedValueId(valueId)
+  }
+
+  function setIndexOfIntervention(oldIdx: number, newIdx: number) {
+    if (oldIdx % 1 !== 0 || newIdx % 1 !== 0) {
+      return;
+    }
+
+    // Rearrange items
+    setInterventions((prevItems) => arrayMove(prevItems, oldIdx, newIdx));
   }
 
   async function handleGenerate(prompt: string, generate_k: Number): Promise<string> {
@@ -58,76 +82,90 @@ function MainPage(): JSX.Element {
       const result = await generate({prompt, interventions, generate_k});
       const {generate_text} = result;
       return generate_text;
-    }catch(e) {
+    } catch(e) {
       setPredictionError("Failed generation");
       return prompt;
     }
   }
-
-  function addNamesToValues(prediction: NetworkPrediction) : NetworkPrediction {
-    // One hell of a side effect...
-    const valueIds = getValueNamesFromCookies();
-    const {prompt, layers} = prediction;
-  
-  
-    const new_layers =  [...layers]
-    valueIds.forEach(valueId => {
-      const {type, layer, dim} = valueId;
-      const values = new_layers.filter((prediction) => prediction.layer == layer && prediction.type == type)[0].significant_values
-      values.filter(v=> v.dim === dim && v.layer === layer && v.type === type).forEach(value => value.desc = valueId.desc)
-    })
-    return {
-      prompt,
-      layers: new_layers
-    }
-  }
-
 
   async function handleRun(prompt: string){
     setLoadingPrediction(true);
     setPredictionError(undefined);
     try {
       const result = await predict({prompt, interventions, generate_k: 1});
-      const resultWithNames = addNamesToValues(result);
-      setPrediction(resultWithNames);
-    }catch(e) {
-      setPredictionError("Failed prediction");
+      setPrediction(result);
+    } catch(e) {
+      if (e instanceof Error) {
+        setPredictionError(e.message);
+      }
       console.log(e)
     } finally {
       setLoadingPrediction(false);
     }
   }
 
+  // ------------------------------- //
+  // Serialization of Trace/Generate //
+  // ------------------------------- //
 
-  function handleValueRename(valueId: ValueId, newName: string) {
-    
-    document.cookie = `new_name_${toAbbr.get(valueId?.type)}${valueId?.layer}D${valueId?.dim}=${newName};`;
-    if (prediction === undefined) {
-      return;
-    } 
-    
-    const newPrediction = addNamesToValues(prediction)
-    const namedValueIds = getValueNamesFromCookies()
-    const namedInterventions = interventions.map( inter => {
-      const matches = namedValueIds.filter(v => v.layer == inter.layer && v.dim == inter.dim && v.type == inter.type)
-      if (matches.length == 0) {
-        return inter
-      }
-      const matched = matches[0]
-      return {...inter, desc: matched.desc}
+  function handleDownload() {
+    let result_serialized = JSON.stringify({
+      promptValue: promptValue,
+      prediction: prediction,
+      interventions: interventions
     });
-        
-    setInterventions(namedInterventions)
-    setPrediction(newPrediction)
-    if (selectedValueId?.layer == valueId.layer && selectedValueId?.dim == valueId.dim && selectedValueId?.type == valueId.type) {
-      const {type, layer, dim} = valueId
-      const namedValueId = {type, layer, dim, desc: newName}
-      setSelectedValueId(namedValueId);
+    const blob = new Blob([result_serialized], { type: "application/json" });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "export.json"; // File name
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleUpload(file: any) {
+    const isJson = file.type === 'application/json' || file.name.endsWith('.json');
+
+    if (!isJson) {
+      console.error('You can only upload JSON files!');
+      return Upload.LIST_IGNORE;
     }
-    
+
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      try {
+        const result = e.target?.result;
+        if (typeof result === "string") {
+          const parsed = JSON.parse(result);
+
+          // Use it in your app
+          setInterventions(parsed.interventions);
+          if (parsed.hasOwnProperty("prediction")) {
+            setPrediction(parsed.prediction);
+          }
+          setPromptValue(parsed.promptValue);
+          console.log('JSON file uploaded and parsed successfully!');
+        } else {
+          console.error('JSON-Parsing: invalid file');
+        }
+      } catch (err) {
+        console.error('Error parsing JSON:', err);
+      }
+    };
+
+    reader.readAsText(file);
   }
 
   const detailsVisible = selectedValueId !== undefined;
+
+  function handleIntroClose() {
+    if (dontShowAgain) {
+      setCookie("dontShowIntro", true);
+    }
+    setIntroOpen(false);
+  }
 
   return (
     <MainLayout detailsVisible={detailsVisible}> 
@@ -135,17 +173,19 @@ function MainPage(): JSX.Element {
         <Prompt 
           onRun={handleRun}
           onGenerate={handleGenerate}
-          isLoading={isLoadingPrediction}           
+          isLoading={isLoadingPrediction}
+          promptValue={promptValue}
+          setPromptValue={setPromptValue}
         />
       </PromptArea>
       <ValueDetailsArea detailsVisible={detailsVisible}>
-        <ValueDetailsPanel valueId={selectedValueId} onValueRename={handleValueRename} />
+        <MemoValueDetailsPanel valueId={selectedValueId} />
       </ValueDetailsArea>
       <LayersViewArea>
         <LayersPanel 
           layers={prediction?.layers}
           setSelectedValueId={setSelectedValueId}
-          addIntervention={(valueId) => addIntervention(valueId)} 
+          addIntervention={(valueId) => addIntervention(valueId)}
           isLoading={isLoadingPrediction}
           errorMessage={predictionError}
         />
@@ -157,8 +197,34 @@ function MainPage(): JSX.Element {
           deleteIntervention={(l, d, t) => deleteIntervention(l, d, t)}
           updateIntervention={(v, c) => updateIntervention(v, c)}
           selectIntervention={(v) => selectIntervention(v)}
+          setIndexOfIntervention={setIndexOfIntervention}
+          handleDownload={handleDownload}
+          handleUpload={handleUpload}
         />
       </InterventionArea>
+
+      <Modal
+        visible={introOpen}
+        closable={false}
+        title="Welcome to LM-Debugger"
+        width="900px"
+        footer={[
+          <Checkbox checked={dontShowAgain} onChange={(e) => {setDontShowAgain(e.target.checked)}}>
+            Don't show again
+          </Checkbox>,
+          <Space size="large"/>,
+          <Button key="submit" type="primary" onClick={handleIntroClose}>
+            Close
+          </Button>
+        ]}
+      >
+        <p>Enter an exemplary Prompt into the textfield</p>
+        <p>Use <Tag color="blue">Generate</Tag>generate new Tokens using the Transformer Model</p>
+        <p>Use <Tag color="blue">Trace</Tag>to see the Internal Calculations, Intervention Methods and Metrics of the Transformer Model</p>
+        <p>Click <CopyIcon /> to intervene on a Feature's Activation or add an Intervention using a Model-Transformation and <Tag color="blue">Add as Intervention</Tag></p>
+        <p><Tag color="blue">Generate</Tag>and <Tag color="blue">Trace</Tag>produce different outputs with different Interventions applied</p>
+        <p>Model-Transformation Interventions are sortable via drag-and-hold</p>
+      </Modal>
     </MainLayout>
   )
 }
@@ -166,6 +232,11 @@ function MainPage(): JSX.Element {
 interface DetailsVisibleProps {
   detailsVisible: boolean;
 }
+
+const CopyIcon = styled(DownSquareOutlined)`
+    font-size: 15px;
+    color: #717D7E;
+`;
 
 const withDetails = css`
   grid-template-columns: 5fr 1fr;
