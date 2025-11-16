@@ -1,5 +1,5 @@
 export interface ValueId {
-  type: string;
+  name: string;
   layer: number;
   dim: number;
   desc?: string;
@@ -28,7 +28,9 @@ export interface ScoredValue extends ValueId {
 
 export interface LayerPrediction {
   layer: number;
+  name: string;
   type: string;
+  changeable_layer: boolean;
   predictions_before: Array<Prediction>;
   predictions_after: Array<Prediction>;
   significant_values: Array<ScoredValue>;

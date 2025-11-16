@@ -23,13 +23,13 @@ function ValueLabelWithCopy(props: Props): JSX.Element {
     } = props;
 
     const {
-        type,
+        name,
         layer,
         dim,
         desc,
         score
     } = scoredValue;
-    const actualDesc = desc !== undefined && desc !== "" ? desc : `${toAbbr.get(props.scoredValue.type) ?? "_"}${layer}D${dim}`
+    const actualDesc = desc !== undefined && desc !== "" ? desc : `${toAbbr.get(props.scoredValue.name) ?? "_"}${layer}D${dim}`
     const useEllipsis = actualDesc.length > 10
 
     return (

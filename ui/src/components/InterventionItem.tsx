@@ -47,7 +47,7 @@ function InterventionItem(props: Props):JSX.Element {
     actualDesc = `L${intervention.layer}: ${intervention.text_inputs.prompt.replace("{}", intervention.text_inputs.subject)} ${intervention.text_inputs.target}`;
   }
   else {
-    actualDesc = desc !== undefined && desc !== "" ? desc : `${toAbbr.get(props.intervention.type) ?? "_"}${layer}D${dim}`
+    actualDesc = desc !== undefined && desc !== "" ? desc : `${toAbbr.get(props.intervention.name) ?? "_"}${layer}D${dim}`
   }
   const useEllipsis = actualDesc.length > 10
 
@@ -80,7 +80,7 @@ const SortableInterventionItem = (props: Props) => {
       isDragging,
       transform,
       transition
-  } = useSortable({ id: intervention.type + intervention.layer + intervention.dim });
+  } = useSortable({ id: intervention.name + intervention.layer + intervention.dim });
 
   return (
     <div

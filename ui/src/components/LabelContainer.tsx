@@ -15,7 +15,7 @@ interface Props {
 }
 
 export function LabelContainer(props: Props): JSX.Element {
-    const labels = props.valueLabels.map((item) => {item["type"] = props.type; return item}).map(label =>
+    const labels = props.valueLabels.map((item) => {item["name"] = props.type; return item}).map(label =>
         <ValueLabelWithCopy 
             scoredValue={label}
             key={`${toAbbr.get(props.type)}${label.layer}D${label.dim}`}

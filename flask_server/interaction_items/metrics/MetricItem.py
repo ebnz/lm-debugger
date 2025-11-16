@@ -71,6 +71,9 @@ class MetricItem(InteractionItem):
     """
     Frontend Handling
     """
+    def get_type(self):
+        return "metric"
+
     @abstractmethod
     def get_text_outputs(self, prompt: str, token_logits: torch.Tensor, pre_hook_rv=None, **kwargs):
         pass
@@ -83,8 +86,10 @@ class MetricItem(InteractionItem):
     def get_api_layers(self, prompt: str, token_logits: torch.Tensor, pre_hook_rv=None, **kwargs):
         response_dict = [
             {
-                "layer": -1,
-                "type": self.get_name(),
+                "layer": 0,
+                "name": self.get_name(),
+                "type": self.get_type(),
+                "changeable_layer": self.get_changeable_layer(),
                 "docstring": self.__doc__ if self.__doc__ is not None else "This Metric lacks a Docstring.",
                 **self.get_frontend_items(prompt, token_logits, pre_hook_rv=pre_hook_rv, **kwargs)
             }

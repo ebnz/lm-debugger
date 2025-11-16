@@ -79,8 +79,8 @@ function InterventionsPanel(props: Props): JSX.Element {
 
     if (active.id !== over?.id) {
       // Rearrange items
-      const oldIdx = interventions.findIndex((item) => item.type + item.layer + item.dim === active.id);
-      const newIdx = interventions.findIndex((item) => item.type + item.layer + item.dim === over?.id);
+      const oldIdx = interventions.findIndex((item) => item.name + item.layer + item.dim === active.id);
+      const newIdx = interventions.findIndex((item) => item.name + item.layer + item.dim === over?.id);
 
       // Splice Interventions
       setIndexOfIntervention(oldIdx, newIdx);
@@ -104,11 +104,11 @@ function InterventionsPanel(props: Props): JSX.Element {
   const activeItem = interventions.find((item) => item.layer === activeId);
 
   const sortable_interventions = interventions.filter(
-      (val, idx) => !(UNSORTABLE_METHODS.includes(val["type"]))
+      (val, idx) => !(UNSORTABLE_METHODS.includes(val["name"]))
   );
 
   const unsortable_interventions = interventions.filter(
-      (val, idx) => UNSORTABLE_METHODS.includes(val["type"])
+      (val, idx) => UNSORTABLE_METHODS.includes(val["name"])
   );
 
   return (
@@ -137,14 +137,14 @@ function InterventionsPanel(props: Props): JSX.Element {
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={sortable_interventions.map((item) => item.type + item.layer + item.dim)}
+          items={sortable_interventions.map((item) => item.name + item.layer + item.dim)}
           strategy={horizontalListSortingStrategy} // Horizontal sorting
         >
           {
             sortable_interventions.map((inter) => (
               <SortableInterventionItem
                 intervention={inter}
-                deleteIntervention={() => deleteIntervention(inter.layer, inter.dim, inter.type)}
+                deleteIntervention={() => deleteIntervention(inter.layer, inter.dim, inter.name)}
                 updateIntervention={partial(updateIntervention, inter)}
                 select={partial(selectIntervention, inter)}
               />
@@ -157,7 +157,7 @@ function InterventionsPanel(props: Props): JSX.Element {
             // Render a floating copy of the dragged item
             <InterventionItem
               intervention={activeItem}
-              deleteIntervention={() => deleteIntervention(activeItem.layer, activeItem.dim, activeItem.type)}
+              deleteIntervention={() => deleteIntervention(activeItem.layer, activeItem.dim, activeItem.name)}
               updateIntervention={partial(updateIntervention, activeItem)}
               select={partial(selectIntervention, activeItem)}
             />
@@ -173,7 +173,7 @@ function InterventionsPanel(props: Props): JSX.Element {
         unsortable_interventions.map((inter) => (
           <InterventionItem
             intervention={inter}
-            deleteIntervention={() => deleteIntervention(inter.layer, inter.dim, inter.type)}
+            deleteIntervention={() => deleteIntervention(inter.layer, inter.dim, inter.name)}
             updateIntervention={partial(updateIntervention, inter)}
             select={partial(selectIntervention, inter)}
           />
@@ -219,19 +219,27 @@ const parseInput = (str: string): ParseResult => {
       return {
       type: "failed",
       msg: "Intervention Method Abbreviation " + type_abbr + " does not exist or is not registered!"
+      }
     }
-    }
-    const type = toType.get(arr[1]);
+    const name = toType.get(arr[1]);
     const layer = parseInt(arr[2]);
     const dim = parseInt(arr[3]);
+
+    if (layer < 0 || layer >= 48 || dim < 0 || dim >= 6400) {
+      return {
+      type: "failed",
+      msg: "Intervention Method Abbreviation " + type_abbr + " does not exist or is not registered!"
+      }
+    }
+
     return {
       type: "success",
-      valueId: {type: type ?? "", layer: layer, dim: dim}
+      valueId: {name: name ?? "", layer: layer, dim: dim}
     }
   } else {
     return {
       type: "failed",
-      msg: "Input must be e.g. 'L12D43' or 'S3D69'"
+      msg: "Input must be e.g. 'L12D43'"
     }
   }
 }

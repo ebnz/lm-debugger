@@ -19,6 +19,21 @@ class InteractionItem(ABC):
         """
         return self.__class__.__name__
 
+    def get_type(self):
+        """
+        Set the type of this item. Either 'metric' or 'intervention'
+        :return: Representation-String
+        """
+        pass
+
+    def get_changeable_layer(self):
+        """
+        Returns whether the Layer Index may be changed in the Frontend. Used in almost all Knowledge Editing Methods
+        Makes the Layer Attribute in the Frontend changeable via a Input Field
+        @return: boolean
+        """
+        return False
+
     """
     Frontend Definitions
     """

@@ -10,7 +10,7 @@ class ModelWeightCache:
         cache_key = str(
             list(
                 filter(
-                    lambda x: x["type"] != "LMDebuggerIntervention" and x["coeff"] > 0,
+                    lambda x: x["name"] != "LMDebuggerIntervention" and x["coeff"] > 0,
                     interventions
                 )
             )

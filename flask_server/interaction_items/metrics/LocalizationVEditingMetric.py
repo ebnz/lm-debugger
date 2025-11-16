@@ -26,7 +26,7 @@ class LocalizationVEditingMetric(MetricItem):
 
         for intervention in INTERVENTIONS:
             # Filter out LMDebuggerIntervention
-            if intervention["type"] == "LMDebuggerIntervention":
+            if intervention["name"] == "LMDebuggerIntervention":
                 continue
 
             subject = intervention["text_inputs"]["subject"]

@@ -45,7 +45,7 @@ class InterventionGenerationController:
         if metric.__class__.__name__ in self.config.metric_configs.keys():
             metric.config = self.config.metric_configs[metric.__class__.__name__]
         else:
-            print(f"WARN: No Metric-Config found for Metric Type <{metric.__class__.__name__}>!")
+            print(f"WARN: No Metric-Config found for Metric Name <{metric.__class__.__name__}>!")
 
         self.metrics.append(metric)
 
@@ -60,17 +60,17 @@ class InterventionGenerationController:
         self.interventions = interventions
 
         for intervention in self.interventions:
-            intervention_type = intervention["type"]
+            intervention_name = intervention["name"]
             intervention_layer = intervention["layer"]
 
             fitting_method_found = False
             for method in self.intervention_methods:
-                if (intervention_type == method.get_name() and
+                if (intervention_name == method.get_name() and
                         intervention_layer in range(method.min_layer, method.max_layer + 1)):
                     # General Case for Methods operating on one Layer
                     method.add_intervention(intervention)
                     fitting_method_found = True
-                elif intervention_type == method.get_name() and intervention_layer == -2:
+                elif intervention_name == method.get_name() and intervention_layer == -2:
                     # Methods that work on all Layers
                     method.add_intervention(intervention)
                     fitting_method_found = True
@@ -95,17 +95,17 @@ class InterventionGenerationController:
         :param prompt: Prompt, the Model is run on after setup of Hooks
         """
         for intervention in self.interventions:
-            intervention_type = intervention["type"]
+            intervention_name = intervention["name"]
             intervention_layer = intervention["layer"]
             fitting_method_found = False
 
             for method in self.intervention_methods:
-                if (intervention_type == method.get_name() and
+                if (intervention_name == method.get_name() and
                         intervention_layer in range(method.min_layer, method.max_layer + 1)):
                     method.setup_intervention_hook(intervention, prompt)
                     fitting_method_found = True
                     break
-                elif intervention_type == method.get_name() and intervention_layer == -2:
+                elif intervention_name == method.get_name() and intervention_layer == -2:
                     # Methods that work on all Layers
                     method.add_intervention(intervention)
                     fitting_method_found = True
@@ -138,17 +138,17 @@ class InterventionGenerationController:
 
         # Weights not found in interventions_cache, calculate weights using intervention methods
         for intervention in self.interventions:
-            intervention_type = intervention["type"]
+            intervention_name = intervention["name"]
             intervention_layer = intervention["layer"]
             fitting_method_found = False
 
             for method in self.intervention_methods:
-                if (intervention_type == method.get_name() and
+                if (intervention_name == method.get_name() and
                         intervention_layer in range(method.min_layer, method.max_layer + 1)):
                     method.transform_model(intervention)
                     fitting_method_found = True
                     break
-                elif intervention_type == method.get_name() and intervention_layer == -2:
+                elif intervention_name == method.get_name() and intervention_layer == -2:
                     # Methods that work on all Layers
                     method.add_intervention(intervention)
                     fitting_method_found = True
@@ -201,7 +201,7 @@ class InterventionGenerationController:
 
     def get_manipulated_layers(self, intervention_method_name=None):
         layers_with_interventions = filter(
-            lambda intervention: intervention["coeff"] > 0 and intervention["type"] != "LMDebuggerIntervention",
+            lambda intervention: intervention["coeff"] > 0 and intervention["name"] != "LMDebuggerIntervention",
             self.interventions
         )
 
@@ -211,7 +211,7 @@ class InterventionGenerationController:
         # Else find all LLM-Layers with Interventions where name of InterventionMethod matches intervention_method_name
         else:
             filtered_layers = filter(
-                lambda intervention: intervention_method_name == intervention["type"],
+                lambda intervention: intervention_method_name == intervention["name"],
                 layers_with_interventions
             )
             manip_layers_nested = map(
@@ -322,21 +322,21 @@ class InterventionGenerationController:
 
         return replace_inf_nan(rv_dict)
 
-    def get_projections(self, type, layer, dim):
+    def get_projections(self, name, layer, dim):
         """
         Projects Features (their representation as Vectors) to actual Tokens.
         Used in the Value-Vector-Details Feature.
         :rtype: dict
-        :type type: str
+        :type name: str
         :type layer: int
         :type dim: int
-        :param type: Type of Intervention Method (Name of the Class, the Intervention Method is implemented in)
+        :param name: Name of Intervention Method (Name of the Class, the Intervention Method is implemented in)
         :param layer: Layer Index
         :param dim: Dimension/Index of the Feature ot get Projections from
         :return: Dict of Projections of Features to Tokens
         """
         for method in self.intervention_methods:
-            if type != method.get_name() or layer not in method.layers:
+            if name != method.get_name() or layer not in method.layers:
                 continue
             rv = method.get_projections(layer=layer, dim=dim)
             return rv

@@ -44,6 +44,11 @@ class EasyEditInterventionMethod(InterventionMethod):
     def get_name(self):
         return self.ee_hparams.alg_name
 
+    def get_changeable_layer(self):
+        if self.get_name() == "KN":
+            return False
+        return True
+
     def get_text_inputs(self):
         if self.get_name() == "DINM":
             return {
@@ -103,7 +108,7 @@ class EasyEditInterventionMethod(InterventionMethod):
         rewrite_hparams = copy(self.ee_hparams)
         rewrite_hparams.layers = [intervention["layer"]]
 
-        if self.get_name() == "EMMET":
+        if self.get_name() in ["EMMET", "MEMIT"]:
             self.model_wrapper.model.config.vocab_size += 1
 
         rv = self.invoke_method(
@@ -114,7 +119,7 @@ class EasyEditInterventionMethod(InterventionMethod):
             copy=False
         )
 
-        if self.get_name() == "EMMET":
+        if self.get_name() in ["EMMET", "MEMIT"]:
             self.model_wrapper.model.config.vocab_size -= 1
 
         if isinstance(rv, tuple):

@@ -7,7 +7,7 @@ from .InterventionMethod import InterventionMethod
 
 class LMDebuggerIntervention(InterventionMethod):
     """
-    Shows the Top-k Tokens before and after this Layer, as well as strongly activating Features of the MLP.
+    Shows strongly activating Features of the MLP.
     Feature activations can then be manipulated by clicking the Down-Arrow and (de-)activating a Feature
     using the corresponding slider in the Interventions-Menu
     """
@@ -32,10 +32,31 @@ class LMDebuggerIntervention(InterventionMethod):
         return self.get_token_scores(prompt)
 
     def get_api_layers(self, prompt):
-        return [{
-            "docstring": self.__doc__ if self.__doc__ is not None else "This Intervention Method lacks a Docstring.",
-            **layer
-        } for layer in self.get_frontend_items(None, prompt)]
+        rv = []
+        # Split original LMDebuggerIntervention into Metrics and Intervention part
+        for layer in self.get_frontend_items(None, prompt):
+            # Intervention Part
+            rv.append({
+                "docstring": self.__doc__ if self.__doc__ is not None else "This Intervention Method lacks a Docstring.",
+                "layer": layer["layer"],
+                "name": self.get_name(),
+                "type": self.get_type(),
+                "changeable_layer": self.get_changeable_layer(),
+                "significant_values": layer["significant_values"]
+            })
+
+            # Metric Part
+            rv.append({
+                "docstring": "Shows the Top-k Tokens before and after the MLP of this Layer",
+                "layer": layer["layer"],
+                "name": "TopKTokens",
+                "type": "metric",
+                "changeable_layer": self.get_changeable_layer(),
+                "predictions_before": layer["predictions_before"],
+                "predictions_after": layer["predictions_after"]
+            })
+
+        return rv
 
     """
     Intervention Handling
@@ -295,11 +316,15 @@ class LMDebuggerIntervention(InterventionMethod):
                 top_k = sorted(probs_, key=lambda x: x[1], reverse=True)[:self.TOP_K]
                 top_k = [(t[1].item(), self.model_wrapper.tokenizer.decode(t[0])) for t in top_k]
 
-                additional_token_logit_tuples = [(
-                    probs[idx],
-                    self.model_wrapper.tokenizer.decode(idx),
-                    np.argsort(-probs).argsort()[idx]
-                ) for idx in additional_requested_token_idxs]
+                additional_token_logit_tuples = []
+
+                if additional_requested_token_idxs is not None:
+                    additional_token_logit_tuples = [(
+                        probs[idx],
+                        self.model_wrapper.tokenizer.decode(idx),
+                        np.argsort(-probs).argsort()[idx]
+                    ) for idx in additional_requested_token_idxs]
+
             if "layer_residual" in layer:
                 layer_residual_preds.append(top_k)
                 layer_residual_preds_add.append(additional_token_logit_tuples)

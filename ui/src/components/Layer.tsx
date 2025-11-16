@@ -109,7 +109,7 @@ export function Layer(props: Props): JSX.Element {
             <>
               <LayerTag color="#a55397">
                 {
-                  props.layer.layer >= 0 && props.layer.type !== "LMDebuggerIntervention" ?
+                  props.layer.layer >= 0 && props.layer.changeable_layer ?
                     <InputNumber
                       min={props.layer.min_layer}
                       max={props.layer.max_layer}
@@ -124,7 +124,7 @@ export function Layer(props: Props): JSX.Element {
                     /> :
                   layer_name}
               </LayerTag>
-              <LayerTag color="#a55397">Type {props.layer.type}</LayerTag>
+              <LayerTag color="#a55397">{props.layer.name}</LayerTag>
               <Tooltip title={props.layer.docstring}><QuestionCircleOutlined/></Tooltip>
             </>
           }>
@@ -153,7 +153,7 @@ export function Layer(props: Props): JSX.Element {
               typeof props.layer.significant_values !== "undefined" &&
                 <LabelContainer
                   valueLabels={props.layer.significant_values}
-                  type={props.layer.type}
+                  type={props.layer.name}
                   onAnaylze={props.onAnalyze}
                   onCopy={props.onCopy}
                 />
@@ -197,9 +197,9 @@ export function Layer(props: Props): JSX.Element {
                   type={"primary"}
                   onClick={(e) => {props.onCopy(
                   {text_inputs: textIntervention,
-                  type: props.layer.type,
+                  name: props.layer.name,
                   layer: layerIndex,
-                  dim: hashObject([textIntervention, props.layer.type, layerIndex, Date.now()])}
+                  dim: hashObject([textIntervention, props.layer.name, layerIndex, Date.now()])}
                   )}}>Add as Intervention</AddInterventionButton>
               </TextInputLayout>
             }

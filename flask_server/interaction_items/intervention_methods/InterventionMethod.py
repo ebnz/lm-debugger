@@ -22,6 +22,9 @@ class InterventionMethod(InteractionItem):
     """
     Frontend Definitions
     """
+    def get_type(self):
+        return "intervention"
+
     @abstractmethod
     def get_text_inputs(self):
         """
@@ -39,7 +42,9 @@ class InterventionMethod(InteractionItem):
             "layer": layer,
             "min_layer": self.min_layer,
             "max_layer": self.max_layer,
-            "type": self.get_name(),
+            "name": self.get_name(),
+            "type": self.get_type(),
+            "changeable_layer": self.get_changeable_layer(),
             "docstring": self.__doc__ if self.__doc__ is not None else "This Intervention Method lacks a Docstring.",
             **self.get_frontend_items(layer, prompt)
         } for layer in self.layers]

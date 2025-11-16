@@ -37,22 +37,22 @@ function LayersPanel(props: Props): JSX.Element {
   const renderOverlay = isLoading || layers === undefined;
   let overlayContent: React.ReactNode = <></>;
 
-  metricsContent = useMemo(() => layers?.filter((item) => item.layer === -1)
+  metricsContent = useMemo(() => layers?.filter((item) => item.type === "metric")
     .sort((a, b) => a.layer >= b.layer ? 1 : -1)
     .map((item) => (
       <Layer
-        key={`layer_${item.type}_${item.layer}`}
+        key={`layer_${item.name}_${item.layer}`}
         layer={item}
         onAnalyze={valueId => setSelectedValueId(valueId)}
         onCopy={addIntervention}
       />
     )), [layers]);
 
-  interventionContent = useMemo(() => layers?.filter((item) => item.layer !== -1)
+  interventionContent = useMemo(() => layers?.filter((item) => item.type === "intervention")
     .sort((a, b) => a.layer >= b.layer ? 1 : -1)
     .map((item) => (
       <Layer
-        key={`layer_${item.type}_${item.layer}`}
+        key={`layer_${item.name}_${item.layer}`}
         layer={item}
         onAnalyze={valueId => setSelectedValueId(valueId)}
         onCopy={addIntervention}

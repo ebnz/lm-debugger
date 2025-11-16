@@ -39,10 +39,10 @@ function MainPage(): JSX.Element {
   }
 
   function updateIntervention(valueId: ValueId, coeff: number){
-    const {type, layer, dim, desc} = valueId;
+    const {name, layer, dim, desc} = valueId;
     setInterventions(interventions.map(
       (inter) => {
-        if (inter.layer === layer && inter.dim === dim && inter.type == type) {
+        if (inter.layer === layer && inter.dim === dim && inter.name == name) {
           return {...inter, coeff: coeff};
         }
         return inter;
@@ -51,15 +51,15 @@ function MainPage(): JSX.Element {
   }
 
   function deleteIntervention (l: number, d: number, t: string){
-    setInterventions(interventions.filter(({type, layer, dim}) => (type !== t) || (layer !== l) || (dim !== d)))
+    setInterventions(interventions.filter(({name, layer, dim}) => (name !== t) || (layer !== l) || (dim !== d)))
   }
 
   function hasIntervention (valueId: ValueId) {
     return interventions.filter(
-        ({layer, dim, type}) =>
+        ({layer, dim, name}) =>
             (layer === valueId.layer)
             && (dim === valueId.dim)
-            && (type === valueId.type)
+            && (name === valueId.name)
     ).length > 0
   }
 

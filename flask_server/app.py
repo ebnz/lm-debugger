@@ -29,9 +29,9 @@ if __name__ == '__main__':
     app = Flask(__name__)
     CORS(app)
 
-    @app.route('/get_projections/type/<type>/layer/<layer>/dim/<dim>')
-    def get_projections(type, layer, dim):
-        return jsonify(requests_obj.get_projections(type, layer, dim))
+    @app.route('/get_projections/name/<name>/layer/<layer>/dim/<dim>')
+    def get_projections(name, layer, dim):
+        return jsonify(requests_obj.get_projections(name, layer, dim))
 
     @app.route('/get_data', methods=['POST'])
     def get_data():

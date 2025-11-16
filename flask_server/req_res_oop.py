@@ -133,5 +133,5 @@ class ModelingRequests:
 
         return response_dict
 
-    def get_projections(self, type, layer, dim):
-        return self.intervention_controller.get_projections(type, int(layer), int(dim))
+    def get_projections(self, name, layer, dim):
+        return self.intervention_controller.get_projections(name, int(layer), int(dim))
