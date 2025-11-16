@@ -19,6 +19,7 @@ export interface PredictionParams {
 export interface Prediction {
   token: string;
   score: number;
+  rank?: number;
 }
 
 export interface ScoredValue extends ValueId {

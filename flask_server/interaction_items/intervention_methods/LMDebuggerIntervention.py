@@ -64,7 +64,32 @@ class LMDebuggerIntervention(InterventionMethod):
     Code from LM-Debugger
     """
     def get_token_scores(self, prompt):
-        pred_dict_raw = self.process_and_get_data(prompt)
+        # additional_requested_token_idxs contains Token-Idxs of targets of all Knowledge-Edits (e.g. ROME, MEMIT)
+        # These are shown in The Before/After MLP Tokens
+        additional_requested_token_idxs = []
+        for intervention in self.controller.interventions:
+            if "text_inputs" not in intervention.keys():
+                continue
+            if "target" not in intervention["text_inputs"].keys():
+                continue
+
+            if "gpt" in self.model_wrapper.model_name:
+                token_id = self.model_wrapper.tokenizer(f' {intervention["text_inputs"]["target"]}')["input_ids"][0]
+            elif "llama" in self.model_wrapper.model_name:
+                token_id = self.model_wrapper.tokenizer(
+                    intervention["text_inputs"]["target"],
+                    add_special_tokens=False
+                )["input_ids"][0]
+            else:
+                token_id = self.model_wrapper.tokenizer(intervention["text_inputs"]["target"])["input_ids"][0]
+
+            if token_id not in additional_requested_token_idxs:
+                additional_requested_token_idxs.append(token_id)
+
+        pred_dict_raw = self.process_and_get_data(
+            prompt,
+            additional_requested_token_idxs=additional_requested_token_idxs
+        )
         pred_dict = self.process_pred_dict(pred_dict_raw)
 
         if len(self.interventions) <= 0:
@@ -81,7 +106,10 @@ class LMDebuggerIntervention(InterventionMethod):
                 else:
                     new_max_val = 0
                 self.set_control_hooks_gpt2({intervention['layer']: [intervention['dim']], }, coef_value=new_max_val)
-            pred_dict_new_raw = self.process_and_get_data(prompt)
+            pred_dict_new_raw = self.process_and_get_data(
+                prompt,
+                additional_requested_token_idxs=additional_requested_token_idxs
+            )
             pred_dict_new = self.process_pred_dict(pred_dict_new_raw)
             self.model_wrapper.clear_hooks()
             return pred_dict_new["layers"]
@@ -94,28 +122,40 @@ class LMDebuggerIntervention(InterventionMethod):
             layer_d = {}
             layer_d['layer'] = layer_n
             layer_d['type'] = self.get_name()
-            layer_d['predictions_before'] = [
-                {'token': pred_df['residual_preds_tokens'][layer_n][k],
-                 'score': float(pred_df['residual_preds_probs'][layer_n][k])
-                 }
-                for k in range(self.TOP_K)
-            ]
-            layer_d['predictions_after'] = [
-                {'token': pred_df['layer_preds_tokens'][layer_n][k],
-                 'score': float(pred_df['layer_preds_probs'][layer_n][k])
-                 }
-                for k in range(self.TOP_K)
-            ]
+            # Top-K Tokens
+            layer_d['predictions_before'] = [{
+                'token': pred_df['residual_preds_tokens'][layer_n][k],
+                'score': float(pred_df['residual_preds_probs'][layer_n][k])
+                } for k in range(self.TOP_K)]
+            layer_d['predictions_after'] = [{
+                'token': pred_df['layer_preds_tokens'][layer_n][k],
+                'score': float(pred_df['layer_preds_probs'][layer_n][k])
+                } for k in range(self.TOP_K)]
+
+            # Additionally requested Tokens
+            if len(pred_df['residual_preds_tokens_add']) > 0:
+                for i in range(len(pred_df['residual_preds_tokens_add'][layer_n])):
+                    layer_d['predictions_before'].append({
+                        'token': pred_df['residual_preds_tokens_add'][layer_n][i],
+                        'score': float(pred_df['residual_preds_probs_add'][layer_n][i]),
+                        'rank': float(pred_df['residual_preds_ranks_add'][layer_n][i])
+                    })
+                for i in range(len(pred_df['layer_preds_tokens_add'][layer_n])):
+                    layer_d['predictions_after'].append({
+                        'token': pred_df['layer_preds_tokens_add'][layer_n][i],
+                        'score': float(pred_df['layer_preds_probs_add'][layer_n][i]),
+                        'rank': float(pred_df['layer_preds_ranks_add'][layer_n][i])
+                    })
+
             significant_values_lst = []
             dims_layer_n = pred_df['top_coef_idx'][layer_n]
             scores_layer_n = pred_df['top_coef_vals'][layer_n]
             for k in range(self.TOP_K):
-                significant_values_lst.append(
-                    {'layer': layer_n,
-                     'dim': dims_layer_n[k],
-                     'score': float(scores_layer_n[k])
-                     }
-                )
+                significant_values_lst.append({
+                    'layer': layer_n,
+                    'dim': dims_layer_n[k],
+                    'score': float(scores_layer_n[k])
+                })
             layer_d['significant_values'] = significant_values_lst
 
             pred_d['layers'].append(layer_d)
@@ -208,9 +248,22 @@ class LMDebuggerIntervention(InterventionMethod):
             self.controller.config["layer_mappings"]["post_decoder_norm"]
         )
 
-    def get_resid_predictions(self, sentence, start_idx=None, end_idx=None, set_mlp_0=False):
+    def get_resid_predictions(self, sentence, start_idx=None, end_idx=None, additional_requested_token_idxs=None):
+        """
+        Generates Residual Predictions of the original LMDebugger Intervention Method
+        This Method obtains Top-K Tokens, and additionally requested Token Ranks
+        :type sentence: str
+        :param sentence: Prompt, used to calculate the Features/Token-Scores
+        :type additional_requested_token_idxs: list[int]|None
+        :param additional_requested_token_idxs: Token Indices of extra requested Tokens
+        """
+        # Top-K (Token, Prob)-Pairs before/after for each Layer
         layer_residual_preds = []
         intermed_residual_preds = []
+
+        # Additionally requested (Token, Prob)-Pairs before/after for each Layer
+        layer_residual_preds_add = []
+        intermed_residual_preds_add = []
 
         if start_idx is not None and end_idx is not None:
             tokens = [
@@ -241,39 +294,65 @@ class LMDebuggerIntervention(InterventionMethod):
                     probs_.append((index, prob))
                 top_k = sorted(probs_, key=lambda x: x[1], reverse=True)[:self.TOP_K]
                 top_k = [(t[1].item(), self.model_wrapper.tokenizer.decode(t[0])) for t in top_k]
+
+                additional_token_logit_tuples = [(
+                    probs[idx],
+                    self.model_wrapper.tokenizer.decode(idx),
+                    np.argsort(-probs).argsort()[idx]
+                ) for idx in additional_requested_token_idxs]
             if "layer_residual" in layer:
                 layer_residual_preds.append(top_k)
+                layer_residual_preds_add.append(additional_token_logit_tuples)
             elif "intermediate_residual" in layer:
                 intermed_residual_preds.append(top_k)
+                intermed_residual_preds_add.append(additional_token_logit_tuples)
 
             for attr in ["layer_resid_preds", "intermed_residual_preds"]:
                 if not hasattr(self.model_wrapper.model, attr):
                     setattr(self.model_wrapper.model, attr, [])
 
             self.model_wrapper.model.layer_resid_preds = layer_residual_preds
+            self.model_wrapper.model.layer_resid_preds_add = layer_residual_preds_add
             self.model_wrapper.model.intermed_residual_preds = intermed_residual_preds
+            self.model_wrapper.model.intermed_residual_preds_add = intermed_residual_preds_add
 
-    def get_preds_and_hidden_states(self, prompt):
+    def get_preds_and_hidden_states(self, prompt, additional_requested_token_idxs=None):
         self.set_hooks_gpt2()
 
         sent_to_preds = {}
         sent_to_hidden_states = {}
         sentence = prompt[:]
-        self.get_resid_predictions(sentence)
+        self.get_resid_predictions(sentence, additional_requested_token_idxs=additional_requested_token_idxs)
         sent_to_preds["layer_resid_preds"] = self.model_wrapper.model.layer_resid_preds
         sent_to_preds["intermed_residual_preds"] = self.model_wrapper.model.intermed_residual_preds
+        sent_to_preds["layer_resid_preds_add"] = self.model_wrapper.model.layer_resid_preds_add
+        sent_to_preds["intermed_residual_preds_add"] = self.model_wrapper.model.intermed_residual_preds_add
         sent_to_hidden_states = self.model_wrapper.model.activations_.copy()
 
         return sent_to_hidden_states, sent_to_preds
 
-    def process_and_get_data(self, prompt):
-        sent_to_hidden_states, sent_to_preds = self.get_preds_and_hidden_states(prompt)
+    def process_and_get_data(self, prompt, additional_requested_token_idxs=None):
+        sent_to_hidden_states, sent_to_preds = self.get_preds_and_hidden_states(
+            prompt,
+            additional_requested_token_idxs=additional_requested_token_idxs
+        )
+
         top_coef_idx = []
         top_coef_vals = []
+
+        # Normal Top-K Tokens/Probs
         residual_preds_probs = []
         residual_preds_tokens = []
         layer_preds_probs = []
         layer_preds_tokens = []
+
+        # Additionally requested Tokens/Probs
+        residual_preds_probs_add = []
+        residual_preds_tokens_add = []
+        residual_preds_ranks_add = []
+        layer_preds_probs_add = []
+        layer_preds_tokens_add = []
+        layer_preds_ranks_add = []
         for LAYER in range(self.model_wrapper.model.config.num_hidden_layers):
             coefs_ = []
             m_coefs = sent_to_hidden_states["m_coef_" + str(LAYER)].squeeze(0).cpu().numpy()
@@ -292,17 +371,37 @@ class LMDebuggerIntervention(InterventionMethod):
             for index, prob in enumerate(scaled_coefs):
                 coefs_.append((index, prob))
 
+            # Get Top-K Features from MLP
             top_values = sorted(coefs_, key=lambda x: x[1], reverse=True)[:self.TOP_K]
             c_idx, c_vals = zip(*top_values)
             top_coef_idx.append(c_idx)
             top_coef_vals.append(c_vals)
+
+            # Get Top-K (Idx, Logit)-Pairs from intermediate residual distribution
             residual_p_probs, residual_p_tokens = zip(*sent_to_preds['intermed_residual_preds'][LAYER])
             residual_preds_probs.append(residual_p_probs)
             residual_preds_tokens.append(residual_p_tokens)
 
+            # Get Top-K (Idx, Logit)-Pairs from intermediate residual distribution
             layer_p_probs, layer_p_tokens = zip(*sent_to_preds['layer_resid_preds'][LAYER])
             layer_preds_probs.append(layer_p_probs)
             layer_preds_tokens.append(layer_p_tokens)
+
+            # Get additionally requested (Idx, Logit)-Pairs from intermediate residual distribution
+            if len(sent_to_preds['intermed_residual_preds_add'][LAYER]) != 0:
+                residual_p_probs_add, residual_p_tokens_add, residual_p_ranks_add = zip(
+                    *sent_to_preds['intermed_residual_preds_add'][LAYER]
+                )
+                residual_preds_probs_add.append(residual_p_probs_add)
+                residual_preds_tokens_add.append(residual_p_tokens_add)
+                residual_preds_ranks_add.append(residual_p_ranks_add)
+
+                layer_p_probs_add, layer_p_tokens_add, layer_p_ranks_add = zip(
+                    *sent_to_preds['layer_resid_preds_add'][LAYER]
+                )
+                layer_preds_probs_add.append(layer_p_probs_add)
+                layer_preds_tokens_add.append(layer_p_tokens_add)
+                layer_preds_ranks_add.append(layer_p_ranks_add)
 
         return {
             "sent": prompt,
@@ -312,7 +411,13 @@ class LMDebuggerIntervention(InterventionMethod):
             "residual_preds_tokens": residual_preds_tokens,
             "layer_preds_probs": layer_preds_probs,
             "layer_preds_tokens": layer_preds_tokens,
-            "layer_residual_vec": res_vec,
+            "residual_preds_probs_add": residual_preds_probs_add,
+            "residual_preds_tokens_add": residual_preds_tokens_add,
+            "residual_preds_ranks_add": residual_preds_ranks_add,
+            "layer_preds_probs_add": layer_preds_probs_add,
+            "layer_preds_tokens_add": layer_preds_tokens_add,
+            "layer_preds_ranks_add": layer_preds_ranks_add,
+            "layer_residual_vec": res_vec
         }
 
     def get_new_max_coef(self, layer, old_dict, eps=10e-3):

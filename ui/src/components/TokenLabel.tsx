@@ -1,8 +1,8 @@
 import React from "react";
 import styled from "styled-components";
-import { Button } from 'antd';
+import {Button, Tooltip} from 'antd';
 import { Prediction } from "../types/dataModel";
-import { FontSizeOutlined } from '@ant-design/icons';
+import {FontSizeOutlined, NumberOutlined} from '@ant-design/icons';
 import { Typography } from 'antd';
 
 const { Text } = Typography;
@@ -28,8 +28,9 @@ function TokenLabel(props: Props) : JSX.Element {
     const theText = isFirst? firstText : normalText
     return (
             <TokenButton type="ghost">
-                <FontSizeOutlined style={{color: '#686565', fontSize: '10pt'}}/>
-                {theText}
+                {predToken.rank !== undefined ?
+                    <><Tooltip title="Rank of the edited Token in Output Distribution"><NumberOutlined />{predToken.rank}</Tooltip> {" "} {theText} </> :
+                    <><FontSizeOutlined style={{color: '#686565', fontSize: '10pt'}}/> {theText}</>}
             </TokenButton>
     );
 }
