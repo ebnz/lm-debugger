@@ -29,19 +29,25 @@ class OutOfDistributionKeysMetric(MetricItem):
         for rome_module in rome_modules:
             hparams = rome_module.ee_hparams
 
-            requests = [{
-                "prompt": intervention["text_inputs"]["prompt"],
-                "subject": intervention["text_inputs"]["subject"],
-                "target_new": intervention["text_inputs"]["target"]
-            } for intervention in rome_module.interventions]
+            for intervention in rome_module.interventions:
+                prompt = intervention["text_inputs"]["prompt"]
+                subject = intervention["text_inputs"]["subject"]
+                target = intervention["text_inputs"]["target"]
 
-            for request in requests:
+                layer_idx = intervention["layer"]
+
+                request = {
+                    "prompt": prompt,
+                    "subject": subject,
+                    "target_new": target
+                }
+
                 left_vector = compute_u(
                     self.model_wrapper.model,
                     self.model_wrapper.tokenizer,
                     request,
                     hparams,
-                    rome_module.layers[0],
+                    layer_idx,
                     get_context_templates(
                         self.model_wrapper.model,
                         self.model_wrapper.tokenizer,
@@ -49,18 +55,19 @@ class OutOfDistributionKeysMetric(MetricItem):
                     )
                 )
 
-                cur_input, _ = get_module_input_output_at_word(
+                cur_input, cur_output = get_module_input_output_at_word(
                     self.model_wrapper.model,
                     self.model_wrapper.tokenizer,
-                    rome_module.layers[0],
+                    layer_idx,
                     context_template=request["prompt"],
                     word=request["subject"],
                     module_template=hparams.rewrite_module_tmp,
-                    fact_token_strategy=hparams.fact_token,
+                    fact_token_strategy=hparams.fact_token
                 )
 
-                subject = request['subject']
-                datapoint_name = f'{rome_module.get_name()} | Layer {rome_module.layers[0]} | Subject "{subject}"'
-                metric_values[datapoint_name] = torch.dot(cur_input, left_vector).item()
+                denominator_descriptor = (f'{rome_module.get_name()} | '
+                                          f'Layer {layer_idx} | '
+                                          f'"{prompt.format(subject)} {target}"')
+                metric_values[denominator_descriptor] = abs(torch.dot(cur_input, left_vector).item())
 
         return metric_values
