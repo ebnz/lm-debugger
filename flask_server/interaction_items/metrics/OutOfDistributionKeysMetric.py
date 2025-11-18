@@ -10,7 +10,7 @@ class OutOfDistributionKeysMetric(MetricItem):
     """
     Calculates the value of the denominator of ROME’s Weight Delta Matrix.
     Exceptionally small values (<1) make the Weight Delta Matrix excessively large, leading to possible problems.
-    The Pattern is: '<InterventionMethod> | <Layer> | <Subject> --> <Denominator of Weight Delta Matrix>'
+    The Pattern is: '<InterventionMethod> | <Layer> | <Prompt> --> <Denominator of Weight Delta Matrix>'
     """
     def __init__(self, controller):
         super().__init__(controller)
