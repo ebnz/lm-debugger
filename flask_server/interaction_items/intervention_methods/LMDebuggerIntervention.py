@@ -7,7 +7,7 @@ from .InterventionMethod import InterventionMethod
 
 class LMDebuggerIntervention(InterventionMethod):
     """
-    Shows strongly activating Features of the MLP.
+    Shows strongly activating Features of the MLP and their activation value.
     Feature activations can then be manipulated by clicking the Down-Arrow and (de-)activating a Feature
     using the corresponding slider in the Interventions-Menu
     """
