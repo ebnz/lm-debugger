@@ -86,7 +86,7 @@ class MetricItem(InteractionItem):
     def get_api_layers(self, prompt: str, token_logits: torch.Tensor, pre_hook_rv=None, **kwargs):
         response_dict = [
             {
-                "layer": 0,
+                "layer": -2,
                 "name": self.get_name(),
                 "type": self.get_type(),
                 "changeable_layer": self.get_changeable_layer(),
