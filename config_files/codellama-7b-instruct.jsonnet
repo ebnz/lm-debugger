@@ -33,7 +33,7 @@
   easy_edit_hparams_path: "config_files/ee_hparams",
 
   metric_configs: {
-    EfficacyMetric: {
+    Efficacy: {
       dataset: {
         prompts: ["Elon Musk was born in the city of",
                   "Ian Fleming was born in the city of",
@@ -41,17 +41,71 @@
         targets: ["Pretoria", "London", "Honolulu"]
       },
     },
-    ExcessiveWeightDeltasMetric: {},
-    LocalizationVEditingMetric: {
+    NormOfWeightUpdate: {},
+    CausalTrace: {
       # Config for Causal Trace
       samples: 10,
       noise: 0.1,
       window: 10,
       kind: "mlp"
     },
-    OutOfDistributionKeysMetric: {
+    NormOfROMEUpdateDenominator: {
       applicable_intervention_methods: ["ROME", "R-ROME"]
     },
-    PerplexityMetric: {}
+    Perplexity: {
+      # From https://github.com/WanliYoung/Collapse-in-Model-Editing/tree/main
+      dataset: [
+        " Regions and cities Australia has six states, two major mainland territories, and other minor territories",
+        " I know he has power in both hands, but to catch Tim Bradley is going to be very hard",
+        " Head coach Jeremy Colliton said the changes are being made to make sure the youngster won’t burn out like many rookies do during their first season",
+        " Wade, stressing she wants to back a judge who would show respect for settled law such as the Roe decision",
+        " So I guess what I’m getting at is that this isn’t a super quality game, but it’s loads of fun and it’s good at what it does",
+        "\" Lara Croft was the first major female video game protagonist",
+        " Whether you're in need of emergency service, or you simply are looking to schedule regular maintenance for your Cesspool or Sewer System, give Help",
+        " The students interested in the exam have applied for the exam through online",
+        " These procedures reflect the approach adopted by leading airlines around the world and have been in place for some time",
+        "uk guarantee your PANASONIC CGR-B/202A1B battery chargers transaction will be 100% safe",
+        " The bombing of Pan Am Flight 103 from London to New York resulted in 270 fatalities, including all 259 of the airplane's occupants and eleven individuals on the ground",
+        " They are starving us, now they are killing us,\" he said",
+        " Probably that's why I couldn't warm up to his cheesy character on the boss drama lol",
+        " Wikinews interviewed him regarding his values, his experience, and his campaign",
+        "The travellers took their places in the carriage , and again the monotony of the road , the steady trot of the horses , the sing-song words of encouragement of their driver , monopolised the thoughts of sleepy minds ",
+        " At least 23 others were hospitalized, some with multiple internal injuries",
+        " The couple wanted a simple and relaxing landscape design that employed subtle and scattered spot lights which illuminated the exterior stone facades of the farmhouse",
+        " August 27 1883: Krakatoa, in the Sunda Strait between Sumatra and Java, explodes, after a very violent eruption",
+        " The grouping of disorders, including PDD-NOS, autism, Asperger syndrome, Rett syndrome, and CDD, has been removed and replaced with the general term of Autism Spectrum Disorders",
+        " A possible explanation might be found in another nugget provided by South Korea’s spy agency: China had long protected Kim Jong Nam and his family in their home base of Macau",
+        "\" So to go back to what you said, I think there's different functions within their systems that they would like to be updated at different speeds",
+        " Advertisement Two more years of college later, Mike Shirt is drafted into the Pittsburgh Pirates",
+        " Swift hugged her crying mother after the six-woman, two-man jury said in U",
+        " Welcome to Clix O’Clock, a new weekly feature here on We the Nerdy",
+        "Master Mobile is a family run business set in the heart of Staffordshire, we have been established in this area now for just under 3 years",
+        " RaptorJesus over 7 years ago ThunderBird said: That means Flandre can't kill herself, and the Luna Dial can go bonkers on Remilia, and she still won't age/die of old age",
+        " Easy-to-Hold Design The tablet’s thin bezel makes it easier to hold it with one hand, freeing up the other to tap through apps or high-five strangers",
+        " ‘The area of Pakistan’, the chiefs noted, ‘is strategically the most important in the continent of India and the majority of our strategic requirements could be met",
+        " Societal and cultural aspects of autism have developed: some in the community seek a cure, while others believe that autism is simply another way of being",
+        " It is supervised by a Board of five members, managed by an executive team, has five employees and around 20 volunteers and interns",
+        " From a player’s perspective IRPA does not want that debate to be a distraction from making sure the right thing is done by the players now",
+        " In Closing I’m really excited to introduce to you The ONE Habit Course",
+        " DisableTab : false # ShowPluginNameOnMessages: Show the plugin name on messages sent to the players # and console",
+        "\" The changes are part of a broader effort by the Pentagon to decrease its projected spending by $487 billion over the next decade in accordance with a deficit-reduction deal President Obama reached with Congress in August",
+        " he held the cow's head and forced it to eat grass",
+        " \"Using her smarts, crafting ammo types out of the environment to whittle down the enemy one at a time, using the environment against them, that’s a way she succeeds against overwhelming odds",
+        " \"We may need to start off with a path that may not have a full level of service, and the fee would have to reflect that,\" Galloway said",
+        " Much of its economics and legal philosophy reflect anti-authoritarian, anti-statist, libertarian, and radical interpretations of left-wing and socialist politics such as collectivism, communism, individualism, mutualism, and syndicalism, among other libertarian socialist economic theories",
+        " All those nights of changing my clothes in the minivan as I raced home from work to coach her softball team",
+        "Hot Mess to Mindful Mom is a new book written by Ali Katz",
+        " My hope is that your parent company's eagerness to embrace the drone won't lead you to sidestep covering drone problems",
+        "5, do I need all these if I have the previous version",
+        " How early do you think children can, or should, start learning about philosophy",
+        "The people in this print are all linked by their support for the Revolution",
+        " Describing her as having ‘sentiments as pure, as refined, and as delicate, as ever inhabited a human heart’ his principle mistake was to ask for sympathy for her plight and pose her as ‘the fairest source of animation and encouragement to all who would follow’",
+        " The more this is the case the more a country will need foreign workers to get anything done",
+        " The Force-connection scenes between him and Rey were among the highlights of the film, and provided some much-needed characterization for both of them, allowing both to speak, debate, even flirt, without any need for a lightsaber battle",
+        "when she leaned over to flick her tongue across the tip , he groaned ",
+        " There are also exercise classes especially for women who are pregnant",
+        " Then the bookseller himself , who also was fat and comfortably shabby , and who had beguiled from me the information that I was about to travel , suggested that the `` Poets '' would make very pleasant reading en route "
+      ]
+    }
   }
 }

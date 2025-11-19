@@ -2,7 +2,7 @@ import torch
 from .MetricItem import MetricItem
 
 
-class EfficacyMetric(MetricItem):
+class Efficacy(MetricItem):
     """
     Measures the ROME-Efficacy-Metric of the LLM (incl. Interventions) on the Dataset, defined in the Config.
     Generates the next Token of the dataset-defined Prompt without Interventions. This is the True Token.

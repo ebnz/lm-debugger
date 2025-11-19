@@ -3,7 +3,7 @@ import numpy as np
 from .MetricItem import MetricItem
 
 
-class PerplexityMetric(MetricItem):
+class Perplexity(MetricItem):
     """
     Calculates the Perplexity of the Model Output .
     Perplexity is a measure of uncertainty of the LLM.

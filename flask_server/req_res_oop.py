@@ -9,11 +9,11 @@ from .controller.InterventionGenerationController import InterventionGenerationC
 from .controller.TransformerModels import TransformerModelWrapper
 
 # Metrics
-from .interaction_items.metrics.ExcessiveWeightDeltasMetric import ExcessiveWeightDeltasMetric
-from .interaction_items.metrics.PerplexityMetric import PerplexityMetric
-from .interaction_items.metrics.OutOfDistributionKeysMetric import OutOfDistributionKeysMetric
-from .interaction_items.metrics.LocalizationVEditingMetric import LocalizationVEditingMetric
-from .interaction_items.metrics.EfficacyMetric import EfficacyMetric
+from .interaction_items.metrics.NormOfWeightUpdate import NormOfWeightUpdate
+from .interaction_items.metrics.Perplexity import Perplexity
+from .interaction_items.metrics.NormOfROMEUpdateDenominator import NormOfROMEUpdateDenominator
+from .interaction_items.metrics.CausalTrace import CausalTrace
+from .interaction_items.metrics.Efficacy import Efficacy
 
 # Intervention Methods
 from .interaction_items.intervention_methods.LMDebuggerIntervention import LMDebuggerIntervention
@@ -73,31 +73,31 @@ class ModelingRequests:
             ))
 
         self.intervention_controller.register_metric(
-            ExcessiveWeightDeltasMetric(
+            NormOfWeightUpdate(
                 self.intervention_controller
             )
         )
 
         self.intervention_controller.register_metric(
-            PerplexityMetric(
+            Perplexity(
                 self.intervention_controller
             )
         )
 
         self.intervention_controller.register_metric(
-            OutOfDistributionKeysMetric(
+            NormOfROMEUpdateDenominator(
                 self.intervention_controller
             )
         )
 
         self.intervention_controller.register_metric(
-            LocalizationVEditingMetric(
+            CausalTrace(
                 self.intervention_controller
             )
         )
 
         self.intervention_controller.register_metric(
-            EfficacyMetric(
+            Efficacy(
                 self.intervention_controller
             )
         )
