@@ -66,7 +66,7 @@ function LayersPanel(props: Props): JSX.Element {
   }
 
   return (
-    <div style={{display: "flex", flexDirection: "row", height: "80vh", overflow: "auto", position: "relative"}}>
+    <div style={{ display: "flex", flexDirection: "row", height: "100%" }}>
       {renderOverlay && <OverlayLayout>{overlayContent}</OverlayLayout>}
       <MainLayout title="Metrics">{metricsContent}</MainLayout>
       <MainLayout title="Interventions">{interventionContent}</MainLayout>
@@ -76,10 +76,10 @@ function LayersPanel(props: Props): JSX.Element {
 
 const OverlayLayout = styled.div`
   position: absolute;
-  top: 0;
+  top: 50px;
   left: 0;
   width: 100%;
-  height: 100%;
+  height: calc(100vh - 186px);
   z-index: 999;
   background-color: rgba(255, 255, 255, 0.7);
   display: flex;
@@ -94,11 +94,14 @@ const MainLayout = styled(Card).attrs({
   height: 100%;
 
   &.ant-card .ant-card-body {
-    height: calc(100vh - 236px);
-    overflow-x: hidden;
+    max-height: calc(100vh - 236px);
     overflow-y: auto;
+    
+    //height: calc(100vh - 236px);
+    overflow-x: hidden;
+    //overflow-y: auto;
     padding: 2px;
-
+    //
     display: grid;
     justify-items: center;
     align-content: start;
