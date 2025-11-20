@@ -16,20 +16,15 @@ class ROMEUpdateDenominator(MetricItem):
         super().__init__(controller)
 
     def get_text_outputs(self, prompt, token_logits, pre_hook_rv=None, **kwargs):
-        # Find ROME-Modules
-        rome_modules = list(
-            filter(
-                lambda x: x.get_name() in self.config.applicable_intervention_methods,
-                self.controller.intervention_methods
-            )
-        )
-
         metric_values = {}
 
-        for rome_module in rome_modules:
-            hparams = rome_module.ee_hparams
+        for method in self.controller.intervention_methods:
+            if method.get_name() not in ["ROME", "R-ROME"]:
+                continue
 
-            for intervention in rome_module.interventions:
+            hparams = method.ee_hparams
+
+            for intervention in method.interventions:
                 prompt = intervention["text_inputs"]["prompt"]
                 subject = intervention["text_inputs"]["subject"]
                 target = intervention["text_inputs"]["target"]
@@ -42,32 +37,52 @@ class ROMEUpdateDenominator(MetricItem):
                     "target_new": target
                 }
 
-                left_vector = compute_u(
+                context_templates = get_context_templates(
+                        self.model_wrapper.model,
+                        self.model_wrapper.tokenizer,
+                        hparams.context_template_length_params
+                    )
+
+                inv_cov_times_key = compute_u(
                     self.model_wrapper.model,
                     self.model_wrapper.tokenizer,
                     request,
                     hparams,
                     layer_idx,
-                    get_context_templates(
+                    context_templates 
+                )
+
+                # There is a bug in ROME where one of the keys isn't properly prefixed
+                # with the context_templates
+                if method.get_name() == "ROME":
+                    key, _ = get_module_input_output_at_word(
                         self.model_wrapper.model,
                         self.model_wrapper.tokenizer,
-                        hparams.context_template_length_params
+                        layer_idx,
+                        context_template=request["prompt"],
+                        word=request["subject"],
+                        module_template=hparams.rewrite_module_tmp,
+                        fact_token_strategy=hparams.fact_token
                     )
-                )
 
-                cur_input, cur_output = get_module_input_output_at_word(
-                    self.model_wrapper.model,
-                    self.model_wrapper.tokenizer,
-                    layer_idx,
-                    context_template=request["prompt"],
-                    word=request["subject"],
-                    module_template=hparams.rewrite_module_tmp,
-                    fact_token_strategy=hparams.fact_token
-                )
+                # R-ROME fixes this bug
+                elif method.get_name() == "R-ROME":
+                    key = torch.stack([
+                        get_module_input_output_at_word(
+                            self.model_wrapper.model,
+                            self.model_wrapper.tokenizer,
+                            layer_idx,
+                            context_template=template.format(request["prompt"]),
+                            word=request["subject"],
+                            module_template=hparams.rewrite_module_tmp,
+                            fact_token_strategy=hparams.fact_token
+                        )[0]
+                        for template in context_templates
+                    ]).mean(0)
 
-                denominator_descriptor = (f'{rome_module.get_name()} | '
+                denominator_descriptor = (f'{method.get_name()} | '
                                           f'Layer {layer_idx} | '
                                           f'"{prompt.format(subject)} {target}"')
-                metric_values[denominator_descriptor] = abs(torch.dot(cur_input, left_vector).item())
+                metric_values[denominator_descriptor] = abs(torch.dot(key, inv_cov_times_key).item())
 
         return metric_values
