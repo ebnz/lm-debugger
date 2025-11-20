@@ -49,7 +49,7 @@
       window: 10,
       kind: "mlp"
     },
-    NormOfROMEUpdateDenominator: {
+    ROMEUpdateDenominator: {
       applicable_intervention_methods: ["ROME", "R-ROME"]
     },
     Perplexity: {

@@ -1,12 +1,12 @@
 import torch
 
 from .MetricItem import MetricItem
-from ..intervention_methods.EasyEdit.easyeditor.models.rome.compute_u import get_inv_cov, compute_u
+from ..intervention_methods.EasyEdit.easyeditor.models.rome.compute_u import compute_u
 from ..intervention_methods.EasyEdit.easyeditor.models.rome.rome_main import get_context_templates
 from ..intervention_methods.EasyEdit.easyeditor.models.rome.compute_v import get_module_input_output_at_word
 
 
-class NormOfROMEUpdateDenominator(MetricItem):
+class ROMEUpdateDenominator(MetricItem):
     """
     Calculates the value of the denominator of ROME’s Weight Delta Matrix.
     Exceptionally small values (<1) make the Weight Delta Matrix excessively large, leading to possible problems.
