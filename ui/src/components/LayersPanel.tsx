@@ -97,11 +97,8 @@ const MainLayout = styled(Card).attrs({
     max-height: calc(100vh - 236px);
     overflow-y: auto;
     
-    //height: calc(100vh - 236px);
     overflow-x: hidden;
-    //overflow-y: auto;
     padding: 2px;
-    //
     display: grid;
     justify-items: center;
     align-content: start;

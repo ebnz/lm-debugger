@@ -8,7 +8,7 @@ from ..intervention_methods.EasyEdit.easyeditor.models.rome.compute_v import get
 
 class ROMEUpdateDenominator(MetricItem):
     """
-    Calculates the value of the denominator of ROME’s Weight Delta Matrix.
+    Calculates the absolute value of the denominator of ROME’s Weight Delta Matrix.
     Exceptionally small values (<1) make the Weight Delta Matrix excessively large, leading to possible problems.
     The Pattern is: '<InterventionMethod> | <Layer> | <Prompt> --> <Denominator of Weight Delta Matrix>'
     """
