@@ -105,7 +105,7 @@ export function Layer(props: Props): JSX.Element {
   return (
       <LayerLayout>
         <Collapse>
-          <Panel key={1} header={
+          <Panel key={1} style={{paddingRight: "30px"}} header={
             <>
               <LayerTag color="#a55397">
                 {
@@ -237,8 +237,7 @@ const LayerLayout = styled.div`
   margin: 4px;
   border: 1px #757373c5 solid;
   border-radius: 5px;
-  //width: calc(100% - 100px);
-  max-width: 90%;
+  max-width: calc(100% - 50px);
   width: 100%;
   height: fit-content;
 `;
