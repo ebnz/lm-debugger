@@ -11,7 +11,7 @@ from .controller.TransformerModels import TransformerModelWrapper
 # Metrics
 from .interaction_items.metrics.NormOfWeightUpdate import NormOfWeightUpdate
 from .interaction_items.metrics.Perplexity import Perplexity
-from .interaction_items.metrics.ROMEUpdateDenominator import ROMEUpdateDenominator
+from .interaction_items.metrics.DenominatorOfROMEUpdate import DenominatorOfROMEUpdate
 from .interaction_items.metrics.CausalTrace import CausalTrace
 from .interaction_items.metrics.Efficacy import Efficacy
 
@@ -85,7 +85,7 @@ class ModelingRequests:
         )
 
         self.intervention_controller.register_metric(
-            ROMEUpdateDenominator(
+            DenominatorOfROMEUpdate(
                 self.intervention_controller
             )
         )
