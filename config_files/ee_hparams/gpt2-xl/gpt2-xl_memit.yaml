@@ -1,6 +1,6 @@
 alg_name: "MEMIT"
 model_name: "/nfs/data/shared/hugging_cache/gpt2-xl"
-stats_dir: "/nfs/data/shared/MEMIT_Cache/stats"
+stats_dir: "/nfs/data/shared/ROME_Cache/stats"
 device: 0
 layers: [0]
 clamp_norm_factor: 4
@@ -11,7 +11,7 @@ v_lr: 5e-1
 v_loss_layer: 47
 v_weight_decay: 1e-3
 kl_factor: 0.0625
-mom2_adjustment: false
+mom2_adjustment: true
 mom2_update_weight: 15000
 rewrite_module_tmp: "transformer.h.{}.mlp.c_proj"
 layer_module_tmp: "transformer.h.{}"
@@ -20,6 +20,6 @@ attn_module_tmp: "transformer.h.{}.attn"
 ln_f_module: "transformer.ln_f"
 lm_head_module: "transformer.wte"
 mom2_dataset: "wikipedia"
-mom2_n_samples: 10
+mom2_n_samples: 100000
 mom2_dtype: "float32"
 model_parallel: false
