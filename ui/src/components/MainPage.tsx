@@ -93,6 +93,11 @@ function MainPage(): JSX.Element {
     setPredictionError(undefined);
     try {
       const result = await predict({prompt, interventions, generate_k: 1});
+      console.log(result)
+      if (result?.layers.length === 0 || result === undefined) {
+        setPredictionError("Got empty result. Check your Backend!");
+        console.log("Got empty result. Check your Backend!");
+      }
       setPrediction(result);
     } catch(e) {
       if (e instanceof Error) {
