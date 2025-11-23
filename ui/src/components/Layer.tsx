@@ -195,12 +195,12 @@ export function Layer(props: Props): JSX.Element {
                 <AddInterventionButton
                   disabled={add_intervention_button_disabled(textIntervention)}
                   type={"primary"}
-                  onClick={(e) => {props.onCopy(
-                  {text_inputs: textIntervention,
-                  name: props.layer.name,
-                  layer: layerIndex,
-                  dim: hashObject([textIntervention, props.layer.name, layerIndex, Date.now()])}
-                  )}}>Add as Intervention</AddInterventionButton>
+                  onClick={(e) => {props.onCopy({
+                    text_inputs: textIntervention,
+                    name: props.layer.name,
+                    layer: layerIndex,
+                    dim: hashObject([textIntervention, props.layer.name, layerIndex, Date.now()])
+                  })}}>Add as Intervention</AddInterventionButton>
               </TextInputLayout>
             }
           </Panel>

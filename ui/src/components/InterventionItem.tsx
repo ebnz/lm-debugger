@@ -43,8 +43,7 @@ function InterventionItem(props: Props):JSX.Element {
   let actualDesc = "";
 
   if (intervention.hasOwnProperty("text_inputs")) {
-    // @ts-ignore
-    actualDesc = `L${intervention.layer}: ${intervention.text_inputs.prompt.replace("{}", intervention.text_inputs.subject)} ${intervention.text_inputs.target}`;
+    actualDesc = `L${intervention.layer} ${intervention.name}: ${intervention.text_inputs?.prompt.replace("{}", intervention.text_inputs?.subject)} ${intervention.text_inputs?.target}`;
   }
   else {
     actualDesc = desc !== undefined && desc !== "" ? desc : `${toAbbr.get(props.intervention.name) ?? "_"}${layer}D${dim}`
@@ -55,7 +54,7 @@ function InterventionItem(props: Props):JSX.Element {
     <MainLayout checked={isOn}>
       <Label onClick={select}>
         <Text strong
-          style={useEllipsis ? { width: 85 } : undefined}
+          style={useEllipsis ? { width: 125 } : undefined}
           ellipsis={useEllipsis ? { tooltip: true } : false}>{actualDesc}</Text>
       </Label>
       <CoeffToggle checked={isOn} onChange={handleChange}/>
