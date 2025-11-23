@@ -1,3 +1,4 @@
+/* ONLY EXPERIMENAL SUPPORT OF LLAMA2 MODELS */
 {
   server_files_dir:: "server_files/",
   model_name:"codellama/CodeLlama-7b-hf",
@@ -30,17 +31,9 @@
     post_decoder_norm: "model.norm"
   },
 
-  easy_edit_hparams_path: "config_files/ee_hparams",
+  easy_edit_hparams_path: "<ABSOLUTE PATH>/config_files/ee_hparams",
 
   metric_configs: {
-    Efficacy: {
-      dataset: {
-        prompts: ["Elon Musk was born in the city of",
-                  "Ian Fleming was born in the city of",
-                  "Barack Obama was born in the city of"],
-        targets: ["Pretoria", "London", "Honolulu"]
-      },
-    },
     NormOfWeightUpdate: {},
     CausalTrace: {
       # Config for Causal Trace

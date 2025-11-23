@@ -13,7 +13,6 @@ from .interaction_items.metrics.NormOfWeightUpdate import NormOfWeightUpdate
 from .interaction_items.metrics.Perplexity import Perplexity
 from .interaction_items.metrics.DenominatorOfROMEUpdate import DenominatorOfROMEUpdate
 from .interaction_items.metrics.CausalTrace import CausalTrace
-from .interaction_items.metrics.Efficacy import Efficacy
 
 # Intervention Methods
 from .interaction_items.intervention_methods.LMDebuggerIntervention import LMDebuggerIntervention
@@ -92,12 +91,6 @@ class ModelingRequests:
 
         self.intervention_controller.register_metric(
             CausalTrace(
-                self.intervention_controller
-            )
-        )
-
-        self.intervention_controller.register_metric(
-            Efficacy(
                 self.intervention_controller
             )
         )
