@@ -2,11 +2,16 @@
 
 Implementing a new Intervention Method can be done by creating a subclass of the Abstract Base Class `InterventionMethod`.
 
-### Types of Intervention Methods
+Examples: 
+* `EasyEditInterventionMethod`
+* `LMDebuggerIntervention` (note that this implementation deviates quite a bit from the intended way to implement an Intervention Method)
+
+### What do I need to implement? (Types of Intervention Methods)
 An Intervention Method can either be implemented as a **Hook-based Intervention Method** or a **Model-Transform Intervention Method**. 
 
 #### General
-Each Method should set the Attribute `self.layers = [0, 1, 2]` to the layer indices, the Method mutates. This allows to index Intervention Method in the Frontend and also cache a Model's Weights to later undo Model-Transformations. 
+Each Method should set the Attribute `self.layers = [0]` to the layer index, the Method mutates by default.
+This allows to index Intervention Methods in the Frontend and also cache a Model's Weights to later undo Model-Transformations.
 
 #### Hook-based Intervention Method
 
@@ -33,10 +38,7 @@ A **Model-Transform Intervention Method** implements the following Methods:
 
 #### get_name
 By default, we use the name of this Subclass as the Name of this Intervention Method. 
-By overriding this Method, a custom name can be set. 
-
-Examples: 
-* `EasyEditInterventionMethod`
+By overriding this Method, a custom name can be set.
 
 #### get_text_inputs
 Returns a dict of Text Inputs, which are used to define an Intervention. The defined Text Inputs show up in the UI. 
@@ -56,7 +58,12 @@ A set Intervention will have the same structure with filled out Dict-Values. Exe
 ```python
 {
     "layer": 5, 
-    "type": "ExampleInterventionMethod", 
+    "name": "ExampleInterventionMethod", 
+    "type": "intervention", 
+    "min_layer": 0, 
+    "max_layer": 47, 
+    "changeable_layer": True, 
+    "docstring": "This is a descriptive docstring", 
     "text_inputs": {
         "prompt": "{} is a",
         "subject": "Barack Obama",
@@ -131,3 +138,7 @@ def get_projections(self, dim, *args, **kwargs):
         }, ...]
     }
 ```
+
+### Additional info
+The attributes `min_layer` and `max_layer` contain information on the first and last Layer of the Transformer, an Intervention Method can be applied to. 
+By overwriting the Method `get_changeable_layer`, we can set if this Intervention Method's Layer can be changed (by respecting `min_layer` & `max_layer`) in the Frontend. 

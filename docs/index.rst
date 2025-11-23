@@ -11,5 +11,5 @@ LM-Debugger++ documentation
    :caption: Contents:
 
    config_lm_debugger.md
-   scripts.md
-
+   new_intervention_method.md
+   new_metric.md
