@@ -9,6 +9,8 @@ import {partial} from "lodash";
 import CaretDownOutlined from "@ant-design/icons/CaretDownOutlined";
 import runConfig from "../runConfig.json";
 
+import logo from '../knowledge_editor_logo.png';
+
 
 interface Props {
   onRun: (prompt: string) => void;
@@ -75,7 +77,7 @@ function Prompt(props: Props): JSX.Element {
   return (
     <MainLayout>
       <div id="lmlogo">
-        <img src={require('../lmdebugger_logo.svg').default} alt='mySvgImage' />
+        <img src={logo} alt='KnowledgeEditor' style={{ width: '150px', height: 'auto' }}/>
       </div>
       <ExampleDropdown disabled={isAnythingLoading} overlay={menuOverlay} trigger={['hover']}>
         <Button>Select Example <CaretDownOutlined /></Button>

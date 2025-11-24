@@ -1,6 +1,6 @@
 [//]: # (# LM-Debugger 🔎 )
 ### 
-<img width="30%" src="img/lmdebugger_logo.png" />
+<img width="30%" src="img/knowledge_editor_logo.png" />
 
 LM-Debugger++ is an open-source interactive tool for inspection and intervention in transformer-based language models. LM-Debugger++ is an extension of the original LM-Debugger, originally developed by [Geva et al](https://arxiv.org/abs/2204.12130).
 This repository includes the code and links for data files required for running LM-Debugger++ over CodeLlama Models by Facebook. Adapting this tool to other models only requires changing the backend API (see details below). 
