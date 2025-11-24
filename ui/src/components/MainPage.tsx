@@ -211,7 +211,7 @@ function MainPage(): JSX.Element {
       <Modal
         visible={introOpen}
         closable={false}
-        title="Welcome to LM-Debugger"
+        title="Welcome to Knowledge-Debugger"
         width="900px"
         footer={[
           <Checkbox checked={dontShowAgain} onChange={(e) => {setDontShowAgain(e.target.checked)}}>

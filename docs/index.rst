@@ -10,6 +10,6 @@ LM-Debugger++ documentation
    :maxdepth: 2
    :caption: Contents:
 
-   config_lm_debugger.md
+   config_knowledge_debugger.md
    new_intervention_method.md
    new_metric.md

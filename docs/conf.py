@@ -6,7 +6,7 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'LM-Debugger++'
+project = 'Knowledge-Debugger'
 copyright = '2025, Eric Benz'
 author = 'Eric Benz'
 release = 'v1.0.0'
