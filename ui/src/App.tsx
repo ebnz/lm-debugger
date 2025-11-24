@@ -14,8 +14,8 @@ function App(): JSX.Element {
     <>
       <Helmet>  
         <html lang="en" />  
-        <title>LM-Debugger</title>
-        <meta name="description" content="A Debugger Tool for Transformer-based Language Models." />
+        <title>Knowledge-Debugger</title>
+        <meta name="description" content="An Interactive Tool for Inspection and Knowledge Editing in Transformer-Based Language Models" />
       </Helmet>  
     <BrowserRouter>
       <Routes>

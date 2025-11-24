@@ -1,6 +1,6 @@
 {
-  "short_name": "LM-Debugger",
-  "name": "An Interactive Tool for Inspection and Intervention in Transformer-Based Language Models",
+  "short_name": "Knowledge-Debugger",
+  "name": "An Interactive Tool for Inspection and Knowledge Editing in Transformer-Based Language Models",
   "icons": [
     {
       "src": "favicon.ico",
