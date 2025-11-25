@@ -83,19 +83,4 @@ In case you are interested in _running only one of the two views of Knowledge-De
 ### Origins of Knowledge-Debugger
 Knowledge-Debugger is based on LM-Debugger, originally developed by [Geva et al](https://arxiv.org/abs/2204.12130).
 
-Online Demos of LM-Debugger are available here: 
-- GPT2 Medium: https://lm-debugger.apps.allenai.org/
-- GPT2 Large: https://lm-debugger-l.apps.allenai.org/
-
-### Citation
-Please cite as:
-```bibtex
-@article{geva2022lmdebugger,
-  title={LM-Debugger: An Interactive Tool for Inspection and Intervention in Transformer-Based Language Models},
-  author={Geva, Mor and Caciularu, Avi and Dar, Guy and Roit, Paul and Sadde, Shoval and Shlain, Micah and Tamir, Bar and Goldberg, Yoav},
-  journal={arXiv preprint arXiv:2204.12130},
-  year={2022}
-}
-```
-
 Docs to be extended soon!
