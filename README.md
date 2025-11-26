@@ -44,7 +44,13 @@ This file's config fields can be seen in the [Docs](https://ebnz.github.io/lm-de
 Exemplary Files are provided in `config_files/`
 
 #### Creating an Elasticsearch Index
-The keyword search functionality in the exploration view is powered by an Elasticsearch index that stores the projections of feed-forward parameter vectors from the entire network. To create this index, run:
+The keyword search functionality in the exploration view is powered by an Elasticsearch index that stores the projections of feed-forward parameter vectors from the entire network. 
+To write this index into the server files directory (specified in Config), run:
+```bash
+python es_index/create_offline_files.py \
+--config_path CONFIG_PATH
+```
+To upload the index from the server files directory to an ElasticSearch Database, run:
 ```bash
 python es_index/index_value_projections_docs.py \
 --config_path CONFIG_PATH
