@@ -77,7 +77,7 @@ class Perplexity(MetricItem):
             with torch.no_grad():
                 out_logits = model(encoded_batch, attention_mask=attn_mask).logits
 
-            shift_logits = out_logits[..., :-1, :].contiguous()
+            shift_logits = out_logits[..., :-1, :].contiguous().to(dtype=torch.float32)
             shift_labels = labels[..., 1:].contiguous()
             shift_attention_mask_batch = attn_mask[..., 1:].contiguous()
 
