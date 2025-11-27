@@ -50,15 +50,7 @@ with Elasticsearch(
     if len(dict_for_df["search_score"]) > 0:
         pandas_df = pd.DataFrame(data=dict_for_df)
         streamlit_df = st.dataframe(
-            pandas_df,
-            column_config={
-                "index_type": "Type of Intervention Method",
-                "layer": "Layer Index",
-                "dim": "Feature Index",
-                "tokens": st.column_config.Column(label="Strongly activating Tokens", width=1200),
-                "search_score": "Database-Hit strength"
-            },
-            hide_index=True
+            pandas_df
         )
 
     else:
