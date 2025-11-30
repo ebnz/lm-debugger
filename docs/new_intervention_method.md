@@ -15,14 +15,14 @@ This allows to index Intervention Methods in the Frontend and also cache a Model
 
 #### Hook-based Intervention Method
 
-A **Hook-based Intervention Method** uses Features of a Model. Interventions place Hooks on specific Features in the computational Graph of the Transformer Model to directly mutate the activation of the Feature. 
+A **Hook-based Intervention Method** uses Features of a Model. Interventions place Hooks on specific Modules in the computational Graph of the Transformer Model to directly mutate the activations of Features. 
 
 A **Hook-based Intervention Method** implements the following Methods:
 * `setup_intervention_hook`
   * Installs a Hook, given as a Parameter
-  * Use Method `self.model_wrapper.setup_hook` to install Hooks
+  * Use Method `TransformerModelWrapper.setup_hook` to install Hooks
 * `get_projections`
-  * Returns a Feature's projected Tokens and Logit Values
+  * Projects Features to Vocab-Space. Returns a Feature's projected Tokens and Logit Values
 
 #### Model-Transform Intervention Method
 
@@ -31,6 +31,7 @@ A **Model-Transform Intervention Method** transforms the Model-Weights of the Tr
 A **Model-Transform Intervention Method** implements the following Methods:
 * `get_text_inputs`
   * Returns a dict of Names of Text-Inputs (Keys) and standard-inputs (Values)
+  * This dict is sent to the Frontend, where the user populates it with inputs (e.g., prompt, subject, target)
 * `transform_model`
   * Performs the Transformation of the Model's Weights based on a given Intervention
 
@@ -87,7 +88,8 @@ def transform_model(self, intervention):
         "subject": intervention["text_inputs"]["prompt"],
         "target_new": intervention["text_inputs"]["target"]
     }]
-
+    
+    # This is the invoke-method of an EasyEdit-Method
     rv = self.invoke_method(
         self.model_wrapper.model,
         self.model_wrapper.tokenizer,
@@ -122,7 +124,7 @@ def setup_intervention_hooks(self, intervention: dict, prompt: str):
     )
 ```
 
-Set Hooks are automatically cleared after usage. 
+Set Hooks are automatically cleared after usage. (As long as `permanent=False`)
 
 #### get_projections
 The results of `get_projections` are shown in the side menu (ValueDetailsPanel), once a Feature of an Intervention is clicked. 
