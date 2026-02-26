@@ -8,7 +8,7 @@ Knowledge-Debugger is an open-source interactive tool for inspection and knowled
 This repository includes the code and links for data files required for running Knowledge-Debugger on GPT2-XL. 
 This tool is easily adaptable to other models, new knowledge editing methods and metrics. These modifications only require a few changes. 
 
-We currently support GPT2-like models (stable) and Llama2-like models (experimental). 
+KnowledgeDebugger is able to run Models that build upon the Transformer Architecture. Tested with GPT2-XL and Llama2/Llama3-style Models. 
 
 Contributions are welcome!
 
